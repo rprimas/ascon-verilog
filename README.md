@@ -33,14 +33,14 @@ Besides the interface changes, this code base comes with:
 ## Interface
 
 The interface of the Ascon core is similar to [GMU's crypto core interface (Figure 5.1)](https://cryptography.gmu.edu/athena/LWC/LWC_HW_Implementers_Guide.pdf) that was often used during the [NIST standardization for lightweight authenticated encryption](https://csrc.nist.gov/projects/lightweight-cryptography/).
-Nevertheless, the following changes to the GMU crypto core interface were made:
+The following changes to the GMU crypto core interface were made:
 - Removed signals:
   - `key_update`
   - `bdi_valid_bytes`, `bdi_pad_loc`, `bdi_size`
   - `fdi_ready`, `fdi_valid`, `fdi_data`, `fdo_ready`, `fdo_valid`, `fdo_data`
   - `bdo_valid_bytes`, `end_of_block`
 
-The resulting simplified interface of the Ascon core is shown here:
+The resulting (simplified) interface of the Ascon core is shown here:
 
 ![Ascon Core Interface](interface.png "Ascon Core Interface")
 
@@ -77,16 +77,16 @@ You can have a look at `rtl/tb.sv` for an example of how the Ascon core interfac
   - See `https://steveicarus.github.io/iverilog/usage/installation.html`.
   - Tested with version 12.0 and flags `-g2005-sv`, `-g2009`, and `-g2012`.
 - Execute verilog testbench:
-  - `make` (runs `rtl/tb.sv` using `KAT/KAT_tmp` as input).
+  - `make` (runs `rtl/tb.sv` using `KAT/KAT_tmp.txt` as input).
 - Execute verilog testbench and show resulting wave forms:
   - `make wave` (same as `make` but also opens resulting `tb.vcd` in GTKWave).
 
 ## Automatic Generation and Execution of Test Vectors
 
 - `python tb.py -s`
-  - Generate a new `KAT/KAT_tmp`, run `rtl/tb.sv`, and compare output to Ascon software implementation in `ascon.py`.
+  - Generate a new `KAT/KAT_tmp.txt`, run `rtl/tb.sv`, and compare output to Ascon software implementation in `ascon.py`.
 - `python tb.py -w`
-  - Same as `python tb.py -s` except the entire process is repeated for many inputs of different lengths.
+  - Same as `python tb.py -s` except the entire process is repeated for many inputs with different lengths.
 
 ## Contact
 
