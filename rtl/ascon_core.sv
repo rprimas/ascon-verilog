@@ -1,8 +1,9 @@
-// Licensed under the Creative Commons 1.0 Universal License (CC0), see LICENSE for details.
+// Licensed under the Creative Commons 1.0 Universal License (CC0), see LICENSE
+// for details.
 //
 // Author: Robert Primas (rprimas 'at' proton.me, https://rprimas.github.io)
 //
-// This module contains an implementation of the Ascon-128 authenticated cipher core.
+// This module contains an implementation of Ascon-128.
 
 module ascon_core (
     input  logic            clk,

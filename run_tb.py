@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 #
-# Licensed under the Creative Commons 1.0 Universal License (CC0), see LICENSE for details.
+# Licensed under the Creative Commons 1.0 Universal License (CC0), see LICENSE
+# for details.
 #
 # Author: Robert Primas (rprimas 'at' proton.me, https://rprimas.github.io)
 #
-# This file contains code that automatically generates test vectors, runs verilog testbenchs, and compares the resulting output to a software implementation.
+# This file contains python scripts that automatically generate test vectors,
+# run verilog testbenches, and compare the resulting output to a software
+# implementation.
 
 import argparse
 import os
 import subprocess
 from ascon import *
 
-# Terminal color codes
+# Terminal color codescore
 OKGREEN = "\033[92m"
 WARNING = "\033[93m"
 FAIL = "\033[91m"
@@ -168,7 +171,7 @@ def run_tb_single():
     print("k      = " + "".join("{:02x}".format(x) for x in k))
     print("n      = " + "".join("{:02x}".format(x) for x in n))
     run_tb(k, n, ad, p)
-    print(f"\n{OKGREEN}ALL PASS{ENDC}")
+    print(f"{OKGREEN}ALL PASS{ENDC}")
 
 
 # Generate multiple test vectors and run testbench

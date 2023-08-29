@@ -1,8 +1,10 @@
-# Licensed under the Creative Commons 1.0 Universal License (CC0), see LICENSE for details.
+# Licensed under the Creative Commons 1.0 Universal License (CC0), see LICENSE
+# for details.
 #
 # Author: Robert Primas (rprimas 'at' proton.me, https://rprimas.github.io)
 #
-# Makefile for running verilog testbench and optionally viewing wave forms in GTKWave.
+# Makefile for running verilog testbench and optionally viewing wave forms
+# in GTKWave.
 
 all:
 	iverilog -g2012 -o tb rtl/tb.sv rtl/ascon_core.sv rtl/asconp.sv
@@ -14,4 +16,3 @@ wave: all
 .PHONY: clean
 clean:
 	rm -f KAT_tmp.txt tb tb.vcd
-

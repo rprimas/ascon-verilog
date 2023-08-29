@@ -14,7 +14,7 @@ Besides the interface changes, this code base comes with:
 
 ## Available Variants
 
-- **Ascon-128** : `ascon128v12`, 32-bit interface, 1 permutation round per clock cycle
+- **Ascon-128** : `ascon128v12`, 32-bit interface, 1 permutation round per clock cycle.
 
 ## Files
 
@@ -74,17 +74,17 @@ You can have a look at `rtl/tb.sv` for an example of how the Ascon core interfac
 ## Quick Start
 
 - Install the Icarus Verilog (iverilog) open-source verilog simulator:
-  - See `https://steveicarus.github.io/iverilog/usage/installation.html`
+  - See `https://steveicarus.github.io/iverilog/usage/installation.html`.
   - Tested with version 12.0 and flags `-g2005-sv`, `-g2009`, and `-g2012`.
 - Execute verilog testbench:
-  - `make` (runs `tb.sv` using `KAT/KAT_tmp` as input)
+  - `make` (runs `rtl/tb.sv` using `KAT/KAT_tmp` as input).
 - Execute verilog testbench and show resulting wave forms:
-  - `make wave` (same as `make` but also opens resulting `tb.vcd` in GTKWave)
+  - `make wave` (same as `make` but also opens resulting `tb.vcd` in GTKWave).
 
 ## Automatic Generation and Execution of Test Vectors
 
 - `python tb.py -s`
-  - Generate a new `KAT/KAT_tmp`, run `tb.sv`, and compare output to Ascon software implementation in `ascon.py`.
+  - Generate a new `KAT/KAT_tmp`, run `rtl/tb.sv`, and compare output to Ascon software implementation in `ascon.py`.
 - `python tb.py -w`
   - Same as `python tb.py -s` except the entire process is repeated for many inputs of different lengths.
 

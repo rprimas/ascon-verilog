@@ -1,4 +1,5 @@
-// Licensed under the Creative Commons 1.0 Universal License (CC0), see LICENSE for details.
+// Licensed under the Creative Commons 1.0 Universal License (CC0), see LICENSE
+// for details.
 //
 // Author: Robert Primas (rprimas 'at' proton.me, https://rprimas.github.io)
 //

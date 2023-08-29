@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 #
-# Licensed under the Creative Commons 1.0 Universal License (CC0), see LICENSE for details.
+# Licensed under the Creative Commons 1.0 Universal License (CC0), see LICENSE
+# for details.
 #
 # Author: Robert Primas (rprimas 'at' proton.me, https://rprimas.github.io)
 #
 # This file contains a software implementation of the Ascon-128 cipher.
-# Associated data (ad) and plaintext (p) need to be 10*-padded to a multiple of the block size (64-bits).
+# Associated data (ad) and plaintext (p) need to be 10*-padded to a multiple
+# of the block size (64-bits).
 
 debugpermutation = False
 
