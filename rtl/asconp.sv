@@ -3,7 +3,7 @@
 //
 // Author: Robert Primas (rprimas 'at' proton.me, https://rprimas.github.io)
 //
-// This module contains an implementation of the Ascon permutation, aka Ascon-p.
+// Implementation of the Ascon permutation (Ascon-p).
 
 module asconp (
     input  logic [ 3:0] round_cnt,

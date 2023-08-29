@@ -3,7 +3,7 @@
 //
 // Author: Robert Primas (rprimas 'at' proton.me, https://rprimas.github.io)
 //
-// This module contains a testbench for controlling the Ascon core.
+// Testbench for controlling the Ascon core.
 
 `timescale 1s / 100ms
 `include "rtl/config.sv"

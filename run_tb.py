@@ -5,9 +5,10 @@
 #
 # Author: Robert Primas (rprimas 'at' proton.me, https://rprimas.github.io)
 #
-# This file contains python scripts that automatically generate test vectors,
-# run verilog testbenches, and compare the resulting output to a software
-# implementation.
+# Python script that:
+# 1. generates test vectors for the Ascon core
+# 2. runs verilog testbenches
+# 3. compares the testbench output to a software implementation
 
 import argparse
 import os

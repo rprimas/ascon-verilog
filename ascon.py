@@ -5,9 +5,8 @@
 #
 # Author: Robert Primas (rprimas 'at' proton.me, https://rprimas.github.io)
 #
-# This file contains a software implementation of the Ascon-128 cipher.
-# Associated data (ad) and plaintext (p) need to be 10*-padded to a multiple
-# of the block size (64-bits).
+# Software implementation of Ascon-128. Associated data (ad) and plaintext (p)
+# need to be 10*-padded to a multiple of the block size (64-bits).
 
 debugpermutation = False
 

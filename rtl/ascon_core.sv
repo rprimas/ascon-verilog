@@ -3,7 +3,7 @@
 //
 // Author: Robert Primas (rprimas 'at' proton.me, https://rprimas.github.io)
 //
-// This module contains an implementation of Ascon-128.
+// Implementation of the Ascon core.
 
 module ascon_core (
     input  logic            clk,
@@ -29,16 +29,11 @@ module ascon_core (
     input  logic            msg_auth_ready
 );
 
-  logic [LANE_BITS/2-1:0] state       [      LANES] [2];
-  logic [LANE_BITS/2-1:0] asconp_o    [      LANES] [2];
-  logic [    LANE_BITS/2] ascon_key   [KEY_BITS/32];
+  // Core registers
+  logic [LANE_BITS/2-1:0] state     [      LANES] [2];
+  logic [    LANE_BITS/2] ascon_key [KEY_BITS/32];
   logic [            1:0] word_cnt;
   logic [            3:0] round_cnt;
-  logic [        CCW-1:0] state_i;
-  logic [        CCW-1:0] state_slice;
-  logic [            3:0] state_idx;
-
-  // Utility registers
   logic flag_ad_eot, flag_dec, flag_eoi, flag_hash, msg_auth_intern;
 
   // Utility signals
@@ -72,6 +67,10 @@ module ascon_core (
   assign ver_tag_do = (fsm_state == VERIF_TAG) & (bdi_type == D_TAG) & bdi_valid & bdi_ready;
   assign ver_tag_done = (word_cnt == 3) & ver_tag_do;
 
+  logic [            3:0] state_idx;
+  logic [LANE_BITS/2-1:0] asconp_o    [LANES][2];
+  logic [        CCW-1:0] state_i;
+  logic [        CCW-1:0] state_slice;
   assign state_slice = state[state_idx/2][state_idx%2];  // Dynamic slicing
 
   // Finate state machine
@@ -115,67 +114,52 @@ module ascon_core (
   /////////////////////
 
   always_comb begin
-    state_i   = 32'h0;
+    state_i = 32'h0;
     state_idx = 0;
     key_ready = 0;
     bdi_ready = 0;
-    case (fsm_state)
-      LOAD_KEY: key_ready = 1;
-      LOAD_NONCE: begin
-        bdi_ready = 1;
-        state_idx = word_cnt + 6;
-        state_i   = bdi;
-      end
-      ABS_AD: begin
-        bdi_ready = 1;
-        state_idx = word_cnt;
-        state_i   = state_slice ^ bdi;
-      end
-      ABS_MSG: begin
-        bdi_ready = 1;
-        state_idx = word_cnt;
-        if (decrypt_in) begin
-          state_i = bdi;
-        end else begin
-          state_i = state_slice ^ bdi;
-        end
-      end
-      SQUEEZE_TAG: state_idx = word_cnt + 6;
-      VERIF_TAG: begin
-        state_idx = word_cnt + 6;
-        bdi_ready = 1;
-      end
-      default: ;
-    endcase
-  end
-
-  /////////
-  // BDO //
-  /////////
-
-  always_comb begin
     bdo = 0;
     bdo_valid = 0;
     bdo_type = D_NULL;
     bdo_eot = 0;
     case (fsm_state)
+      LOAD_KEY: key_ready = 1;
+      LOAD_NONCE: begin
+        state_idx = word_cnt + 6;
+        bdi_ready = 1;
+        state_i   = bdi;
+      end
+      ABS_AD: begin
+        state_idx = word_cnt;
+        bdi_ready = 1;
+        state_i   = state_slice ^ bdi;
+      end
       ABS_MSG: begin
-        if (decrypt_in) begin
-          bdo = state_i ^ state_slice;
+        state_idx = word_cnt;
+        if (flag_dec) begin
+          state_i = bdi;
+          bdo = state_slice ^ state_i;
         end else begin
+          state_i = state_slice ^ bdi;
           bdo = state_i;
         end
+        bdi_ready = 1;
         bdo_valid = 1;
         bdo_type  = D_MSG;
         bdo_eot   = bdi_eot;
       end
       SQUEEZE_TAG: begin
+        state_idx = word_cnt + 6;
         bdo       = state_slice;
         bdo_valid = 1;
         bdo_type  = D_TAG;
         bdo_eot   = word_cnt == 3;
       end
-      default: ;
+      VERIF_TAG: begin
+        state_idx = word_cnt + 6;
+        bdi_ready = 1;
+      end
+      default:  ;
     endcase
   end
 
@@ -202,6 +186,18 @@ module ascon_core (
     if (ver_tag_done) fsm_state_nxt = IDLE;
   end
 
+  //////////////////////
+  // FSM State Update //
+  //////////////////////
+
+  always @(posedge clk) begin
+    if (rst == 1) begin
+      fsm_state <= IDLE;
+    end else begin
+      fsm_state <= fsm_state_nxt;
+    end
+  end
+
   /////////////////////////
   // Ascon State Updates //
   /////////////////////////
@@ -211,13 +207,13 @@ module ascon_core (
       if (ld_nonce_do || abs_ad_do || abs_msg_do) begin
         state[state_idx/2][state_idx%2] <= state_i;  // Dynamic slicing
       end
-      // Key addition 1
+      // State initialization, key addition 1
       if (ld_nonce_done) begin
         state[0][0] <= IV_AEAD[31:0];
         state[0][1] <= IV_AEAD[63:32];
         for (int i = 0; i < 4; i++) state[1+i/2][i%2] <= ascon_key[i];
       end
-      // Perform Ascon-p
+      // Compute Ascon-p
       if (init_do || pro_ad_do || pro_msg_do || final_do) begin
         for (int i = 0; i < 10; i++) state[i/2][i%2] <= asconp_o[i/2][i%2];
       end
@@ -250,10 +246,10 @@ module ascon_core (
       word_cnt <= 0;
     end else begin
       // Setting word counter
-      if ((ld_key_do&!ld_key_done)|(ld_nonce_do&!ld_nonce_done)|abs_ad_do|abs_msg_do|sqz_tag_do|ver_tag_do) begin
+      if (ld_key_do | ld_nonce_do | abs_ad_do | abs_msg_do | sqz_tag_do | ver_tag_do) begin
         word_cnt <= word_cnt + 1;
       end
-      if (ld_key_done | ld_nonce_done | abs_ad_done | abs_msg_done) begin // fix: tag
+      if (ld_key_done|ld_nonce_done|abs_ad_done|abs_msg_done|sqz_tag_done|ver_tag_done) begin
         word_cnt <= 0;
       end
       // Setting round counter
@@ -268,15 +264,7 @@ module ascon_core (
   //////////////////
 
   always @(posedge clk) begin
-    if (rst == 1) begin
-      flag_ad_eot <= 0;
-      flag_dec <= 0;
-      flag_eoi <= 0;
-      flag_hash <= 0;
-      msg_auth <= 0;
-      msg_auth_intern <= 0;
-      msg_auth_valid <= 0;
-    end else begin
+    if (rst == 0) begin
       if (idle_done) begin
         flag_ad_eot <= 0;
         flag_dec <= 0;
@@ -301,19 +289,6 @@ module ascon_core (
         msg_auth_valid <= 1;
         msg_auth <= msg_auth_intern;
       end
-    end
-  end
-
-  /////////////////////////////////
-  // Reset and FSM State Updates //
-  /////////////////////////////////
-
-  always @(posedge clk) begin
-    if (rst == 1) begin
-      fsm_state <= IDLE;
-      word_cnt  <= 0;
-    end else begin
-      fsm_state <= fsm_state_nxt;
     end
   end
 
