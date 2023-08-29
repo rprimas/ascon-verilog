@@ -1,0 +1,69 @@
+# Load-Key More-Input Data-Length
+# 3        0          000010
+INS 30000010
+DAT 422BB331
+DAT 5702FE4F
+DAT 9BF6BC9E
+DAT 81C10B15
+
+# Specify Authenticated Encryption
+INS 00000000
+
+# Load-Nonce More-Input Data-Length
+# 4          0          000010
+INS 40000010
+DAT 092CD9F3
+DAT C78FE9D1
+DAT FE0F31BB
+DAT 541B4C0F
+
+# Load-Associated-Data More-Input Data-Length-Incl-Padding-Byte
+# 5                    0          000010
+INS 50000010
+DAT 7F095A49
+DAT 19545FC3
+DAT CA96BEE8
+DAT 6D6C4F80
+
+# Load-Message Last-Input Data-Length-Incl-Padding-Byte
+# 6            1          000010
+INS 61000010
+DAT D6119183
+DAT 6EF76AFE
+DAT C023813E
+DAT 35873780
+
+# Specify authenticated decryption
+INS 10000000
+
+# Load-Nonce More-Input Data-Length
+# 4          0          000010
+INS 40000010
+DAT 092CD9F3
+DAT C78FE9D1
+DAT FE0F31BB
+DAT 541B4C0F
+
+# Load-Associated-Data More-Input Data-Length-Incl-Padding-Byte
+# 5                    0          000010
+INS 50000010
+DAT 7F095A49
+DAT 19545FC3
+DAT CA96BEE8
+DAT 6D6C4F80
+
+# Load-Message Last-Input Data-Length-Incl-Padding-Byte
+# 6            1          000010
+INS 61000010
+DAT 4990F1C6
+DAT DF521637
+DAT 4FA00F1E
+DAT 918F5B27
+
+# Load-Message Last-Input Data-Length
+# 7            1          000010
+INS 71000010
+DAT 4627EC75
+DAT B7E69EE0
+DAT D735D11D
+DAT 50601A7F
