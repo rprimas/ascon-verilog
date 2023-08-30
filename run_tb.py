@@ -10,9 +10,7 @@
 # 2. runs verilog test benches
 # 3. compares the test bench output to a software implementation
 
-import argparse
-import os
-import subprocess
+import argparse, io, os, subprocess
 from ascon import *
 
 # Terminal color codescore
@@ -21,13 +19,14 @@ WARNING = "\033[93m"
 FAIL = "\033[91m"
 ENDC = "\033[0m"
 
-# Specify encryption and/or decryption operations for the Ascon core
-DO_ENC = 1
-DO_DEC = 1
+# Specify encryption, decryption, and/or hash operations for the Ascon core
+DO_ENC = True
+DO_DEC = True
+DO_HASH = True
 
 
 # Print inputs/outputs of Ascon software implementation
-def print_ascon(ad, ad_pad, m, m_pad, c, event):
+def print_ascon(ad, ad_pad, m, m_pad, c, h, event):
     if event == "fail":
         print(f"{FAIL}")
     print("ad     = " + "".join("{:02x}".format(x) for x in ad))
@@ -36,11 +35,12 @@ def print_ascon(ad, ad_pad, m, m_pad, c, event):
     print("m_pad  = " + "".join("{:02x}".format(x) for x in m_pad))
     print("c      = " + "".join("{:02x}".format(x) for x in c[:-16]))
     print("tag    = " + "".join("{:02x}".format(x) for x in c[-16:]))
+    print("hash   = " + "".join("{:02x}".format(x) for x in h))
     if event == "pass":
         print(f"{OKGREEN}PASS{ENDC}")
     if event == "fail":
-        print("ERROR")
-    print(f"{ENDC}")
+        print(f"ERROR{ENDC}")
+        exit()
 
 
 # Write data segment to test vector file
@@ -55,12 +55,12 @@ def write_data_seg(f, x, xlen):
 
 
 # Write test vector file
-def write_tv_file(k, klen, n, nlen, ad, adlen, m, c, mlen):
-    f = open("tv/tmp.txt", "w")
+def write_tv_file(k, n, ad, p, c, m):
+    f = open("tv/tv.txt", "w")
 
     f.write("# Load key\n")
-    f.write("INS 30{:06x}\n".format(klen))
-    write_data_seg(f, k, klen)
+    f.write("INS 30{:06x}\n".format(len(k)))
+    write_data_seg(f, k, len(k))
 
     if DO_ENC:
         f.write("# Specify authenticated encryption\n")
@@ -68,18 +68,17 @@ def write_tv_file(k, klen, n, nlen, ad, adlen, m, c, mlen):
         f.write("\n")
 
         f.write("# Load nonce\n")
-        f.write("INS 4{:01x}{:06x}\n".format(not (adlen or mlen), nlen))
-        write_data_seg(f, n, nlen)
+        f.write("INS 40{:06x}\n".format(len(n)))
+        write_data_seg(f, n, len(n))
 
-        if adlen > 0:
+        if len(ad) > 0:
             f.write("# Load associated data\n")
-            f.write("INS 5{:01x}{:06x}\n".format(not (mlen), adlen))
-            write_data_seg(f, ad, adlen)
+            f.write("INS 50{:06x}\n".format(len(ad)))
+            write_data_seg(f, ad, len(ad))
 
-        if mlen > 0:
-            f.write("# Load message\n")
-            f.write("INS 61{:06X}\n".format(mlen))
-            write_data_seg(f, m, mlen)
+        f.write("# Load plaintext\n")
+        f.write("INS 61{:06X}\n".format(len(p)))
+        write_data_seg(f, p, len(p))
 
     if DO_DEC:
         f.write("# Specify authenticated decryption\n")
@@ -87,22 +86,30 @@ def write_tv_file(k, klen, n, nlen, ad, adlen, m, c, mlen):
         f.write("\n")
 
         f.write("# Load nonce\n")
-        f.write("INS 4{:01x}{:06x}\n".format(not (adlen or mlen), nlen))
-        write_data_seg(f, n, nlen)
+        f.write("INS 40{:06x}\n".format(len(n)))
+        write_data_seg(f, n, len(n))
 
-        if adlen > 0:
+        if len(ad) > 0:
             f.write("# Load associated data\n")
-            f.write("INS 5{:01x}{:06x}\n".format(not (mlen), adlen))
-            write_data_seg(f, ad, adlen)
+            f.write("INS 50{:06x}\n".format(len(ad)))
+            write_data_seg(f, ad, len(ad))
 
-        if mlen > 0:
-            f.write("# Load message\n")
-            f.write("INS 61{:06X}\n".format(mlen))
-            write_data_seg(f, c, mlen)
+        f.write("# Load ciphertext\n")
+        f.write("INS 71{:06X}\n".format(len(p)))
+        write_data_seg(f, c, len(c) - 16)
 
         f.write("# Load tag\n")
-        f.write("INS 71{:06x}\n".format(16))
+        f.write("INS 81{:06x}\n".format(16))
         write_data_seg(f, c[-16:], 16)
+
+    if DO_HASH:
+        f.write("# Specify hashing\n")
+        f.write("INS 20000000\n")
+        f.write("\n")
+
+        f.write("# Load message data\n")
+        f.write("INS 51{:06x}\n".format(len(m)))
+        write_data_seg(f, m, len(m))
 
     f.close()
 
@@ -111,6 +118,7 @@ def write_tv_file(k, klen, n, nlen, ad, adlen, m, c, mlen):
 def run_tb(k, n, ad, p):
     ad_pad = bytearray(ad)
     p_pad = bytearray(p)
+    m_pad = bytearray(ad)
 
     # 10*-pad inputs to block size (64 bits)
     if len(ad_pad) > 0:
@@ -120,43 +128,55 @@ def run_tb(k, n, ad, p):
     p_pad.append(0x80)
     while len(p_pad) % 8 != 0:
         p_pad.append(0x00)
+    m_pad.append(0x80)
+    while len(m_pad) % 8 != 0:
+        m_pad.append(0x00)
 
     # Compute Ascon in software
     c = ascon_aead("Ascon-128", k, n, ad_pad, p_pad, 0)
+    h = ascon_hash(m_pad)
 
-    # Write testvector file for verilog test bench
-    write_tv_file(k, len(k), n, len(n), ad_pad, len(ad_pad), p_pad, c, len(p_pad))
+    # Write test vector file for verilog test bench
+    write_tv_file(k, n, ad_pad, p_pad, c, m_pad)
 
-    # Run verilog test bench and grep the output
-    try:
-        ps = subprocess.Popen(["make"], stdout=subprocess.PIPE)
-        result = subprocess.check_output((["grep", "-e", "=>"]), stdin=ps.stdout)
-    except:
-        print(f"{FAIL}EXECUTION ERROR{ENDC}")
+    # Run verilog test bench and parse the output
+    ps = subprocess.run(
+        ["make"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, text=True
+    )
+    buf = io.StringIO(ps.stdout)
+    tb_c = bytearray()
+    tb_t = bytearray()
+    tb_p = bytearray()
+    tb_h = bytearray()
+    tb_ver = bytearray()
+    for line in buf.readlines():
+        if "cip =>" in line:
+            tb_c += bytearray.fromhex(line[7 : 7 + 16])
+        if "tag =>" in line:
+            tb_t += bytearray.fromhex(line[7 : 7 + 16])
+        if "pla =>" in line:
+            tb_p += bytearray.fromhex(line[7 : 7 + 16])
+        if "hash=>" in line:
+            tb_h += bytearray.fromhex(line[7 : 7 + 16])
+        if "ver =>" in line:
+            tb_ver += bytearray.fromhex("0" + line[7 : 7 + 1])
 
-    # Compare Ascon computation between hardware/software
-    if DO_ENC and DO_DEC:
-        out_len = len(p_pad) + 16 + len(p_pad)
-        ref_sw = c + p_pad
-    elif DO_ENC:
-        out_len = len(p_pad) + 16
-        ref_sw = c
-    elif DO_DEC:
-        out_len = len(p_pad)
-        ref_sw = p_pad
-    for i in range(out_len):
-        x_sw = ref_sw[i]
-        offset = 7 + (i // 4) * 16 + (i % 4) * 2
-        x_hw = bytearray.fromhex(result[offset : offset + 2].decode())[0]
-        if x_sw != x_hw:
-            print_ascon(ad, ad_pad, p, p_pad, c, "fail")
-            exit()
-    if DO_DEC:
-        msg_auth = bytearray.fromhex("0" + result[-2:-1].decode())
-        if msg_auth == 0:
-            print_ascon(ad, ad_pad, p, p_pad, c, "fail")
-            exit()
-    print_ascon(ad, ad_pad, p, p_pad, c, "pass")
+    # Compare test bench output to software implementation
+    for i, x in enumerate(c[:-16]):
+        if x != tb_c[i]:
+            print_ascon(ad, ad_pad, p, p_pad, c, h, "fail")
+    for i, x in enumerate(c[-16:]):
+        if x != tb_t[i]:
+            print_ascon(ad, ad_pad, p, p_pad, c, h, "fail")
+    for i, x in enumerate(p_pad):
+        if x != tb_p[i]:
+            print_ascon(ad, ad_pad, p, p_pad, c, h, "fail")
+    for i, x in enumerate(h):
+        if x != tb_h[i]:
+            print_ascon(ad, ad_pad, p, p_pad, c, h, "fail")
+    if tb_ver[0] == 0:
+        print_ascon(ad, ad_pad, p, p_pad, c, h, "fail")
+    print_ascon(ad, ad_pad, p, p_pad, c, h, "pass")
 
 
 # Generate one test vector and run test bench
@@ -167,7 +187,7 @@ def run_tb_single():
     # p = bytearray(os.urandom(16))
     k = bytearray.fromhex("000102030405060708090a0b0c0d0e0f")
     n = bytearray.fromhex("000102030405060708090a0b0c0d0e0f")
-    ad = bytearray.fromhex("00010203")
+    ad = bytearray.fromhex("")
     p = bytearray.fromhex("00010203")
     print("k      = " + "".join("{:02x}".format(x) for x in k))
     print("n      = " + "".join("{:02x}".format(x) for x in n))

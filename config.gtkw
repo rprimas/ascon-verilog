@@ -1,20 +1,20 @@
 [*]
 [*] GTKWave Analyzer v3.3.115 (w)1999-2023 BSI
-[*] Tue Aug 29 16:25:42 2023
+[*] Wed Aug 30 20:02:09 2023
 [*]
 [dumpfile] "/home/rprimas/Git/ascon-verilog/tb.vcd"
-[dumpfile_mtime] "Tue Aug 29 16:23:30 2023"
-[dumpfile_size] 4159
+[dumpfile_mtime] "Wed Aug 30 20:01:49 2023"
+[dumpfile_size] 73979
 [savefile] "/home/rprimas/Git/ascon-verilog/config.gtkw"
-[timestart] 1368400
-[size] 1440 821
-[pos] 68 356
-*-15.414291 1444800 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[timestart] 0
+[size] 1609 1051
+[pos] 94 195
+*-15.414291 1216000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb.
 [sst_width] 273
 [signals_width] 318
 [sst_expanded] 1
-[sst_vpaned_height] 317
+[sst_vpaned_height] 424
 @28
 tb.clk
 tb.rst
@@ -34,11 +34,6 @@ tb.key_valid
 tb.key_ready
 @200
 -
-@28
-tb.msg_auth
-tb.msg_auth_valid
-tb.msg_auth_ready
-@200
 -
 @22
 tb.bdi[31:0]
@@ -48,8 +43,8 @@ tb.bdi_ready
 tb.bdi_type[3:0]
 tb.bdi_eot
 tb.bdi_eoi
-tb.decrypt_in
-tb.hash_in
+tb.decrypt
+tb.hash
 @200
 -
 @22
@@ -62,10 +57,11 @@ tb.bdo_eot
 @200
 -
 @821
-tb.ascon_core_i.fsm_state
+tb.ascon_core_i.fsm[0:63]
 @24
 tb.ascon_core_i.round_cnt[3:0]
 tb.ascon_core_i.word_cnt[1:0]
+tb.ascon_core_i.hash_cnt[1:0]
 @200
 -
 @22

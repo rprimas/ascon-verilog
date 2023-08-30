@@ -47,6 +47,36 @@ def ascon_decrypt(key, nonce, ad, c, variant="Ascon-128"):
         return None
 
 
+def ascon_hash(message, variant="Ascon-Hash", hashlength=32):
+    a = 12  # rounds
+    b = 12  # rounds
+    rate = 8  # bytes
+
+    # Initialization
+    tagspec = int_to_bytes(256 if variant in ["Ascon-Hash", "Ascon-Hasha"] else 0, 4)
+    S = bytes_to_state(to_bytes([0, rate * 8, a, a - b]) + tagspec + zero_bytes(32))
+    ascon_permutation(S, a)
+    # Message Processing (Absorbing)
+    # m_padding = to_bytes([0x80]) + zero_bytes(rate - (len(message) % rate) - 1)
+    m_padded = message  # + m_padding
+
+    # first s-1 blocks
+    for block in range(0, len(m_padded) - rate, rate):
+        S[0] ^= bytes_to_int(m_padded[block : block + 8])
+        ascon_permutation(S, b)
+    # last block
+    block = len(m_padded) - rate
+    S[0] ^= bytes_to_int(m_padded[block : block + 8])
+
+    # Finalization (Squeezing)
+    H = b""
+    ascon_permutation(S, a)
+    while len(H) < hashlength:
+        H += int_to_bytes(S[0], 8)  # rate=8
+        ascon_permutation(S, b)
+    return H[:hashlength]
+
+
 def ascon_initialize(S, k, rate, a, b, key, nonce):
     iv_zero_key_nonce = (
         to_bytes([k, rate * 8, a, b] + (20 - len(key)) * [0]) + key + nonce
