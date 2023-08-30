@@ -3,19 +3,19 @@
 //
 // Author: Robert Primas (rprimas 'at' proton.me, https://rprimas.github.io)
 //
-// Testbench for controlling the Ascon core.
+// Test bench for controlling the Ascon core.
 
 `timescale 1s / 100ms
 `include "rtl/config.sv"
 
 module tb;
 
-  // Testbench config
+  // Test bench config
   int               SIM_CYCLES = 200;
   string            VCD_FILE = "tb.vcd";
-  string            KAT_FILE = "KAT/KAT_tmp.txt";
+  string            TV_FILE = "tv/tmp.txt";
 
-  // Testbench signals
+  // Test bench signals
   logic  [    23:0] tb_word_cnt = 0;
   logic  [    31:0] data;
   logic  [     3:0] op;
@@ -71,7 +71,7 @@ module tb;
       .msg_auth_ready(msg_auth_ready)
   );
 
-  // Read one line of KAT file per cycle
+  // Read one line of test vector file per cycle
   always @(posedge clk) begin
     if (!$feof(fd)) begin
       if ((hdr != "DAT") | ((hdr == "DAT") & ((key_ready | bdi_ready)))) begin
@@ -89,7 +89,7 @@ module tb;
     end
   end
 
-  // Set persitent signals according to current line of KAT file
+  // Set persitent signals according to current line of test vector file
   always @(posedge clk) begin
     if (rst) begin
       decrypt_in <= 0;
@@ -108,7 +108,7 @@ module tb;
     end
   end
 
-  // Set interface signals according to current line of KAT file
+  // Set interface signals according to current line of test vector file
   always @(*) begin
     key = 0;
     key_valid = 0;
@@ -170,9 +170,9 @@ module tb;
   // Generate clock signal
   always #5 clk = !clk;
 
-  // Open KAT file
+  // Open test vector file
   initial begin
-    fd = $fopen(KAT_FILE, "r");
+    fd = $fopen(TV_FILE, "r");
   end
 
   // Specify debug variables and set simulation start/finish

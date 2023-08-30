@@ -3,7 +3,7 @@
 #
 # Author: Robert Primas (rprimas 'at' proton.me, https://rprimas.github.io)
 #
-# Makefile for running verilog testbench and optionally viewing wave forms
+# Makefile for running verilog test bench and optionally viewing wave forms
 # in GTKWave.
 
 all:

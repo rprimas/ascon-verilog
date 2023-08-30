@@ -3,7 +3,7 @@
 //
 // Author: Robert Primas (rprimas 'at' proton.me, https://rprimas.github.io)
 //
-// Configuration parameters for the Ascon core and testbench.
+// Configuration parameters for the Ascon core and test bench.
 
 ///////////
 // Ascon //

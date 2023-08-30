@@ -7,8 +7,8 @@
 #
 # Python script that:
 # 1. generates test vectors for the Ascon core
-# 2. runs verilog testbenches
-# 3. compares the testbench output to a software implementation
+# 2. runs verilog test benches
+# 3. compares the test bench output to a software implementation
 
 import argparse
 import os
@@ -43,7 +43,7 @@ def print_ascon(ad, ad_pad, m, m_pad, c, event):
     print(f"{ENDC}")
 
 
-# Write data segment to KAT file
+# Write data segment to test vector file
 def write_data_seg(f, x, xlen):
     for i in range(xlen):
         if (i % 4) == 0:
@@ -54,9 +54,9 @@ def write_data_seg(f, x, xlen):
     f.write("\n")
 
 
-# Write known answer test (KAT) file
-def write_kat_file(k, klen, n, nlen, ad, adlen, m, c, mlen):
-    f = open("KAT/KAT_tmp.txt", "w")
+# Write test vector file
+def write_tv_file(k, klen, n, nlen, ad, adlen, m, c, mlen):
+    f = open("tv/tmp.txt", "w")
 
     f.write("# Load key\n")
     f.write("INS 30{:06x}\n".format(klen))
@@ -107,7 +107,7 @@ def write_kat_file(k, klen, n, nlen, ad, adlen, m, c, mlen):
     f.close()
 
 
-# Pad inputs, generate a KAT file, and run verilog testbench
+# Pad inputs, generate a test vector file, and run verilog test bench
 def run_tb(k, n, ad, p):
     ad_pad = bytearray(ad)
     p_pad = bytearray(p)
@@ -124,10 +124,10 @@ def run_tb(k, n, ad, p):
     # Compute Ascon in software
     c = ascon_aead("Ascon-128", k, n, ad_pad, p_pad, 0)
 
-    # Write KAT file for verilog testbench
-    write_kat_file(k, len(k), n, len(n), ad_pad, len(ad_pad), p_pad, c, len(p_pad))
+    # Write testvector file for verilog test bench
+    write_tv_file(k, len(k), n, len(n), ad_pad, len(ad_pad), p_pad, c, len(p_pad))
 
-    # Run verilog testbench and grep the output
+    # Run verilog test bench and grep the output
     try:
         ps = subprocess.Popen(["make"], stdout=subprocess.PIPE)
         result = subprocess.check_output((["grep", "-e", "=>"]), stdin=ps.stdout)
@@ -159,7 +159,7 @@ def run_tb(k, n, ad, p):
     print_ascon(ad, ad_pad, p, p_pad, c, "pass")
 
 
-# Generate one test vector and run testbench
+# Generate one test vector and run test bench
 def run_tb_single():
     # k = to_bytes(os.urandom(16))
     # n = to_bytes(os.urandom(16))
@@ -175,7 +175,7 @@ def run_tb_single():
     print(f"{OKGREEN}ALL PASS{ENDC}")
 
 
-# Generate multiple test vectors and run testbench
+# Generate multiple test vectors and run test bench
 def run_tb_sweep():
     klen = 16
     nlen = 16
@@ -198,14 +198,14 @@ if __name__ == "__main__":
         "--single",
         action="store",
         nargs="*",
-        help="Perform a single testbench run.",
+        help="Perform a single test bench run.",
     )
     parser.add_argument(
         "-w",
         "--sweep",
         action="store",
         nargs="*",
-        help="Sweep over inputs of different lengths and perform testbench runs.",
+        help="Sweep over inputs of different lengths and perform test bench runs.",
     )
     args = parser.parse_args()
     if args.single is not None:
