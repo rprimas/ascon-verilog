@@ -20,10 +20,10 @@ def ascon_aead(variant, k, n, ad, p, debug_perm):
 
 def ascon_encrypt(key, nonce, ad, p, variant="Ascon-128"):
     S = [0, 0, 0, 0, 0]
-    k = len(key) * 8  # bits
-    a = 12  # rounds
-    b = 8 if variant == "Ascon-128a" else 6  # rounds
-    rate = 16 if variant == "Ascon-128a" else 8  # bytes
+    k = len(key) * 8
+    a = 12
+    b = 8 if variant == "Ascon-128a" else 6
+    rate = 16 if variant == "Ascon-128a" else 8
     ascon_initialize(S, k, rate, a, b, key, nonce)
     ascon_process_associated_data(S, b, rate, ad)
     c = ascon_process_plaintext(S, b, rate, p)
@@ -33,10 +33,10 @@ def ascon_encrypt(key, nonce, ad, p, variant="Ascon-128"):
 
 def ascon_decrypt(key, nonce, ad, c, variant="Ascon-128"):
     S = [0, 0, 0, 0, 0]
-    k = len(key) * 8  # bits
-    a = 12  # rounds
-    b = 8 if variant == "Ascon-128a" else 6  # rounds
-    rate = 16 if variant == "Ascon-128a" else 8  # bytes
+    k = len(key) * 8
+    a = 12
+    b = 8 if variant == "Ascon-128a" else 6
+    rate = 16 if variant == "Ascon-128a" else 8
     ascon_initialize(S, k, rate, a, b, key, nonce)
     ascon_process_associated_data(S, b, rate, ad)
     p = ascon_process_ciphertext(S, b, rate, c[:-16])
@@ -48,31 +48,21 @@ def ascon_decrypt(key, nonce, ad, c, variant="Ascon-128"):
 
 
 def ascon_hash(message, variant="Ascon-Hash", hashlength=32):
-    a = 12  # rounds
-    b = 12  # rounds
-    rate = 8  # bytes
-
-    # Initialization
+    a = 12
+    b = 12
+    rate = 8
     tagspec = int_to_bytes(256 if variant in ["Ascon-Hash", "Ascon-Hasha"] else 0, 4)
     S = bytes_to_state(to_bytes([0, rate * 8, a, a - b]) + tagspec + zero_bytes(32))
     ascon_permutation(S, a)
-    # Message Processing (Absorbing)
-    # m_padding = to_bytes([0x80]) + zero_bytes(rate - (len(message) % rate) - 1)
-    m_padded = message  # + m_padding
-
-    # first s-1 blocks
-    for block in range(0, len(m_padded) - rate, rate):
-        S[0] ^= bytes_to_int(m_padded[block : block + 8])
+    for block in range(0, len(message) - rate, rate):
+        S[0] ^= bytes_to_int(message[block : block + 8])
         ascon_permutation(S, b)
-    # last block
-    block = len(m_padded) - rate
-    S[0] ^= bytes_to_int(m_padded[block : block + 8])
-
-    # Finalization (Squeezing)
+    block = len(message) - rate
+    S[0] ^= bytes_to_int(message[block : block + 8])
     H = b""
     ascon_permutation(S, a)
     while len(H) < hashlength:
-        H += int_to_bytes(S[0], 8)  # rate=8
+        H += int_to_bytes(S[0], 8)
         ascon_permutation(S, b)
     return H[:hashlength]
 
@@ -141,9 +131,7 @@ def ascon_finalize(S, rate, a, key):
     S[rate // 8 + 0] ^= bytes_to_int(key[0:8])
     S[rate // 8 + 1] ^= bytes_to_int(key[8:16])
     S[rate // 8 + 2] ^= bytes_to_int(key[16:] + zero_bytes(24 - len(key)))
-
     ascon_permutation(S, a)
-
     S[3] ^= bytes_to_int(key[-16:-8])
     S[4] ^= bytes_to_int(key[-8:])
     tag = int_to_bytes(S[3], 8) + int_to_bytes(S[4], 8)
@@ -155,9 +143,7 @@ def ascon_permutation(S, rounds=1):
     if debugpermutation:
         printwords(S, "permutation input:")
     for r in range(12 - rounds, 12):
-        # --- add round constants ---
         S[2] ^= 0xF0 - r * 0x10 + r * 0x1
-        # --- substitution layer ---
         S[0] ^= S[4]
         S[4] ^= S[3]
         S[2] ^= S[1]
@@ -168,7 +154,6 @@ def ascon_permutation(S, rounds=1):
         S[0] ^= S[4]
         S[3] ^= S[2]
         S[2] ^= 0xFFFFFFFFFFFFFFFF
-        # --- linear diffusion layer ---
         S[0] ^= rotr(S[0], 19) ^ rotr(S[0], 28)
         S[1] ^= rotr(S[1], 61) ^ rotr(S[1], 39)
         S[2] ^= rotr(S[2], 1) ^ rotr(S[2], 6)

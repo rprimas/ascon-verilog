@@ -14,7 +14,7 @@ Besides the interface changes, this code base comes with:
 
 ## Available Variants
 
-- **Ascon-128** : `ascon128v12`, 32-bit interface, 1 permutation round per clock cycle.
+- **v1** : `Ascon-128 + Ascon-Hash`, 32-bit data interface, 1 permutation round per clock cycle.
 
 ## Files
 
@@ -35,13 +35,14 @@ Besides the interface changes, this code base comes with:
 The interface of the Ascon core is similar to [GMU's crypto core interface (Figure 5.1)](https://cryptography.gmu.edu/athena/LWC/LWC_HW_Implementers_Guide.pdf) that was often used during the [NIST standardization for lightweight authenticated encryption](https://csrc.nist.gov/projects/lightweight-cryptography/).
 The following changes to the GMU crypto core interface were made:
 - Removed signals:
-  - `key_update`
   - `bdi_valid_bytes`, `bdi_pad_loc`, `bdi_size`
-  - `fdi_ready`, `fdi_valid`, `fdi_data`, `fdo_ready`, `fdo_valid`, `fdo_data`
-  - `bdo_valid_bytes`, `end_of_block`
+  - `fdi_ready`, `fdi_valid`, `fdi_data`
+  - `fdo_ready`, `fdo_valid`, `fdo_data`
+  - `bdo_valid_bytes`, `end_of_block`, `key_update`
 - Renamed signals:
   - `decrypt_in` -> `decrypt`
   - `hash_in` -> `hash`
+  - `msg_auth`, `msg_auth_valid`, `msg_auth_ready` -> `auth`, `auth_valid`, `auth_ready` 
 
 The resulting (simplified) interface of the Ascon core is shown here:
 
@@ -63,7 +64,7 @@ The following table contains a description of the interface signals:
 | bdi_eoi        | The current BDI block is the last block of input other than the tag segment. |
 | bdi_type       | Type of BDI data. See `rtl/config.sv`.                                       |
 | decrypt        | 0=Encryption, 1=Decryption.                                                  |
-| hash           | 0=Encryption/Decryption, 1=Hash. Note: Currently not supported.              |
+| hash           | 0=Encryption/Decryption, 1=Hash.                                             |
 | bdo_data       | Block data output (BDO).                                                     |
 | bdo_valid      | BDO data is valid.                                                           |
 | bdo_ready      | Test bench is ready to receive data.                                         |

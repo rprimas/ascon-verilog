@@ -26,21 +26,18 @@ DO_HASH = True
 
 
 # Print inputs/outputs of Ascon software implementation
-def print_ascon(ad, ad_pad, m, m_pad, c, h, event):
-    if event == "fail":
+def print_result(result, ad_pad, p_pad, c, h):
+    if result:
         print(f"{FAIL}")
-    print("ad     = " + "".join("{:02x}".format(x) for x in ad))
-    print("ad_pad = " + "".join("{:02x}".format(x) for x in ad_pad))
-    print("m      = " + "".join("{:02x}".format(x) for x in m))
-    print("m_pad  = " + "".join("{:02x}".format(x) for x in m_pad))
-    print("c      = " + "".join("{:02x}".format(x) for x in c[:-16]))
-    print("tag    = " + "".join("{:02x}".format(x) for x in c[-16:]))
-    print("hash   = " + "".join("{:02x}".format(x) for x in h))
-    if event == "pass":
-        print(f"{OKGREEN}PASS{ENDC}")
-    if event == "fail":
+    print("ad = " + "".join("{:02x}".format(x) for x in ad_pad))
+    print("p  = " + "".join("{:02x}".format(x) for x in p_pad))
+    print("c  = " + "".join("{:02x}".format(x) for x in c[:-16]))
+    print("t  = " + "".join("{:02x}".format(x) for x in c[-16:]))
+    print("h  = " + "".join("{:02x}".format(x) for x in h))
+    if result:
         print(f"ERROR{ENDC}")
-        exit()
+    else:
+        print(f"{OKGREEN}PASS{ENDC}")
 
 
 # Write data segment to test vector file
@@ -143,52 +140,43 @@ def run_tb(k, n, ad, p):
     ps = subprocess.run(
         ["make"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, text=True
     )
-    buf = io.StringIO(ps.stdout)
+    stdout = io.StringIO(ps.stdout)
     tb_c = bytearray()
     tb_t = bytearray()
     tb_p = bytearray()
     tb_h = bytearray()
     tb_ver = bytearray()
-    for line in buf.readlines():
-        if "cip =>" in line:
-            tb_c += bytearray.fromhex(line[7 : 7 + 16])
-        if "tag =>" in line:
-            tb_t += bytearray.fromhex(line[7 : 7 + 16])
-        if "pla =>" in line:
-            tb_p += bytearray.fromhex(line[7 : 7 + 16])
-        if "hash=>" in line:
-            tb_h += bytearray.fromhex(line[7 : 7 + 16])
-        if "ver =>" in line:
-            tb_ver += bytearray.fromhex("0" + line[7 : 7 + 1])
+    for line in stdout.readlines():
+        if "c =>" in line:
+            tb_c += bytearray.fromhex(line[5 : 5 + 16])
+        if "t =>" in line:
+            tb_t += bytearray.fromhex(line[5 : 5 + 16])
+        if "p =>" in line:
+            tb_p += bytearray.fromhex(line[5 : 5 + 16])
+        if "h =>" in line:
+            tb_h += bytearray.fromhex(line[5 : 5 + 16])
+        if "v =>" in line:
+            tb_ver += bytearray.fromhex("0" + line[5 : 5 + 1])
 
     # Compare test bench output to software implementation
-    for i, x in enumerate(c[:-16]):
-        if x != tb_c[i]:
-            print_ascon(ad, ad_pad, p, p_pad, c, h, "fail")
-    for i, x in enumerate(c[-16:]):
-        if x != tb_t[i]:
-            print_ascon(ad, ad_pad, p, p_pad, c, h, "fail")
-    for i, x in enumerate(p_pad):
-        if x != tb_p[i]:
-            print_ascon(ad, ad_pad, p, p_pad, c, h, "fail")
-    for i, x in enumerate(h):
-        if x != tb_h[i]:
-            print_ascon(ad, ad_pad, p, p_pad, c, h, "fail")
-    if tb_ver[0] == 0:
-        print_ascon(ad, ad_pad, p, p_pad, c, h, "fail")
-    print_ascon(ad, ad_pad, p, p_pad, c, h, "pass")
+    result = 0
+    if DO_DEC:
+        result |= c[:-16] != tb_c
+        result |= c[-16:] != tb_t
+    if DO_DEC:
+        result |= p_pad != tb_p
+        result |= tb_ver[0] != 1
+    if DO_HASH:
+        result |= h != tb_h
+    print_result(result, ad_pad, p_pad, c, h)
 
 
 # Generate one test vector and run test bench
 def run_tb_single():
-    # k = to_bytes(os.urandom(16))
-    # n = to_bytes(os.urandom(16))
-    # ad = bytearray(os.urandom(16))
-    # p = bytearray(os.urandom(16))
-    k = bytearray.fromhex("000102030405060708090a0b0c0d0e0f")
-    n = bytearray.fromhex("000102030405060708090a0b0c0d0e0f")
-    ad = bytearray.fromhex("")
-    p = bytearray.fromhex("00010203")
+    k = bytes.fromhex("000102030405060708090a0b0c0d0e0f")
+    n = bytes.fromhex("000102030405060708090a0b0c0d0e0f")
+    ad = bytes.fromhex("00010203")
+    p = bytes.fromhex("00010203")
     print("k      = " + "".join("{:02x}".format(x) for x in k))
     print("n      = " + "".join("{:02x}".format(x) for x in n))
     run_tb(k, n, ad, p)
