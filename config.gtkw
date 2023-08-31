@@ -1,20 +1,20 @@
 [*]
 [*] GTKWave Analyzer v3.3.115 (w)1999-2023 BSI
-[*] Thu Aug 31 06:46:59 2023
+[*] Thu Aug 31 07:21:34 2023
 [*]
 [dumpfile] "/home/rprimas/Git/ascon-verilog/tb.vcd"
-[dumpfile_mtime] "Thu Aug 31 06:45:55 2023"
-[dumpfile_size] 23281
+[dumpfile_mtime] "Thu Aug 31 07:21:25 2023"
+[dumpfile_size] 53536
 [savefile] "/home/rprimas/Git/ascon-verilog/config.gtkw"
 [timestart] 554500
-[size] 1440 821
-[pos] 68 172
+[size] 1634 1102
+[pos] 69 185
 *-15.414291 1216000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb.
 [sst_width] 273
 [signals_width] 318
 [sst_expanded] 1
-[sst_vpaned_height] 316
+[sst_vpaned_height] 448
 @28
 tb.clk
 tb.rst

@@ -14,7 +14,9 @@ Besides the interface changes, this code base comes with:
 
 ## Available Variants
 
-- **v1** : `Ascon-128 + Ascon-Hash`, 32-bit data interface, 1 permutation round per clock cycle.
+- **v1**
+  - Ascon-128 + Ascon-Hash
+  - 32-bit data block interface, 1 permutation round per clock cycle.
 
 ## Files
 
@@ -50,28 +52,28 @@ The resulting (simplified) interface of the Ascon core is shown here:
 
 The following table contains a description of the interface signals:
 
-| **Name**       | **Description**                                                              |
-| -------------- | ---------------------------------------------------------------------------- |
-| clk            | Clock signal.                                                                |
-| rst            | Reset signal. Note: Synchronous active high.                                 |
-| key            | Key data input.                                                              |
-| key_valid      | Key data is valid.                                                           |
-| key_ready      | Ascon core is ready to receive a new key.                                    |
-| bdi_data       | Block data input (BDI).                                                      |
-| bdi_valid      | BDI data is valid.                                                           |
-| bdi_ready      | Ascon core is ready to receive data.                                         |
-| bdi_eot        | The current BDI block is the last block of its type.                         |
-| bdi_eoi        | The current BDI block is the last block of input other than the tag segment. |
-| bdi_type       | Type of BDI data. See `rtl/config.sv`.                                       |
-| decrypt        | 0=Encryption, 1=Decryption.                                                  |
-| hash           | 0=Encryption/Decryption, 1=Hash.                                             |
-| bdo_data       | Block data output (BDO).                                                     |
-| bdo_valid      | BDO data is valid.                                                           |
-| bdo_ready      | Test bench is ready to receive data.                                         |
-| bdo_type       | Type of BDO data. See `rtl/config.sv`.                                       |
-| msg_auth       | 1=Authentication success, 0=Authentication failure.                          |
-| msg_auth_valid | Authentication output is valid.                                              |
-| msg_auth_ready | Test bench is ready to accept authentication result.                         |
+| **Name**   | **Description**                                                              |
+| ---------- | ---------------------------------------------------------------------------- |
+| clk        | Clock signal.                                                                |
+| rst        | Reset signal. Note: Synchronous active high.                                 |
+| key        | Key data input.                                                              |
+| key_valid  | Key data is valid.                                                           |
+| key_ready  | Ascon core is ready to receive a new key.                                    |
+| bdi_data   | Block data input (BDI).                                                      |
+| bdi_valid  | BDI data is valid.                                                           |
+| bdi_ready  | Ascon core is ready to receive data.                                         |
+| bdi_eot    | The current BDI block is the last block of its type.                         |
+| bdi_eoi    | The current BDI block is the last block of input other than the tag segment. |
+| bdi_type   | Type of BDI data. See `rtl/config.sv`.                                       |
+| decrypt    | 0=Encryption, 1=Decryption.                                                  |
+| hash       | 0=Encryption/Decryption, 1=Hash.                                             |
+| bdo_data   | Block data output (BDO).                                                     |
+| bdo_valid  | BDO data is valid.                                                           |
+| bdo_ready  | Test bench is ready to receive data.                                         |
+| bdo_type   | Type of BDO data. See `rtl/config.sv`.                                       |
+| auth       | 1=Authentication success, 0=Authentication failure.                          |
+| auth_valid | Authentication output is valid.                                              |
+| auth_ready | Test bench is ready to accept authentication result.                         |
 
 You can have a look at `rtl/tb.sv` for an example of how the Ascon core interface can be used.
 

@@ -8,22 +8,22 @@
 # Software implementation of Ascon-128. Associated data (ad) and plaintext (p)
 # need to be 10*-padded to a multiple of the block size (64-bits).
 
-debugpermutation = False
+debug_permutation = False
 
 
-def ascon_aead(variant, k, n, ad, p, debug_perm):
-    global debugpermutation
-    debugpermutation = debug_perm
+def ascon_aead(k, n, ad, p, debug):
+    global debug_permutation
+    debug_permutation = debug
     c = ascon_encrypt(k, n, ad, p)
     return c
 
 
-def ascon_encrypt(key, nonce, ad, p, variant="Ascon-128"):
+def ascon_encrypt(key, nonce, ad, p):
     S = [0, 0, 0, 0, 0]
     k = len(key) * 8
     a = 12
-    b = 8 if variant == "Ascon-128a" else 6
-    rate = 16 if variant == "Ascon-128a" else 8
+    b = 6
+    rate = 8
     ascon_initialize(S, k, rate, a, b, key, nonce)
     ascon_process_associated_data(S, b, rate, ad)
     c = ascon_process_plaintext(S, b, rate, p)
@@ -31,12 +31,12 @@ def ascon_encrypt(key, nonce, ad, p, variant="Ascon-128"):
     return c + tag
 
 
-def ascon_decrypt(key, nonce, ad, c, variant="Ascon-128"):
+def ascon_decrypt(key, nonce, ad, c):
     S = [0, 0, 0, 0, 0]
     k = len(key) * 8
     a = 12
-    b = 8 if variant == "Ascon-128a" else 6
-    rate = 16 if variant == "Ascon-128a" else 8
+    b = 6
+    rate = 8
     ascon_initialize(S, k, rate, a, b, key, nonce)
     ascon_process_associated_data(S, b, rate, ad)
     p = ascon_process_ciphertext(S, b, rate, c[:-16])
@@ -47,24 +47,27 @@ def ascon_decrypt(key, nonce, ad, c, variant="Ascon-128"):
         return None
 
 
-def ascon_hash(message, variant="Ascon-Hash", hashlength=32):
+def ascon_hash(m, debug):
+    global debug_permutation
+    debug_permutation = debug
     a = 12
     b = 12
     rate = 8
-    tagspec = int_to_bytes(256 if variant in ["Ascon-Hash", "Ascon-Hasha"] else 0, 4)
-    S = bytes_to_state(to_bytes([0, rate * 8, a, a - b]) + tagspec + zero_bytes(32))
+    hash_length = 32
+    tag_spec = int_to_bytes(256, 4)
+    S = bytes_to_state(to_bytes([0, rate * 8, a, a - b]) + tag_spec + zero_bytes(32))
     ascon_permutation(S, a)
-    for block in range(0, len(message) - rate, rate):
-        S[0] ^= bytes_to_int(message[block : block + 8])
+    for block in range(0, len(m) - rate, rate):
+        S[0] ^= bytes_to_int(m[block : block + 8])
         ascon_permutation(S, b)
-    block = len(message) - rate
-    S[0] ^= bytes_to_int(message[block : block + 8])
+    block = len(m) - rate
+    S[0] ^= bytes_to_int(m[block : block + 8])
     H = b""
     ascon_permutation(S, a)
-    while len(H) < hashlength:
+    while len(H) < hash_length:
         H += int_to_bytes(S[0], 8)
         ascon_permutation(S, b)
-    return H[:hashlength]
+    return H[:hash_length]
 
 
 def ascon_initialize(S, k, rate, a, b, key, nonce):
@@ -140,8 +143,8 @@ def ascon_finalize(S, rate, a, key):
 
 def ascon_permutation(S, rounds=1):
     assert rounds <= 12
-    if debugpermutation:
-        printwords(S, "permutation input:")
+    if debug_permutation:
+        print_words(S, f"\n{rounds} rounds, input:")
     for r in range(12 - rounds, 12):
         S[2] ^= 0xF0 - r * 0x10 + r * 0x1
         S[0] ^= S[4]
@@ -159,8 +162,8 @@ def ascon_permutation(S, rounds=1):
         S[2] ^= rotr(S[2], 1) ^ rotr(S[2], 6)
         S[3] ^= rotr(S[3], 10) ^ rotr(S[3], 17)
         S[4] ^= rotr(S[4], 7) ^ rotr(S[4], 41)
-    if debugpermutation:
-        printwords(S, "permutation output:")
+    if debug_permutation:
+        print_words(S, "output:")
 
 
 def zero_bytes(n):
@@ -189,7 +192,7 @@ def rotr(val, r):
     return (val >> r) | ((val & (1 << r) - 1) << (64 - r))
 
 
-def printwords(S, description=""):
+def print_words(S, description=""):
     print(" " + description)
     print("\n".join(["  x{i}={s:016X}".format(**locals()) for i, s in enumerate(S)]))
 
@@ -199,8 +202,10 @@ if __name__ == "__main__":
     n = bytearray.fromhex("000102030405060708090a0b0c0d0e0f")
     ad = bytearray.fromhex("00010203")
     p = bytearray.fromhex("00010203")
+
     ad_pad = bytearray(ad)
     p_pad = bytearray(p)
+    m_pad = bytearray(ad)
 
     # 10*-pad inputs to block size (64 bits)
     if len(ad_pad) > 0:
@@ -210,8 +215,19 @@ if __name__ == "__main__":
     p_pad.append(0x80)
     while len(p_pad) % 8 != 0:
         p_pad.append(0x00)
+    m_pad.append(0x80)
+    while len(m_pad) % 8 != 0:
+        m_pad.append(0x00)
 
     # Compute Ascon in software
     c = ascon_aead("Ascon-128", k, n, ad_pad, p_pad, 0)
-    print("c      = " + "".join("{:02x}".format(x) for x in c[:-16]))
-    print("tag    = " + "".join("{:02x}".format(x) for x in c[-16:]))
+    h = ascon_hash(m_pad, 0)
+
+    print("k  = " + "".join("{:02x}".format(x) for x in k))
+    print("n  = " + "".join("{:02x}".format(x) for x in n))
+    print("ad = " + "".join("{:02x}".format(x) for x in ad_pad))
+    print("p  = " + "".join("{:02x}".format(x) for x in p_pad))
+    print("c  = " + "".join("{:02x}".format(x) for x in c[:-16]))
+    print("t  = " + "".join("{:02x}".format(x) for x in c[-16:]))
+    print("m  = " + "".join("{:02x}".format(x) for x in m_pad))
+    print("h  = " + "".join("{:02x}".format(x) for x in h))

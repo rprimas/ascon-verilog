@@ -6,13 +6,17 @@
 # Makefile for running verilog test bench and optionally viewing wave forms
 # in GTKWave.
 
-all:
+all: v1
+
+v1:
 	iverilog -g2012 -o tb rtl/tb.sv rtl/ascon_core.sv rtl/asconp.sv
 	vvp tb
 
-wave: all
+wave: v1_wave
+
+v1_wave: v1
 	gtkwave tb.vcd config.gtkw -6 --rcvar 'fontname_signals Source Code Pro 10' --rcvar 'fontname_waves Source Code Pro 10'
 
 .PHONY: clean
 clean:
-	rm -f KAT_tmp.txt tb tb.vcd
+	rm -f tb tb.vcd

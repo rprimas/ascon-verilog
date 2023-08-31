@@ -19,6 +19,10 @@ WARNING = "\033[93m"
 FAIL = "\033[91m"
 ENDC = "\033[0m"
 
+# Specify verbose output of Ascon computations in software
+VERBOSE_AEAD_SW = 0
+VERBOSE_HASH_SW = 0
+
 # Specify encryption, decryption, and/or hash operations for the Ascon core
 INCL_ENC = 1
 INCL_DEC = 1
@@ -27,6 +31,7 @@ INCL_HASH = 1
 
 # Print inputs/outputs of Ascon software implementation
 def print_result(result, ad_pad, p_pad, c, m_pad, h):
+    print()
     if result:
         print(f"{FAIL}")
     print("ad = " + "".join("{:02x}".format(x) for x in ad_pad))
@@ -136,8 +141,8 @@ def run_tb(k, n, ad, p):
         m_pad.append(0x00)
 
     # Compute Ascon in software
-    c = ascon_aead("Ascon-128", k, n, ad_pad, p_pad, 0)
-    h = ascon_hash(m_pad)
+    c = ascon_aead(k, n, ad_pad, p_pad, VERBOSE_AEAD_SW)
+    h = ascon_hash(m_pad, VERBOSE_HASH_SW)
 
     # Write test vector file for verilog test bench
     write_tv_file(k, n, ad_pad, p_pad, c, m_pad)
@@ -181,10 +186,10 @@ def run_tb(k, n, ad, p):
 def run_tb_single():
     k = bytes.fromhex("000102030405060708090a0b0c0d0e0f")
     n = bytes.fromhex("000102030405060708090a0b0c0d0e0f")
-    ad = bytes.fromhex("")
+    ad = bytes.fromhex("00010203")
     p = bytes.fromhex("00010203")
-    print("k      = " + "".join("{:02x}".format(x) for x in k))
-    print("n      = " + "".join("{:02x}".format(x) for x in n))
+    print("k  = " + "".join("{:02x}".format(x) for x in k))
+    print("n  = " + "".join("{:02x}".format(x) for x in n))
     run_tb(k, n, ad, p)
     print(f"{OKGREEN}ALL PASS{ENDC}")
 
