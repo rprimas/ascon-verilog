@@ -191,8 +191,8 @@ def run_tb(k, n, ad, p, variant):
 def run_tb_single(variant):
     k = bytes.fromhex("000102030405060708090a0b0c0d0e0f")
     n = bytes.fromhex("000102030405060708090a0b0c0d0e0f")
-    ad = bytes.fromhex("")
-    p = bytes.fromhex("")
+    ad = bytes.fromhex("00010203")
+    p = bytes.fromhex("00010203")
     print(variant)
     print("k  = " + "".join("{:02x}".format(x) for x in k))
     print("n  = " + "".join("{:02x}".format(x) for x in n))

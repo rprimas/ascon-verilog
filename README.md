@@ -78,13 +78,13 @@ The following table contains a description of the interface signals:
 | bdi_ready  | Ascon core is ready to receive data.                                         |
 | bdi_eot    | The current BDI block is the last block of its type.                         |
 | bdi_eoi    | The current BDI block is the last block of input other than the tag segment. |
-| bdi_type   | Type of BDI data. See `rtl/config.sv`.                                       |
+| bdi_type   | Type of BDI data. See `rtl/config_core.sv`.                                  |
 | decrypt    | 0=Encryption, 1=Decryption.                                                  |
 | hash       | 0=Encryption/Decryption, 1=Hash.                                             |
 | bdo_data   | Block data output (BDO).                                                     |
 | bdo_valid  | BDO data is valid.                                                           |
 | bdo_ready  | Test bench is ready to receive data.                                         |
-| bdo_type   | Type of BDO data. See `rtl/config.sv`.                                       |
+| bdo_type   | Type of BDO data. See `rtl/config_core.sv`.                                  |
 | auth       | 1=Authentication success, 0=Authentication failure.                          |
 | auth_valid | Authentication output is valid.                                              |
 | auth_ready | Test bench is ready to accept authentication result.                         |
@@ -98,11 +98,11 @@ You can have a look at `rtl/tb.sv` for an example of how the Ascon core interfac
   - Tested with version 12.0 and flags `-g2005-sv`, `-g2009`, and `-g2012`.
 - Execute verilog test bench:
   - `make`
-  - Runs `rtl/tb.sv` using **v1** of the Ascon core and `tv/tv.txt` as input.
+  - Runs `rtl/tb.sv` using the **v1** variant of the Ascon core and `tv/tv.txt` as input.
   - For other variants use `make v2` etc..
 - Execute verilog test bench and show resulting wave forms:
   - `make wave`
-  - Same as `make` but also opens resulting `tb.vcd` in GTKWave.
+  - Same as `make` but also opens the resulting `tb.vcd` in GTKWave.
   - For other variants use `make v2_wave` etc..
 
 ## Automatic Generation and Execution of Test Vectors
