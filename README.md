@@ -26,13 +26,17 @@ Besides the interface changes, this code base comes with:
   - Ascon-128 + Ascon-Hash.
   - 32-bit block data interface.
   - 3 permutation rounds per clock cycle.
+- **v4**
+  - Ascon-128 + Ascon-Hash.
+  - 32-bit block data interface.
+  - 6 permutation rounds per clock cycle.
 
 ## Files
 
 - `rtl/ascon_core.sv`: Verilog implementation of the Ascon core.
 - `rtl/asconp.sv`: Verilog implementation of the Ascon permutation.
 - `rtl/config_core.sv`: Configuration file for the Ascon core and test bench.
-- `rtl/config_v*.sv`: Configuration file for the Ascon core.
+- `rtl/config_v*.sv`: Configuration files for the Ascon core.
 - `rtl/tb.sv`: Verilog test bench for the Ascon core.
 - `tv/*`: Test vector files for the verilog test bench.
 - `LICENSE`: License file.
@@ -93,16 +97,22 @@ You can have a look at `rtl/tb.sv` for an example of how the Ascon core interfac
   - See `https://steveicarus.github.io/iverilog/usage/installation.html`.
   - Tested with version 12.0 and flags `-g2005-sv`, `-g2009`, and `-g2012`.
 - Execute verilog test bench:
-  - `make` (runs `rtl/tb.sv` using `tv/tv.txt` as input).
+  - `make`
+  - Runs `rtl/tb.sv` using **v1** of the Ascon core and `tv/tv.txt` as input.
+  - For other variants use `make v2` etc..
 - Execute verilog test bench and show resulting wave forms:
-  - `make wave` (same as `make` but also opens resulting `tb.vcd` in GTKWave).
+  - `make wave`
+  - Same as `make` but also opens resulting `tb.vcd` in GTKWave.
+  - For other variants use `make v2_wave` etc..
 
 ## Automatic Generation and Execution of Test Vectors
 
-- `python tb.py -s` (add `-v 2` or `-v 3` for other variants)
-  - Generate a new `tv/tv.txt`, run `rtl/tb.sv`, and compare output to Ascon software implementation in `ascon.py`.
-- `python tb.py -w` (add `-v 2` or `-v 3` for other variants)
-  - Same as `python tb.py -s` except the entire process is repeated for many inputs with different lengths.
+- `python run_tb.py -s`
+  - Generate a new `tv/tv.txt`, run `rtl/tb.sv` using **v1** of the Ascon core, and compare output to the Ascon software implementation in `ascon.py`.
+  - For other variants add `-v 2` etc..
+- `python run_tb.py -w`
+  - Same as `python run_tb.py -s` except the entire process is repeated for many inputs with different lengths.
+  - For other variants add `-v 2` etc..
 
 ## Contact
 

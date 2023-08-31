@@ -49,14 +49,13 @@ module ascon_core (
   assign ld_nonce_done = (word_cnt == 3) & ld_nonce_do;
   assign init_do = (fsm == INIT);
   assign init_done = (round_cnt == UROL) & init_do;
-  assign key_add_2_done = (fsm == KEY_ADD_2);
+  assign key_add_2_done = (fsm == KEY_ADD_2) & (flag_eoi | bdi_valid);
 
   assign abs_ad_do = (fsm == ABS_AD) & (bdi_type == D_AD) & bdi_valid & bdi_ready;
   assign abs_ad_done = ((word_cnt == 1) | bdi_eot) & abs_ad_do;
   assign pro_ad_do = (fsm == PRO_AD);
   assign pro_ad_done = (round_cnt == UROL) & pro_ad_do;
 
-  assign abs_ptct_req = bdi_valid && (bdi_type == D_PTCT);
   assign abs_ptct_do = (fsm == ABS_PTCT) & (bdi_type == D_PTCT) & bdi_valid & bdi_ready & bdo_ready;
   assign abs_ptct_done = ((word_cnt == 1) | bdi_eot) & abs_ptct_do;
   assign pro_ptct_do = (fsm == PRO_PTCT);
@@ -64,7 +63,6 @@ module ascon_core (
 
   assign final_do = (fsm == FINAL);
   assign final_done = (round_cnt == UROL) & final_do;
-  assign key_add_3_done = (fsm == KEY_ADD_3);
 
   assign sqz_hash_do = (fsm == SQUEEZE_HASH) & bdo_ready;
   assign sqz_hash_done1 = (word_cnt == 1) & sqz_hash_do;
@@ -78,6 +76,7 @@ module ascon_core (
   logic [LANE_BITS/2-1:0] asconp_o    [LANES][2];
   logic [        CCW-1:0] state_i;
   logic [        CCW-1:0] state_slice;
+
   assign state_slice = state[state_idx/2][state_idx%2];  // Dynamic slicing
 
   // Finate state machine
@@ -192,7 +191,11 @@ module ascon_core (
     if (ld_key_done) fsm_nx = LOAD_NONCE;
     if (ld_nonce_done) fsm_nx = INIT;
     if (init_done) fsm_nx = flag_hash === 1 ? ABS_AD : KEY_ADD_2;
-    if (fsm == KEY_ADD_2) fsm_nx = (flag_eoi | abs_ptct_req) === 1 ? DOM_SEP : ABS_AD;
+    if (key_add_2_done) begin
+      if (flag_eoi) fsm_nx = DOM_SEP;
+      else if (bdi_type == D_AD) fsm_nx = ABS_AD;
+      else if (bdi_type == D_PTCT) fsm_nx = DOM_SEP;
+    end
     if (abs_ad_done) fsm_nx = PRO_AD;
     if (pro_ad_done) begin
       if (flag_hash) fsm_nx = flag_ad_eot === 1 ? SQUEEZE_HASH : ABS_AD;
@@ -248,13 +251,13 @@ module ascon_core (
         for (int i = 0; i < 10; i++) state[i/2][i%2] <= asconp_o[i/2][i%2];
       end
       // Key addition 2/4
-      if (fsm == KEY_ADD_2 || fsm == KEY_ADD_4) begin
+      if (key_add_2_done | fsm == KEY_ADD_4) begin
         for (int i = 0; i < 4; i++) state[3+i/2][i%2] <= state[3+i/2][i%2] ^ ascon_key[i];
       end
       // Domain separation
       if (fsm == DOM_SEP) begin
         state[4][1] <= state[4][1] ^ 32'h00000001;
-        // if (flag_eoi) state[0][0] <= state[0][0] ^ 32'h80000000;  // Padding of empty message
+        if (flag_eoi) state[0][0] <= state[0][0] ^ 32'h80000000;  // Padding of empty message
       end
       // Key addition 3
       if (fsm == KEY_ADD_3) begin
@@ -285,9 +288,9 @@ module ascon_core (
       if (sqz_hash_done1) hash_cnt <= hash_cnt + 1;
       if (flag_hash & abs_ad_done & bdi_eoi) hash_cnt <= 0;
       // Setting round counter
-      if (ld_nonce_done | key_add_3_done | (idle_done & op_hash_req)) round_cnt <= ROUNDS_A;
-      if (abs_ad_done | (abs_ptct_done & !bdi_eot)) round_cnt <= ROUNDS_B;
+      if ((idle_done & op_hash_req) | ld_nonce_done | fsm == KEY_ADD_3) round_cnt <= ROUNDS_A;
       if (((abs_ad_done & flag_hash) | sqz_hash_done1) & !sqz_hash_done2) round_cnt <= ROUNDS_A;
+      if ((abs_ad_done & !flag_hash) | (abs_ptct_done & !bdi_eot)) round_cnt <= ROUNDS_B;
       if (init_do | pro_ad_do | pro_ptct_do | final_do) round_cnt <= round_cnt - UROL;
     end
   end

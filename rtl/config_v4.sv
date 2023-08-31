@@ -3,9 +3,9 @@
 //
 // Author: Robert Primas (rprimas 'at' proton.me, https://rprimas.github.io)
 //
-// "v2" configuration parameters for the Ascon core.
+// "v3" configuration parameters for the Ascon core.
 // - Ascon-128 + Ascon-Hash.
 // - 32-bit data block interface.
-// - 2 permutation rounds per clock cycle.
+// - 6 permutation rounds per clock cycle.
 
-parameter logic [1:0] UROL = 2;
+parameter logic [2:0] UROL = 6;

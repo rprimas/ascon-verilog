@@ -8,19 +8,16 @@
 # Python script that:
 # 1. generates test vectors for the Ascon core
 # 2. runs verilog test benches
-# 3. compares the test bench output to an Ascon osoftware implementation
+# 3. compares the test bench output to an Ascon software implementation
 
-import argparse, io, os, subprocess
+import argparse, io, random, subprocess
 from ascon import *
 
-# Terminal color codescore
+# Terminal colors
 OKGREEN = "\033[92m"
 WARNING = "\033[93m"
 FAIL = "\033[91m"
 ENDC = "\033[0m"
-
-# Specify variant of the Ascon core
-VARIANT = "v1"
 
 # Specify verbose output of Ascon computations in software
 VERBOSE_AEAD_SW = 0
@@ -127,7 +124,7 @@ def write_tv_file(k, n, ad, p, c, m):
 
 
 # Pad inputs, generate a test vector file, and run verilog test bench
-def run_tb(k, n, ad, p):
+def run_tb(k, n, ad, p, variant):
     ad_pad = bytearray(ad)
     p_pad = bytearray(p)
     m_pad = bytearray(ad)
@@ -153,7 +150,7 @@ def run_tb(k, n, ad, p):
 
     # Run verilog test bench and parse the output
     ps = subprocess.run(
-        ["make", VARIANT],
+        ["make", variant],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=True,
@@ -191,31 +188,35 @@ def run_tb(k, n, ad, p):
 
 
 # Generate one test vector and run test bench
-def run_tb_single():
+def run_tb_single(variant):
     k = bytes.fromhex("000102030405060708090a0b0c0d0e0f")
     n = bytes.fromhex("000102030405060708090a0b0c0d0e0f")
-    ad = bytes.fromhex("00010203")
-    p = bytes.fromhex("00010203")
-    print(VARIANT)
+    ad = bytes.fromhex("")
+    p = bytes.fromhex("")
+    print(variant)
     print("k  = " + "".join("{:02x}".format(x) for x in k))
     print("n  = " + "".join("{:02x}".format(x) for x in n))
-    run_tb(k, n, ad, p)
+    run_tb(k, n, ad, p, variant)
     print(f"{OKGREEN}ALL PASS{ENDC}")
 
 
 # Generate multiple test vectors and run test bench
-def run_tb_sweep():
+def run_tb_sweep(variant):
     klen = 16
     nlen = 16
-    k = to_bytes(os.urandom(klen))
-    n = to_bytes(os.urandom(nlen))
+    max_adlen = 16
+    max_plen = 16
+    random.seed(42)
+    k = random.randbytes(klen)
+    n = random.randbytes(nlen)
+    print(variant)
     print("k      = " + "".join("{:02x}".format(x) for x in k))
     print("n      = " + "".join("{:02x}".format(x) for x in n))
-    for adlen in range(16):
-        for plen in range(16):
-            ad = bytearray(os.urandom(adlen))
-            p = bytearray(os.urandom(plen))
-            run_tb(k, n, ad, p)
+    for adlen in range(max_adlen):
+        for plen in range(max_plen):
+            ad = random.randbytes(adlen)
+            p = random.randbytes(plen)
+            run_tb(k, n, ad, p, variant)
     print(f"{OKGREEN}ALL PASS{ENDC}")
 
 
@@ -243,9 +244,11 @@ if __name__ == "__main__":
         type=int,
         help="The variant of the Ascon core: 1, 2, or 3",
     )
+
     args = parser.parse_args()
-    VARIANT = f"v{args.variant}"
+    variant = f"v{args.variant}"
+
     if args.single is not None:
-        run_tb_single()
+        run_tb_single(variant)
     else:
-        run_tb_sweep()
+        run_tb_sweep(variant)

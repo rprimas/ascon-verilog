@@ -6,6 +6,6 @@
 // "v3" configuration parameters for the Ascon core.
 // - Ascon-128 + Ascon-Hash.
 // - 32-bit data block interface.
-// - 3 permutation round per clock cycle.
+// - 3 permutations round per clock cycle.
 
 parameter logic [1:0] UROL = 3;
