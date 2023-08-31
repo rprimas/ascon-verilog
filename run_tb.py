@@ -8,7 +8,7 @@
 # Python script that:
 # 1. generates test vectors for the Ascon core
 # 2. runs verilog test benches
-# 3. compares the test bench output to a software implementation
+# 3. compares the test bench output to an Ascon osoftware implementation
 
 import argparse, io, os, subprocess
 from ascon import *
@@ -20,19 +20,20 @@ FAIL = "\033[91m"
 ENDC = "\033[0m"
 
 # Specify encryption, decryption, and/or hash operations for the Ascon core
-DO_ENC = True
-DO_DEC = True
-DO_HASH = True
+INCL_ENC = 1
+INCL_DEC = 1
+INCL_HASH = 1
 
 
 # Print inputs/outputs of Ascon software implementation
-def print_result(result, ad_pad, p_pad, c, h):
+def print_result(result, ad_pad, p_pad, c, m_pad, h):
     if result:
         print(f"{FAIL}")
     print("ad = " + "".join("{:02x}".format(x) for x in ad_pad))
     print("p  = " + "".join("{:02x}".format(x) for x in p_pad))
     print("c  = " + "".join("{:02x}".format(x) for x in c[:-16]))
     print("t  = " + "".join("{:02x}".format(x) for x in c[-16:]))
+    print("m  = " + "".join("{:02x}".format(x) for x in m_pad))
     print("h  = " + "".join("{:02x}".format(x) for x in h))
     if result:
         print(f"ERROR{ENDC}")
@@ -55,11 +56,11 @@ def write_data_seg(f, x, xlen):
 def write_tv_file(k, n, ad, p, c, m):
     f = open("tv/tv.txt", "w")
 
-    f.write("# Load key\n")
-    f.write("INS 30{:06x}\n".format(len(k)))
-    write_data_seg(f, k, len(k))
+    if INCL_ENC:
+        f.write("# Load key\n")
+        f.write("INS 30{:06x}\n".format(len(k)))
+        write_data_seg(f, k, len(k))
 
-    if DO_ENC:
         f.write("# Specify authenticated encryption\n")
         f.write("INS 00000000\n")
         f.write("\n")
@@ -77,7 +78,12 @@ def write_tv_file(k, n, ad, p, c, m):
         f.write("INS 61{:06X}\n".format(len(p)))
         write_data_seg(f, p, len(p))
 
-    if DO_DEC:
+    if INCL_DEC:
+        if not INCL_ENC:
+            f.write("# Load key\n")
+            f.write("INS 30{:06x}\n".format(len(k)))
+            write_data_seg(f, k, len(k))
+
         f.write("# Specify authenticated decryption\n")
         f.write("INS 10000000\n")
         f.write("\n")
@@ -99,7 +105,7 @@ def write_tv_file(k, n, ad, p, c, m):
         f.write("INS 81{:06x}\n".format(16))
         write_data_seg(f, c[-16:], 16)
 
-    if DO_HASH:
+    if INCL_HASH:
         f.write("# Specify hashing\n")
         f.write("INS 20000000\n")
         f.write("\n")
@@ -160,22 +166,22 @@ def run_tb(k, n, ad, p):
 
     # Compare test bench output to software implementation
     result = 0
-    if DO_DEC:
+    if INCL_ENC:
         result |= c[:-16] != tb_c
         result |= c[-16:] != tb_t
-    if DO_DEC:
+    if INCL_DEC:
         result |= p_pad != tb_p
         result |= tb_ver[0] != 1
-    if DO_HASH:
+    if INCL_HASH:
         result |= h != tb_h
-    print_result(result, ad_pad, p_pad, c, h)
+    print_result(result, ad_pad, p_pad, c, m_pad, h)
 
 
 # Generate one test vector and run test bench
 def run_tb_single():
     k = bytes.fromhex("000102030405060708090a0b0c0d0e0f")
     n = bytes.fromhex("000102030405060708090a0b0c0d0e0f")
-    ad = bytes.fromhex("00010203")
+    ad = bytes.fromhex("")
     p = bytes.fromhex("00010203")
     print("k      = " + "".join("{:02x}".format(x) for x in k))
     print("n      = " + "".join("{:02x}".format(x) for x in n))

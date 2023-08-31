@@ -191,7 +191,7 @@ module ascon_core (
     end
     if (ld_key_done) fsm_nx = LOAD_NONCE;
     if (ld_nonce_done) fsm_nx = INIT;
-    if (init_done) fsm_nx = flag_hash === 1 ? ABS_AD : KEY_ADD_2;  // fix no hash
+    if (init_done) fsm_nx = flag_hash === 1 ? ABS_AD : KEY_ADD_2;
     if (fsm == KEY_ADD_2) fsm_nx = (flag_eoi | abs_ptct_req) === 1 ? DOM_SEP : ABS_AD;
     if (abs_ad_done) fsm_nx = PRO_AD;
     if (pro_ad_done) begin
