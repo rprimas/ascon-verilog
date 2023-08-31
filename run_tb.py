@@ -19,6 +19,9 @@ WARNING = "\033[93m"
 FAIL = "\033[91m"
 ENDC = "\033[0m"
 
+# Specify variant of the Ascon core
+VARIANT = "v1"
+
 # Specify verbose output of Ascon computations in software
 VERBOSE_AEAD_SW = 0
 VERBOSE_HASH_SW = 0
@@ -42,6 +45,7 @@ def print_result(result, ad_pad, p_pad, c, m_pad, h):
     print("h  = " + "".join("{:02x}".format(x) for x in h))
     if result:
         print(f"ERROR{ENDC}")
+        exit()
     else:
         print(f"{OKGREEN}PASS{ENDC}")
 
@@ -149,7 +153,11 @@ def run_tb(k, n, ad, p):
 
     # Run verilog test bench and parse the output
     ps = subprocess.run(
-        ["make"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, text=True
+        ["make", VARIANT],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=True,
+        text=True,
     )
     stdout = io.StringIO(ps.stdout)
     tb_c = bytearray()
@@ -188,6 +196,7 @@ def run_tb_single():
     n = bytes.fromhex("000102030405060708090a0b0c0d0e0f")
     ad = bytes.fromhex("00010203")
     p = bytes.fromhex("00010203")
+    print(VARIANT)
     print("k  = " + "".join("{:02x}".format(x) for x in k))
     print("n  = " + "".join("{:02x}".format(x) for x in n))
     run_tb(k, n, ad, p)
@@ -226,7 +235,16 @@ if __name__ == "__main__":
         nargs="*",
         help="Sweep over inputs of different lengths and perform test bench runs.",
     )
+    parser.add_argument(
+        "-v",
+        "--variant",
+        nargs="?",
+        default=1,
+        type=int,
+        help="The variant of the Ascon core: 1, 2, or 3",
+    )
     args = parser.parse_args()
+    VARIANT = f"v{args.variant}"
     if args.single is not None:
         run_tb_single()
     else:

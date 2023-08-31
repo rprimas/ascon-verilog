@@ -48,22 +48,22 @@ module ascon_core (
   assign ld_nonce_do = (fsm == LOAD_NONCE) & (bdi_type == D_NONCE) & bdi_valid & bdi_ready;
   assign ld_nonce_done = (word_cnt == 3) & ld_nonce_do;
   assign init_do = (fsm == INIT);
-  assign init_done = (round_cnt == 1) & init_do;
+  assign init_done = (round_cnt == UROL) & init_do;
   assign key_add_2_done = (fsm == KEY_ADD_2);
 
   assign abs_ad_do = (fsm == ABS_AD) & (bdi_type == D_AD) & bdi_valid & bdi_ready;
   assign abs_ad_done = ((word_cnt == 1) | bdi_eot) & abs_ad_do;
   assign pro_ad_do = (fsm == PRO_AD);
-  assign pro_ad_done = (round_cnt == 1) & pro_ad_do;
+  assign pro_ad_done = (round_cnt == UROL) & pro_ad_do;
 
   assign abs_ptct_req = bdi_valid && (bdi_type == D_PTCT);
   assign abs_ptct_do = (fsm == ABS_PTCT) & (bdi_type == D_PTCT) & bdi_valid & bdi_ready & bdo_ready;
   assign abs_ptct_done = ((word_cnt == 1) | bdi_eot) & abs_ptct_do;
   assign pro_ptct_do = (fsm == PRO_PTCT);
-  assign pro_ptct_done = (round_cnt == 1) & pro_ptct_do;
+  assign pro_ptct_done = (round_cnt == UROL) & pro_ptct_do;
 
   assign final_do = (fsm == FINAL);
-  assign final_done = (round_cnt == 1) & final_do;
+  assign final_done = (round_cnt == UROL) & final_do;
   assign key_add_3_done = (fsm == KEY_ADD_3);
 
   assign sqz_hash_do = (fsm == SQUEEZE_HASH) & bdo_ready;
@@ -152,7 +152,7 @@ module ascon_core (
           bdo = state_i;
         end
         bdi_ready = 1;
-        bdo_valid = 1;
+        bdo_valid = bdi_valid;
         bdo_type  = D_PTCT;
         bdo_eot   = bdi_eot;
       end
@@ -254,7 +254,7 @@ module ascon_core (
       // Domain separation
       if (fsm == DOM_SEP) begin
         state[4][1] <= state[4][1] ^ 32'h00000001;
-        if (flag_eoi) state[0][0] <= state[0][0] ^ 32'h80000000;  // Padding of empty message
+        // if (flag_eoi) state[0][0] <= state[0][0] ^ 32'h80000000;  // Padding of empty message
       end
       // Key addition 3
       if (fsm == KEY_ADD_3) begin
@@ -288,7 +288,7 @@ module ascon_core (
       if (ld_nonce_done | key_add_3_done | (idle_done & op_hash_req)) round_cnt <= ROUNDS_A;
       if (abs_ad_done | (abs_ptct_done & !bdi_eot)) round_cnt <= ROUNDS_B;
       if (((abs_ad_done & flag_hash) | sqz_hash_done1) & !sqz_hash_done2) round_cnt <= ROUNDS_A;
-      if (init_do | pro_ad_do | pro_ptct_do | final_do) round_cnt <= round_cnt - 1;
+      if (init_do | pro_ad_do | pro_ptct_do | final_do) round_cnt <= round_cnt - UROL;
     end
   end
 

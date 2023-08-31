@@ -8,12 +8,12 @@
 # Software implementation of Ascon-128. Associated data (ad) and plaintext (p)
 # need to be 10*-padded to a multiple of the block size (64-bits).
 
-debug_permutation = False
+DEBUG = False
 
 
 def ascon_aead(k, n, ad, p, debug):
-    global debug_permutation
-    debug_permutation = debug
+    global DEBUG
+    DEBUG = debug
     c = ascon_encrypt(k, n, ad, p)
     return c
 
@@ -48,8 +48,8 @@ def ascon_decrypt(key, nonce, ad, c):
 
 
 def ascon_hash(m, debug):
-    global debug_permutation
-    debug_permutation = debug
+    global DEBUG
+    DEBUG = debug
     a = 12
     b = 12
     rate = 8
@@ -143,7 +143,7 @@ def ascon_finalize(S, rate, a, key):
 
 def ascon_permutation(S, rounds=1):
     assert rounds <= 12
-    if debug_permutation:
+    if DEBUG:
         print_words(S, f"\n{rounds} rounds, input:")
     for r in range(12 - rounds, 12):
         S[2] ^= 0xF0 - r * 0x10 + r * 0x1
@@ -162,7 +162,7 @@ def ascon_permutation(S, rounds=1):
         S[2] ^= rotr(S[2], 1) ^ rotr(S[2], 6)
         S[3] ^= rotr(S[3], 10) ^ rotr(S[3], 17)
         S[4] ^= rotr(S[4], 7) ^ rotr(S[4], 41)
-    if debug_permutation:
+    if DEBUG:
         print_words(S, "output:")
 
 

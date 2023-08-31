@@ -1,20 +1,21 @@
 [*]
 [*] GTKWave Analyzer v3.3.115 (w)1999-2023 BSI
-[*] Thu Aug 31 07:21:34 2023
+[*] Thu Aug 31 09:00:12 2023
 [*]
 [dumpfile] "/home/rprimas/Git/ascon-verilog/tb.vcd"
-[dumpfile_mtime] "Thu Aug 31 07:21:25 2023"
-[dumpfile_size] 53536
+[dumpfile_mtime] "Thu Aug 31 08:59:52 2023"
+[dumpfile_size] 38444
 [savefile] "/home/rprimas/Git/ascon-verilog/config.gtkw"
-[timestart] 554500
-[size] 1634 1102
-[pos] 69 185
-*-15.414291 1216000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[timestart] 0
+[size] 1634 1183
+[pos] 148 141
+*-15.414291 14800 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb.
+[treeopen] tb.ascon_core_i.
 [sst_width] 273
 [signals_width] 318
 [sst_expanded] 1
-[sst_vpaned_height] 448
+[sst_vpaned_height] 484
 @28
 tb.clk
 tb.rst
@@ -37,7 +38,6 @@ tb.key_ready
 @28
 tb.auth
 tb.auth_ready
-@29
 tb.auth_valid
 @200
 -
@@ -76,7 +76,7 @@ tb.ascon_core_i.x1[63:0]
 tb.ascon_core_i.x2[63:0]
 tb.ascon_core_i.x3[63:0]
 tb.ascon_core_i.x4[63:0]
-@200
+@201
 -
 [pattern_trace] 1
 [pattern_trace] 0

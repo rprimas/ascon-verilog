@@ -1,4 +1,4 @@
-# Hardware Design of [Ascon v1.2](https://ascon.iaik.tugraz.at)
+# Hardware Design of [Ascon-128 and Ascon-Hash (v1.2)](https://ascon.iaik.tugraz.at)
 
 [Ascon](https://ascon.iaik.tugraz.at) is a family of authenticated encryption and hashing algorithms designed to be lightweight and easy to implement, even with added countermeasures against side-channel attacks. Ascon has been selected as new standard for lightweight cryptography in the [NIST Lightweight Cryptography competition](https://www.nist.gov/news-events/news/2023/02/nist-selects-lightweight-cryptography-algorithms-protect-small-devices) (2019–2023). Ascon has also been selected as the primary choice for lightweight authenticated encryption in the final portfolio of the [CAESAR competition](https://competitions.cr.yp.to/caesar.html) (2014-2019).
 
@@ -15,16 +15,26 @@ Besides the interface changes, this code base comes with:
 ## Available Variants
 
 - **v1**
-  - Ascon-128 + Ascon-Hash
-  - 32-bit data block interface, 1 permutation round per clock cycle.
+  - Ascon-128 + Ascon-Hash.
+  - 32-bit block data interface.
+  - 1 permutation round per clock cycle.
+- **v2**
+  - Ascon-128 + Ascon-Hash.
+  - 32-bit block data interface.
+  - 2 permutation rounds per clock cycle.
+- **v3**
+  - Ascon-128 + Ascon-Hash.
+  - 32-bit block data interface.
+  - 3 permutation rounds per clock cycle.
 
 ## Files
 
-- `tv/*`: Example test vector files for the verilog test bench.
 - `rtl/ascon_core.sv`: Verilog implementation of the Ascon core.
 - `rtl/asconp.sv`: Verilog implementation of the Ascon permutation.
-- `rtl/config.sv`: Configuration file for the Ascon core and test bench.
+- `rtl/config_core.sv`: Configuration file for the Ascon core and test bench.
+- `rtl/config_v*.sv`: Configuration file for the Ascon core.
 - `rtl/tb.sv`: Verilog test bench for the Ascon core.
+- `tv/*`: Test vector files for the verilog test bench.
 - `LICENSE`: License file.
 - `Makefile`: Commands for running verilog test bench and optionally showing wave forms in GTKWave.
 - `README.md`: This README.
@@ -83,15 +93,15 @@ You can have a look at `rtl/tb.sv` for an example of how the Ascon core interfac
   - See `https://steveicarus.github.io/iverilog/usage/installation.html`.
   - Tested with version 12.0 and flags `-g2005-sv`, `-g2009`, and `-g2012`.
 - Execute verilog test bench:
-  - `make` (runs `rtl/tb.sv` using `tv/tmp.txt` as input).
+  - `make` (runs `rtl/tb.sv` using `tv/tv.txt` as input).
 - Execute verilog test bench and show resulting wave forms:
   - `make wave` (same as `make` but also opens resulting `tb.vcd` in GTKWave).
 
 ## Automatic Generation and Execution of Test Vectors
 
-- `python tb.py -s`
-  - Generate a new `tv/tmp.txt`, run `rtl/tb.sv`, and compare output to Ascon software implementation in `ascon.py`.
-- `python tb.py -w`
+- `python tb.py -s` (add `-v 2` or `-v 3` for other variants)
+  - Generate a new `tv/tv.txt`, run `rtl/tb.sv`, and compare output to Ascon software implementation in `ascon.py`.
+- `python tb.py -w` (add `-v 2` or `-v 3` for other variants)
   - Same as `python tb.py -s` except the entire process is repeated for many inputs with different lengths.
 
 ## Contact

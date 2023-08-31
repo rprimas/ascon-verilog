@@ -6,7 +6,6 @@
 // Test bench for controlling the Ascon core.
 
 `timescale 1s / 100ms
-`include "rtl/config.sv"
 
 module tb;
 
@@ -139,7 +138,7 @@ module tb;
           bdo_ready = 1;
         end
         if (op == OP_LD_TAG) begin
-          bdi_type = D_TAG;
+          bdi_type   = D_TAG;
           auth_ready = 1;
         end
         if (tb_word_cnt == 0) bdi_type = D_NULL;

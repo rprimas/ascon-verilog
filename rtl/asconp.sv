@@ -4,6 +4,7 @@
 // Author: Robert Primas (rprimas 'at' proton.me, https://rprimas.github.io)
 //
 // Implementation of the Ascon permutation (Ascon-p).
+// Performs UROL rounds per clock cycle.
 
 module asconp (
     input  logic [ 3:0] round_cnt,
@@ -18,39 +19,56 @@ module asconp (
     output logic [63:0] x3_o,
     output logic [63:0] x4_o
 );
-  logic [63:0] x0_1, x0_2, x0_3;
-  logic [63:0] x1_1, x1_2, x1_3;
-  logic [63:0] x2_1, x2_2, x2_3;
-  logic [63:0] x3_1, x3_2, x3_3;
-  logic [63:0] x4_1, x4_2, x4_3;
-  logic [3:0] t;
 
-  // 1st affine layer
-  assign t = (4'hC) - round_cnt;
-  assign x0_1 = x0_i ^ x4_i;
-  assign x1_1 = x1_i;
-  assign x2_1 = x2_i ^ x1_i ^ {(4'hF - t), t};
-  assign x3_1 = x3_i;
-  assign x4_1 = x4_i ^ x3_i;
+  logic [UROL][63:0] x0_aff1, x0_chi, x0_aff2;
+  logic [UROL][63:0] x1_aff1, x1_chi, x1_aff2;
+  logic [UROL][63:0] x2_aff1, x2_chi, x2_aff2;
+  logic [UROL][63:0] x3_aff1, x3_chi, x3_aff2;
+  logic [UROL][63:0] x4_aff1, x4_chi, x4_aff2;
+  logic [UROL:0][63:0] x0, x1, x2, x3, x4;
+  logic [UROL][3:0] t;
 
-  // non-linear chi layer
-  assign x0_2 = x0_1 ^ ((~x1_1) & x2_1);
-  assign x1_2 = x1_1 ^ ((~x2_1) & x3_1);
-  assign x2_2 = x2_1 ^ ((~x3_1) & x4_1);
-  assign x3_2 = x3_1 ^ ((~x4_1) & x0_1);
-  assign x4_2 = x4_1 ^ ((~x0_1) & x1_1);
+  assign x0[0] = x0_i;
+  assign x1[0] = x1_i;
+  assign x2[0] = x2_i;
+  assign x3[0] = x3_i;
+  assign x4[0] = x4_i;
 
-  // 2nd affine layer
-  assign x0_3 = x0_2 ^ x4_2;
-  assign x1_3 = x1_2 ^ x0_2;
-  assign x2_3 = ~x2_2;
-  assign x3_3 = x3_2 ^ x2_2;
-  assign x4_3 = x4_2;
+  genvar i;
+  generate
+    for (i = 0; i < UROL; i++) begin
+      // 1st affine layer
+      assign t[i] = (4'hC) - (round_cnt - i);
+      assign x0_aff1[i] = x0[i] ^ x4[i];
+      assign x1_aff1[i] = x1[i];
+      assign x2_aff1[i] = x2[i] ^ x1[i] ^ {(4'hF - t[i]), t[i]};
+      assign x3_aff1[i] = x3[i];
+      assign x4_aff1[i] = x4[i] ^ x3[i];
+      // non-linear chi layer
+      assign x0_chi[i] = x0_aff1[i] ^ ((~x1_aff1[i]) & x2_aff1[i]);
+      assign x1_chi[i] = x1_aff1[i] ^ ((~x2_aff1[i]) & x3_aff1[i]);
+      assign x2_chi[i] = x2_aff1[i] ^ ((~x3_aff1[i]) & x4_aff1[i]);
+      assign x3_chi[i] = x3_aff1[i] ^ ((~x4_aff1[i]) & x0_aff1[i]);
+      assign x4_chi[i] = x4_aff1[i] ^ ((~x0_aff1[i]) & x1_aff1[i]);
+      // 2nd affine layer
+      assign x0_aff2[i] = x0_chi[i] ^ x4_chi[i];
+      assign x1_aff2[i] = x1_chi[i] ^ x0_chi[i];
+      assign x2_aff2[i] = ~x2_chi[i];
+      assign x3_aff2[i] = x3_chi[i] ^ x2_chi[i];
+      assign x4_aff2[i] = x4_chi[i];
+      // linear layer
+      assign x0[i+1] = x0_aff2[i] ^ {x0_aff2[i][18:0], x0_aff2[i][63:19]} ^ {x0_aff2[i][27:0], x0_aff2[i][63:28]};
+      assign x1[i+1] = x1_aff2[i] ^ {x1_aff2[i][60:0], x1_aff2[i][63:61]} ^ {x1_aff2[i][38:0], x1_aff2[i][63:39]};
+      assign x2[i+1] = x2_aff2[i] ^ {x2_aff2[i][0:0], x2_aff2[i][63:01]} ^ {x2_aff2[i][05:0], x2_aff2[i][63:06]};
+      assign x3[i+1] = x3_aff2[i] ^ {x3_aff2[i][9:0], x3_aff2[i][63:10]} ^ {x3_aff2[i][16:0], x3_aff2[i][63:17]};
+      assign x4[i+1] = x4_aff2[i] ^ {x4_aff2[i][6:0], x4_aff2[i][63:07]} ^ {x4_aff2[i][40:0], x4_aff2[i][63:41]};
+    end
+  endgenerate
 
-  // linear layer
-  assign x0_o = x0_3 ^ {x0_3[18:0], x0_3[63:19]} ^ {x0_3[27:0], x0_3[63:28]};
-  assign x1_o = x1_3 ^ {x1_3[60:0], x1_3[63:61]} ^ {x1_3[38:0], x1_3[63:39]};
-  assign x2_o = x2_3 ^ {x2_3[0:0], x2_3[63:01]} ^ {x2_3[05:0], x2_3[63:06]};
-  assign x3_o = x3_3 ^ {x3_3[9:0], x3_3[63:10]} ^ {x3_3[16:0], x3_3[63:17]};
-  assign x4_o = x4_3 ^ {x4_3[6:0], x4_3[63:07]} ^ {x4_3[40:0], x4_3[63:41]};
+  assign x0_o = x0[UROL];
+  assign x1_o = x1[UROL];
+  assign x2_o = x2[UROL];
+  assign x3_o = x3[UROL];
+  assign x4_o = x4[UROL];
+
 endmodule
