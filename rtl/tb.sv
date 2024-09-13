@@ -11,7 +11,6 @@ module tb;
 
   // Test bench config
   int               SIM_CYCLES = 300;
-  string            VCD_FILE = "tb.vcd";
   string            TV_FILE = "tv/tv.txt";
 
   // Test bench signals
@@ -82,7 +81,7 @@ module tb;
           tb_word_cnt <= (data[23:0] + 3) / 4 + 1;
         end else if (hdr == "DAT") begin
           void'($fscanf(fd, "%h", data));
-          tb_word_cnt <= tb_word_cnt - (tb_word_cnt > 0);
+          tb_word_cnt <= tb_word_cnt - {23'd0, (tb_word_cnt > 0)};
         end
       end
     end
@@ -108,7 +107,7 @@ module tb;
   end
 
   // Set interface signals according to current line of test vector file
-  always @(*) begin
+  always_comb begin
     key = 0;
     key_valid = 0;
     bdi = 0;
@@ -118,7 +117,6 @@ module tb;
     bdi_eoi = 0;
     bdo_ready = 0;
     auth_ready = 0;
-
     if (hdr == "DAT") begin
       if (op == OP_LD_KEY) begin
         key = data;
@@ -148,10 +146,6 @@ module tb;
         end
       end
     end
-  end
-
-  // Signal readyness to receive tag from Ascon core
-  always @(*) begin
     if ((bdo_type == D_TAG) & bdo_valid) begin
       bdo_ready = 1;
     end
@@ -187,10 +181,8 @@ module tb;
 
   // Specify debug variables and set simulation start/finish
   initial begin
-    $dumpfile(VCD_FILE);
-    $dumpvars(0, clk, rst, op, data, tb_word_cnt, key, key_valid, key_ready, bdi, bdi_valid,
-              bdi_ready, bdi_type, bdi_eot, bdi_eoi, decrypt, hash, bdo, bdo_valid, bdo_ready,
-              bdo_type, bdo_eot, auth_valid, auth_ready, auth);
+    $dumpfile("wave.fst");
+    $dumpvars(0, clk);
     #1;
     rst = 1;
     #10;

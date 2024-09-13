@@ -8,4 +8,4 @@
 // - 32-bit data block interface.
 // - 1 permutation round per clock cycle.
 
-parameter logic [1:0] UROL = 1;
+parameter logic [3:0] UROL = 1;

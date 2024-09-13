@@ -1,4 +1,4 @@
-tb
 tb.vcd
+obj_dir/
 .vscode
 __pycache__/

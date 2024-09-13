@@ -31,17 +31,19 @@ module ascon_core (
 
   // Core registers
   logic [LANE_BITS/2-1:0] state     [      LANES] [2];
-  logic [    LANE_BITS/2] ascon_key [KEY_BITS/32];
+  logic [LANE_BITS/2-1:0] ascon_key [KEY_BITS/32];
   logic [            3:0] round_cnt;
-  logic [            1:0] word_cnt;
+  logic [            3:0] word_cnt;
   logic [            1:0] hash_cnt;
   logic flag_ad_eot, flag_dec, flag_eoi, flag_hash, auth_intern;
 
   // Utility signals
+  logic op_ld_key_req, op_aead_req, op_hash_req;
   assign op_ld_key_req = key_valid;
   assign op_aead_req = (bdi_type == D_NONCE) & bdi_valid;
   assign op_hash_req = (bdi_type == D_AD) & bdi_valid & hash;
 
+  logic idle_done, ld_key_do, ld_key_done, ld_nonce_do, ld_nonce_done, init_do, init_done, key_add_2_done;
   assign idle_done = (fsm == IDLE) & (op_ld_key_req | op_aead_req | op_hash_req);
   assign ld_key_do = (fsm == LOAD_KEY) & key_valid & key_ready;
   assign ld_key_done = (word_cnt == 3) & ld_key_do;
@@ -51,19 +53,23 @@ module ascon_core (
   assign init_done = (round_cnt == UROL) & init_do;
   assign key_add_2_done = (fsm == KEY_ADD_2) & (flag_eoi | bdi_valid);
 
+  logic abs_ad_do, abs_ad_done, pro_ad_do, pro_ad_done;
   assign abs_ad_do = (fsm == ABS_AD) & (bdi_type == D_AD) & bdi_valid & bdi_ready;
   assign abs_ad_done = ((word_cnt == 1) | bdi_eot) & abs_ad_do;
   assign pro_ad_do = (fsm == PRO_AD);
   assign pro_ad_done = (round_cnt == UROL) & pro_ad_do;
 
+  logic abs_ptct_do, abs_ptct_done, pro_ptct_do, pro_ptct_done;
   assign abs_ptct_do = (fsm == ABS_PTCT) & (bdi_type == D_PTCT) & bdi_valid & bdi_ready & bdo_ready;
   assign abs_ptct_done = ((word_cnt == 1) | bdi_eot) & abs_ptct_do;
   assign pro_ptct_do = (fsm == PRO_PTCT);
   assign pro_ptct_done = (round_cnt == UROL) & pro_ptct_do;
 
+  logic final_do, final_done;
   assign final_do = (fsm == FINAL);
   assign final_done = (round_cnt == UROL) & final_do;
 
+  logic sqz_hash_do, sqz_hash_done1, sqz_hash_done2, sqz_tag_do, sqz_tag_done, ver_tag_do, ver_tag_done;
   assign sqz_hash_do = (fsm == SQUEEZE_HASH) & bdo_ready;
   assign sqz_hash_done1 = (word_cnt == 1) & sqz_hash_do;
   assign sqz_hash_done2 = (hash_cnt == 3) & sqz_hash_done1;
@@ -80,7 +86,7 @@ module ascon_core (
   assign state_slice = state[state_idx/2][state_idx%2];  // Dynamic slicing
 
   // Finate state machine
-  typedef enum bit [64] {
+  typedef enum bit [63:0] {
     IDLE         = "IDLE",
     LOAD_KEY     = "LD_KEY",
     LOAD_NONCE   = "LD_NONCE",
@@ -265,7 +271,7 @@ module ascon_core (
       end
       // Store key
       if (ld_key_do) begin
-        ascon_key[word_cnt] <= key;
+        ascon_key[word_cnt[1:0]] <= key;
       end
     end
   end

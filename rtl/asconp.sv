@@ -20,13 +20,15 @@ module asconp (
     output logic [63:0] x4_o
 );
 
-  logic [UROL][63:0] x0_aff1, x0_chi, x0_aff2;
-  logic [UROL][63:0] x1_aff1, x1_chi, x1_aff2;
-  logic [UROL][63:0] x2_aff1, x2_chi, x2_aff2;
-  logic [UROL][63:0] x3_aff1, x3_chi, x3_aff2;
-  logic [UROL][63:0] x4_aff1, x4_chi, x4_aff2;
-  logic [UROL:0][63:0] x0, x1, x2, x3, x4;
-  logic [UROL][3:0] t;
+  /* verilator lint_off UNOPTFLAT */
+  logic [UROL-1:0][63:0] x0_aff1, x0_chi, x0_aff2;
+  logic [UROL-1:0][63:0] x1_aff1, x1_chi, x1_aff2;
+  logic [UROL-1:0][63:0] x2_aff1, x2_chi, x2_aff2;
+  logic [UROL-1:0][63:0] x3_aff1, x3_chi, x3_aff2;
+  logic [UROL-1:0][63:0] x4_aff1, x4_chi, x4_aff2;
+  logic [UROL : 0][63:0] x0, x1, x2, x3, x4;
+  logic [UROL-1:0][3:0] t;
+  /* verilator lint_on UNOPTFLAT */
 
   assign x0[0] = x0_i;
   assign x1[0] = x1_i;
@@ -36,12 +38,12 @@ module asconp (
 
   genvar i;
   generate
-    for (i = 0; i < UROL; i++) begin
+    for (i = 0; i < UROL; i++) begin : g_asdf
       // 1st affine layer
       assign t[i] = (4'hC) - (round_cnt - i);
       assign x0_aff1[i] = x0[i] ^ x4[i];
       assign x1_aff1[i] = x1[i];
-      assign x2_aff1[i] = x2[i] ^ x1[i] ^ {(4'hF - t[i]), t[i]};
+      assign x2_aff1[i] = x2[i] ^ x1[i] ^ {56'd0, (4'hF - t[i]), t[i]};
       assign x3_aff1[i] = x3[i];
       assign x4_aff1[i] = x4[i] ^ x3[i];
       // non-linear chi layer

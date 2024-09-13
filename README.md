@@ -40,7 +40,7 @@ Besides the interface changes, this code base comes with:
 - `rtl/tb.sv`: Verilog test bench for the Ascon core.
 - `tv/*`: Test vector files for the verilog test bench.
 - `LICENSE`: License file.
-- `Makefile`: Commands for running verilog test bench and optionally showing wave forms in GTKWave.
+- `Makefile`: Commands for running verilog test bench and optionally showing waveforms in GTKWave.
 - `README.md`: This README.
 - `ascon.py`: Python software implementation of Ascon, used by `run_tb.py`.
 - `config.gtkw`: Optional configuration file for the GTKWave waveform viewer.
@@ -93,14 +93,19 @@ You can have a look at `rtl/tb.sv` for an example of how the Ascon core interfac
 
 ## Quick Start
 
-- Install the Icarus Verilog (iverilog) open-source verilog simulator:
-  - See `https://steveicarus.github.io/iverilog/usage/installation.html`.
-  - Tested with version 12.0 and flags `-g2005-sv`, `-g2009`, and `-g2012`.
+- Install the Verilator open-source verilog simulator with **version >= 5.0**:
+  - Ubuntu:
+    - `apt-get install verilator`
+  - Fedora:
+    - `dnf install verilator`
+    - `dnf install verilator-devel`
+  - Build from source:
+    - [Git Quick Install](https://verilator.org/guide/latest/install.html#git-quick-install)
 - Execute verilog test bench:
   - `make`
   - Runs `rtl/tb.sv` using the **v1** variant of the Ascon core and `tv/tv.txt` as input.
   - For other variants use `make v2` etc..
-- Execute verilog test bench and show resulting wave forms:
+- Execute verilog test bench and show resulting waveforms:
   - `make wave`
   - Same as `make` but also opens the resulting `tb.vcd` in GTKWave.
   - For other variants use `make v2_wave` etc..
