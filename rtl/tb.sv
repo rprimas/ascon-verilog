@@ -158,17 +158,17 @@ module tb;
   always @(posedge clk) begin
     if (bdo_valid) begin
       if (bdo_type == D_PTCT) begin
-        if (decrypt) $display("p => %h", bdo);
-        else $display("c => %h", bdo);
+        if (decrypt) $display("pt   => %h", bdo);
+        else $display("ct   => %h", bdo);
       end
-      if (bdo_type == D_TAG) $display("t => %h", bdo);
-      if (bdo_type == D_HASH) $display("h => %h", bdo);
+      if (bdo_type == D_TAG) $display("tag  => %h", bdo);
+      if (bdo_type == D_HASH) $display("hash => %h", bdo);
     end
   end
 
   // Print tag verification output from Ascon core
   always @(posedge auth_valid) begin
-    $display("v => %h", auth);
+    $display("auth => %h", auth);
   end
 
   // Generate clock signal

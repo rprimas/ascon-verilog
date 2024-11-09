@@ -13,19 +13,48 @@ parameter unsigned LANES = 5;
 parameter unsigned LANE_BITS = 64;
 parameter unsigned KEY_BITS = 128;
 
-///////////////
-// Ascon-128 //
-///////////////
+// ///////////////
+// // Ascon-128 //
+// ///////////////
 
-parameter logic [63:0] IV_AEAD = 64'h0000000080400c06;
+// parameter logic [63:0] IV_AEAD = 64'h0000000080400c06;
+// parameter unsigned ROUNDS_A = 12;
+// parameter unsigned ROUNDS_B = 6;
+// parameter unsigned RATE_AEAD_BITS = 64;
+
+// ////////////////
+// // Ascon-128a //
+// ////////////////
+
+parameter logic [63:0] IV_AEAD = 64'h0000000080800c08;
 parameter unsigned ROUNDS_A = 12;
-parameter unsigned ROUNDS_B = 6;
+parameter unsigned ROUNDS_B = 8;
+parameter unsigned RATE_AEAD_BITS = 128;
+parameter unsigned RATE_AEAD_WORDS = RATE_AEAD_BITS/32;
 
-////////////////
-// Ascon-Hash //
-////////////////
+// ///////////////////
+// // Ascon-AEAD128 //
+// ///////////////////
+
+// parameter logic [63:0] IV_AEAD = 64'h00001000808c0001;
+// parameter unsigned ROUNDS_A = 12;
+// parameter unsigned ROUNDS_B = 8;
+// parameter unsigned RATE_AEAD_BITS = 128;
+
+// ///////////////////
+// // ASCON-Hash256 //
+// ///////////////////
 
 parameter logic [63:0] IV_HASH = 64'h0000010000400c00;
+// parameter unsigned RATE_HASH_BITS = 64;
+
+///////////////////
+// ASCON-Hash256 //
+///////////////////
+
+// parameter logic [63:0] IV_HASH = 64'h0000080100cc0002;
+parameter unsigned RATE_HASH_BITS = 64;
+parameter unsigned RATE_HASH_WORDS = RATE_HASH_BITS/32;
 
 ///////////////
 // Interface //

@@ -29,7 +29,7 @@ v4:
 	verilator $(VARGS) rtl/config_v4.sv $(SRC)
 	./obj_dir/Vtb
 
-v1_wave: v1
+v1wave: v1
 	gtkwave ./tb.vcd config.gtkw $(GTKARGS)
 
 v2_wave: v2

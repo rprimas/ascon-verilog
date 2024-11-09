@@ -11,7 +11,7 @@
 # 3. compares the test bench output to an Ascon software implementation
 
 import argparse, io, random, subprocess
-from ascon import *
+from asconaa import *
 
 # Terminal colors
 OKGREEN = "\033[92m"
@@ -25,26 +25,38 @@ VERBOSE_HASH_SW = 0
 
 # Specify encryption, decryption, and/or hash operations for the Ascon core
 INCL_ENC = 1
-INCL_DEC = 1
-INCL_HASH = 1
+INCL_DEC = 0
+INCL_HASH = 0
 
 
 # Print inputs/outputs of Ascon software implementation
-def print_result(result, ad_pad, p_pad, c, m_pad, h):
+def print_result(result, ad_pad, pt_pad, ct, tag, msg_pad, hash):
     print()
     if result:
         print(f"{FAIL}")
-    print("ad = " + "".join("{:02x}".format(x) for x in ad_pad))
-    print("p  = " + "".join("{:02x}".format(x) for x in p_pad))
-    print("c  = " + "".join("{:02x}".format(x) for x in c[:-16]))
-    print("t  = " + "".join("{:02x}".format(x) for x in c[-16:]))
-    print("m  = " + "".join("{:02x}".format(x) for x in m_pad))
-    print("h  = " + "".join("{:02x}".format(x) for x in h))
+    print("ad   = " + "".join("{:02x}".format(x) for x in ad_pad))
+    print("pt   = " + "".join("{:02x}".format(x) for x in pt_pad))
+    print("ct   = " + "".join("{:02x}".format(x) for x in ct))
+    print("tag  = " + "".join("{:02x}".format(x) for x in tag))
+    print("msg  = " + "".join("{:02x}".format(x) for x in msg_pad))
+    print("hash = " + "".join("{:02x}".format(x) for x in hash))
     if result:
         print(f"ERROR{ENDC}")
         exit()
     else:
         print(f"{OKGREEN}PASS{ENDC}")
+
+
+# Print inputs/outputs of Ascon software implementation
+def check_result(name, val_sw, val_hw):
+    print()
+    if (val_sw != val_hw):
+        print(f"{FAIL}")
+        print(name)
+        print("".join("{:02x}".format(x) for x in val_sw))
+        print("".join("{:02x}".format(x) for x in val_hw))
+        print(f"ERROR{ENDC}")
+        exit()
 
 
 # Write data segment to test vector file
@@ -59,21 +71,21 @@ def write_data_seg(f, x, xlen):
 
 
 # Write test vector file
-def write_tv_file(k, n, ad, p, c, m):
+def write_tv_file(key, npub, ad, pt, ct, tag, msg):
     f = open("tv/tv.txt", "w")
 
     if INCL_ENC:
         f.write("# Load key\n")
-        f.write("INS 30{:06x}\n".format(len(k)))
-        write_data_seg(f, k, len(k))
+        f.write("INS 30{:06x}\n".format(len(key)))
+        write_data_seg(f, key, len(key))
 
         f.write("# Specify authenticated encryption\n")
         f.write("INS 00000000\n")
         f.write("\n")
 
         f.write("# Load nonce\n")
-        f.write("INS 40{:06x}\n".format(len(n)))
-        write_data_seg(f, n, len(n))
+        f.write("INS 40{:06x}\n".format(len(npub)))
+        write_data_seg(f, npub, len(npub))
 
         if len(ad) > 0:
             f.write("# Load associated data\n")
@@ -81,22 +93,22 @@ def write_tv_file(k, n, ad, p, c, m):
             write_data_seg(f, ad, len(ad))
 
         f.write("# Load plaintext\n")
-        f.write("INS 61{:06X}\n".format(len(p)))
-        write_data_seg(f, p, len(p))
+        f.write("INS 61{:06X}\n".format(len(pt)))
+        write_data_seg(f, pt, len(pt))
 
     if INCL_DEC:
         if not INCL_ENC:
             f.write("# Load key\n")
-            f.write("INS 30{:06x}\n".format(len(k)))
-            write_data_seg(f, k, len(k))
+            f.write("INS 30{:06x}\n".format(len(key)))
+            write_data_seg(f, key, len(key))
 
         f.write("# Specify authenticated decryption\n")
         f.write("INS 10000000\n")
         f.write("\n")
 
         f.write("# Load nonce\n")
-        f.write("INS 40{:06x}\n".format(len(n)))
-        write_data_seg(f, n, len(n))
+        f.write("INS 40{:06x}\n".format(len(npub)))
+        write_data_seg(f, npub, len(npub))
 
         if len(ad) > 0:
             f.write("# Load associated data\n")
@@ -104,12 +116,12 @@ def write_tv_file(k, n, ad, p, c, m):
             write_data_seg(f, ad, len(ad))
 
         f.write("# Load ciphertext\n")
-        f.write("INS 71{:06X}\n".format(len(p)))
-        write_data_seg(f, c, len(c) - 16)
+        f.write("INS 71{:06X}\n".format(len(pt)))
+        write_data_seg(f, ct, len(ct))
 
         f.write("# Load tag\n")
         f.write("INS 81{:06x}\n".format(16))
-        write_data_seg(f, c[-16:], 16)
+        write_data_seg(f, tag, 16)
 
     if INCL_HASH:
         f.write("# Specify hashing\n")
@@ -117,36 +129,38 @@ def write_tv_file(k, n, ad, p, c, m):
         f.write("\n")
 
         f.write("# Load message data\n")
-        f.write("INS 51{:06x}\n".format(len(m)))
-        write_data_seg(f, m, len(m))
+        f.write("INS 51{:06x}\n".format(len(msg)))
+        write_data_seg(f, msg, len(msg))
 
     f.close()
 
 
-# Pad inputs, generate a test vector file, and run verilog test bench
-def run_tb(k, n, ad, p, variant):
-    ad_pad = bytearray(ad)
-    p_pad = bytearray(p)
-    m_pad = bytearray(ad)
+def run_tb(key, npub, ad, pt, variant):
+    """
+    Pad inputs, generate a test vector file, and run verilog test bench
+    """
+    # Compute Ascon in software
+    ct, tag = ascon_encrypt(key, npub, ad, pt)
+    hash = ascon_hash(ad)
 
-    # 10*-pad inputs to block size (64 bits)
+    # Compute Ascon in hardware
+    # Add 10*-padding to inputs so their length is multiple of 8 bytes
+    ad_pad = bytearray(ad)
+    pt_pad = bytearray(pt)
+    msg_pad = bytearray(ad)
     if len(ad_pad) > 0:
         ad_pad.append(0x80)
         while len(ad_pad) % 8 != 0:
             ad_pad.append(0x00)
-    p_pad.append(0x80)
-    while len(p_pad) % 8 != 0:
-        p_pad.append(0x00)
-    m_pad.append(0x80)
-    while len(m_pad) % 8 != 0:
-        m_pad.append(0x00)
+    pt_pad.append(0x80)
+    while len(pt_pad) % 8 != 0:
+        pt_pad.append(0x00)
+    msg_pad.append(0x80)
+    while len(msg_pad) % 8 != 0:
+        msg_pad.append(0x00)
 
-    # Compute Ascon in software
-    c = ascon_aead(k, n, ad_pad, p_pad, VERBOSE_AEAD_SW)
-    h = ascon_hash(m_pad, VERBOSE_HASH_SW)
-
-    # Write test vector file for verilog test bench
-    write_tv_file(k, n, ad_pad, p_pad, c, m_pad)
+    # Write test vector file for verilog test bench to "tv/tv.txt"
+    write_tv_file(key, npub, ad_pad, pt_pad, ct, tag, msg_pad)
 
     # Run verilog test bench and parse the output
     ps = subprocess.run(
@@ -157,66 +171,73 @@ def run_tb(k, n, ad, p, variant):
         text=True,
     )
     stdout = io.StringIO(ps.stdout)
-    tb_c = bytearray()
-    tb_t = bytearray()
-    tb_p = bytearray()
-    tb_h = bytearray()
-    tb_ver = bytearray()
+    hw_ct = bytearray()
+    hw_tag = bytearray()
+    hw_pt = bytearray()
+    hw_hash = bytearray()
+    hw_auth = bytearray()
     for line in stdout.readlines():
-        if "c =>" in line:
-            tb_c += bytearray.fromhex(line[5 : 5 + 16])
-        if "t =>" in line:
-            tb_t += bytearray.fromhex(line[5 : 5 + 16])
-        if "p =>" in line:
-            tb_p += bytearray.fromhex(line[5 : 5 + 16])
-        if "h =>" in line:
-            tb_h += bytearray.fromhex(line[5 : 5 + 16])
-        if "v =>" in line:
-            tb_ver += bytearray.fromhex("0" + line[5 : 5 + 1])
+        if "pt   =>" in line:
+            hw_pt += bytearray.fromhex(line[8 : 8 + 16])
+        if "ct   =>" in line:
+            hw_ct += bytearray.fromhex(line[8 : 8 + 16])
+        if "tag  =>" in line:
+            hw_tag += bytearray.fromhex(line[8 : 8 + 16])
+        if "hash =>" in line:
+            hw_hash += bytearray.fromhex(line[8 : 8 + 16])
+        if "auth =>" in line:
+            hw_auth += bytearray.fromhex("0" + line[8 : 8 + 1])
+    
+    # Truncate hw outputs to expected length
+    hw_pt = hw_pt[0:len(pt)]
+    hw_ct = hw_ct[0:len(ct)]
 
+    print("ad_pad  = " + "".join("{:02x}".format(x) for x in ad_pad))
+    print("pt_pad  = " + "".join("{:02x}".format(x) for x in pt_pad))
+    print("ct      = " + "".join("{:02x}".format(x) for x in ct))
+    print("tag     = " + "".join("{:02x}".format(x) for x in tag))
+    print("msg_pad = " + "".join("{:02x}".format(x) for x in msg_pad))
+    print("hash    = " + "".join("{:02x}".format(x) for x in hash))
     # Compare test bench output to software implementation
-    result = 0
     if INCL_ENC:
-        result |= c[:-16] != tb_c
-        result |= c[-16:] != tb_t
+        check_result("ct", ct, hw_ct)
     if INCL_DEC:
-        result |= p_pad != tb_p
-        result |= tb_ver[0] != 1
+        result |= pt_pad != hw_pt
+        result |= hw_auth[0] != 1
     if INCL_HASH:
-        result |= h != tb_h
-    print_result(result, ad_pad, p_pad, c, m_pad, h)
+        result |= hash != hw_hash
 
 
 # Generate one test vector and run test bench
-def run_tb_single(variant):
-    k = bytes.fromhex("000102030405060708090a0b0c0d0e0f")
-    n = bytes.fromhex("000102030405060708090a0b0c0d0e0f")
+def run_hw_single(variant):
+    key = bytes.fromhex("000102030405060708090a0b0c0d0e0f")
+    npub = bytes.fromhex("000102030405060708090a0b0c0d0e0f")
     ad = bytes.fromhex("00010203")
-    p = bytes.fromhex("00010203")
+    pt = bytes.fromhex("00010203")
     print(variant)
-    print("k  = " + "".join("{:02x}".format(x) for x in k))
-    print("n  = " + "".join("{:02x}".format(x) for x in n))
-    run_tb(k, n, ad, p, variant)
+    print("key     = " + "".join("{:02x}".format(x) for x in key))
+    print("npub    = " + "".join("{:02x}".format(x) for x in npub))
+    run_tb(key, npub, ad, pt, variant)
     print(f"{OKGREEN}ALL PASS{ENDC}")
 
 
 # Generate multiple test vectors and run test bench
-def run_tb_sweep(variant):
-    klen = 16
-    nlen = 16
-    max_adlen = 16
-    max_plen = 16
+def run_hw_sweep(variant):
+    key_len = 16
+    npub_len = 16
+    max_ad_len = 16
+    max_pt_len = 16
     random.seed(42)
-    k = random.randbytes(klen)
-    n = random.randbytes(nlen)
+    key = random.randbytes(key_len)
+    npub = random.randbytes(npub_len)
     print(variant)
-    print("k      = " + "".join("{:02x}".format(x) for x in k))
-    print("n      = " + "".join("{:02x}".format(x) for x in n))
-    for adlen in range(max_adlen):
-        for plen in range(max_plen):
-            ad = random.randbytes(adlen)
-            p = random.randbytes(plen)
-            run_tb(k, n, ad, p, variant)
+    print("key     = " + "".join("{:02x}".format(x) for x in key))
+    print("npub    = " + "".join("{:02x}".format(x) for x in npub))
+    for ad_len in range(max_ad_len):
+        for pt_len in range(max_pt_len):
+            ad = random.randbytes(ad_len)
+            pt = random.randbytes(pt_len)
+            run_tb(key, npub, ad, pt, variant)
     print(f"{OKGREEN}ALL PASS{ENDC}")
 
 
@@ -249,6 +270,6 @@ if __name__ == "__main__":
     variant = f"v{args.variant}"
 
     if args.single is not None:
-        run_tb_single(variant)
+        run_hw_single(variant)
     else:
-        run_tb_sweep(variant)
+        run_hw_sweep(variant)

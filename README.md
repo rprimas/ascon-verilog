@@ -1,35 +1,21 @@
-# Hardware Design of [Ascon-128 and Ascon-Hash (v1.2)](https://ascon.iaik.tugraz.at)
+# Hardware Design of [Ascon-AEAD128](https://ascon.iaik.tugraz.at)
 
-[Ascon](https://ascon.iaik.tugraz.at) is a family of authenticated encryption and hashing algorithms designed to be lightweight and easy to implement, even with added countermeasures against side-channel attacks. Ascon has been selected as new standard for lightweight cryptography in the [NIST Lightweight Cryptography competition](https://www.nist.gov/news-events/news/2023/02/nist-selects-lightweight-cryptography-algorithms-protect-small-devices) (2019–2023). Ascon has also been selected as the primary choice for lightweight authenticated encryption in the final portfolio of the [CAESAR competition](https://competitions.cr.yp.to/caesar.html) (2014-2019).
-
-This verilog implementation of Ascon is similar to my [previous VHDL implementation](https://github.com/ascon/ascon-hardware). The verilog version uses a simpler interface that considerably reduces the size of the code base. The main interface changes are:
-- Some signals have been removed (see [Interface](#Interface) section).
-- Bus width is fixed to 32 bits.
-- Padding of inputs/outputs is shifted to software.
-
-Besides the interface changes, this code base comes with:
-- A more permissive CC0 license.
-- A low amount of external dependencies, i.e., Python, Icarus Verilog, and optionally GTKWave.
-- Easy instructions for simulation/debugging using open-source tools.
+[Ascon](https://ascon.iaik.tugraz.at) is a family of authenticated encryption and hashing algorithms designed to be lightweight and easy to implement, even with added countermeasures against side-channel attacks. Ascon has been selected as new standard for lightweight cryptography in the [NIST Lightweight Cryptography competition](https://www.nist.gov/news-events/news/2023/02/nist-selects-lightweight-cryptography-algorithms-protect-small-devices) (2019–2023). The current draft standard of Ascon is available [here](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-232.ipd.pdf).
 
 ## Available Variants
 
 - **v1**
-  - Ascon-128 + Ascon-Hash.
+  - Ascon-AEAD128 + Ascon-Hash256.
   - 32-bit block data interface.
   - 1 permutation round per clock cycle.
 - **v2**
-  - Ascon-128 + Ascon-Hash.
+  - Ascon-AEAD128 + Ascon-Hash256.
   - 32-bit block data interface.
   - 2 permutation rounds per clock cycle.
 - **v3**
-  - Ascon-128 + Ascon-Hash.
+  - Ascon-AEAD128 + Ascon-Hash256.
   - 32-bit block data interface.
-  - 3 permutation rounds per clock cycle.
-- **v4**
-  - Ascon-128 + Ascon-Hash.
-  - 32-bit block data interface.
-  - 6 permutation rounds per clock cycle.
+  - 4 permutation rounds per clock cycle.
 
 ## Files
 

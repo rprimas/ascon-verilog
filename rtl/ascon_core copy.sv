@@ -37,6 +37,8 @@ module ascon_core (
   logic [            1:0] hash_cnt;
   logic flag_ad_eot, flag_dec, flag_eoi, flag_hash, auth_intern;
 
+  localparam logic [3:0] RateWords = (RATE_AEAD_BITS/32);
+
   // Utility signals
   logic op_ld_key_req, op_aead_req, op_hash_req;
   assign op_ld_key_req = key_valid;
@@ -55,13 +57,13 @@ module ascon_core (
 
   logic abs_ad_do, abs_ad_done, pro_ad_do, pro_ad_done;
   assign abs_ad_do = (fsm == ABS_AD) & (bdi_type == D_AD) & bdi_valid & bdi_ready;
-  assign abs_ad_done = ((word_cnt == (flag_hash == 0 ? 4 : 2)) | bdi_eot) & abs_ad_do;
+  assign abs_ad_done = ((word_cnt == RateWords-1) | bdi_eot) & abs_ad_do;
   assign pro_ad_do = (fsm == PRO_AD);
   assign pro_ad_done = (round_cnt == UROL) & pro_ad_do;
 
   logic abs_ptct_do, abs_ptct_done, pro_ptct_do, pro_ptct_done;
   assign abs_ptct_do = (fsm == ABS_PTCT) & (bdi_type == D_PTCT) & bdi_valid & bdi_ready & bdo_ready;
-  assign abs_ptct_done = ((word_cnt == 4) | bdi_eot) & abs_ptct_do;
+  assign abs_ptct_done = ((word_cnt == RateWords-1) | bdi_eot) & abs_ptct_do;
   assign pro_ptct_do = (fsm == PRO_PTCT);
   assign pro_ptct_done = (round_cnt == UROL) & pro_ptct_do;
 
@@ -238,7 +240,7 @@ module ascon_core (
   always @(posedge clk) begin
     if (rst == 0) begin
       if (ld_nonce_do || abs_ad_do || abs_ptct_do) begin
-        state[state_idx/2][state_idx%2] <= state_i;
+        state[state_idx/2][state_idx%2] <= state_i;  // Dynamic slicing
       end
       // State initialization, hashing
       if (idle_done & op_hash_req) begin
@@ -267,7 +269,7 @@ module ascon_core (
       end
       // Key addition 3
       if (fsm == KEY_ADD_3) begin
-        for (int i = 0; i < 4; i++) state[2+i/2][i%2] <= state[2+i/2][i%2] ^ ascon_key[i];
+        for (int i = 0; i < 4; i++) state[1+i/2][i%2] <= state[1+i/2][i%2] ^ ascon_key[i];
       end
       // Store key
       if (ld_key_do) begin
