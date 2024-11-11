@@ -11,7 +11,8 @@
 # 3. compares the test bench output to an Ascon software implementation
 
 import argparse, io, random, subprocess
-from asconaa import *
+# from ascon_v12 import *
+from ascon import *
 
 # Terminal colors
 OKGREEN = "\033[92m"
@@ -25,7 +26,7 @@ VERBOSE_HASH_SW = 0
 
 # Specify encryption, decryption, and/or hash operations for the Ascon core
 INCL_ENC = 1
-INCL_DEC = 0
+INCL_DEC = 1
 INCL_HASH = 0
 
 
@@ -116,7 +117,7 @@ def write_tv_file(key, npub, ad, pt, ct, tag, msg):
             write_data_seg(f, ad, len(ad))
 
         f.write("# Load ciphertext\n")
-        f.write("INS 71{:06X}\n".format(len(pt)))
+        f.write("INS 71{:06X}\n".format(len(ct)))
         write_data_seg(f, ct, len(ct))
 
         f.write("# Load tag\n")
@@ -149,13 +150,14 @@ def run_tb(key, npub, ad, pt, variant):
     pt_pad = bytearray(pt)
     msg_pad = bytearray(ad)
     if len(ad_pad) > 0:
-        ad_pad.append(0x80)
+        # ad_pad.append(0x80)
+        ad_pad.append(0x01)#########################################################################
         while len(ad_pad) % 8 != 0:
             ad_pad.append(0x00)
-    pt_pad.append(0x80)
+    pt_pad.append(0x01)
     while len(pt_pad) % 8 != 0:
         pt_pad.append(0x00)
-    msg_pad.append(0x80)
+    msg_pad.append(0x01) #########################################################################
     while len(msg_pad) % 8 != 0:
         msg_pad.append(0x00)
 
@@ -198,14 +200,20 @@ def run_tb(key, npub, ad, pt, variant):
     print("tag     = " + "".join("{:02x}".format(x) for x in tag))
     print("msg_pad = " + "".join("{:02x}".format(x) for x in msg_pad))
     print("hash    = " + "".join("{:02x}".format(x) for x in hash))
+
     # Compare test bench output to software implementation
+    result = 0
     if INCL_ENC:
         check_result("ct", ct, hw_ct)
     if INCL_DEC:
-        result |= pt_pad != hw_pt
-        result |= hw_auth[0] != 1
+        check_result("pt", pt, hw_pt)
+        if (hw_auth[0] != 1):
+            print(f"{FAIL}")
+            print("tag verification")
+            print(f"ERROR{ENDC}")
+            exit()
     if INCL_HASH:
-        result |= hash != hw_hash
+        check_result("hash", hash, hw_hash)
 
 
 # Generate one test vector and run test bench

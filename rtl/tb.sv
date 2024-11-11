@@ -14,7 +14,8 @@ module tb;
   string            TV_FILE = "tv/tv.txt";
 
   // Test bench signals
-  logic  [    23:0] tb_word_cnt = 0;
+  // logic  [    23:0] tb_word_cnt = 0;
+  logic  [    23:0] tb_byte_cnt = 0;
   logic  [    31:0] data;
   logic  [     3:0] op;
   logic  [     3:0] flags;
@@ -40,6 +41,7 @@ module tb;
   logic             bdo_ready;
   logic  [     3:0] bdo_type;
   logic             bdo_eot;
+  logic  [     3:0] bdi_valid_bytes;
   logic             auth;
   logic             auth_valid;
   logic             auth_ready;
@@ -78,10 +80,12 @@ module tb;
           void'($fscanf(fd, "%h", data));
           op <= data[31:28];
           flags <= data[27:24];
-          tb_word_cnt <= (data[23:0] + 3) / 4 + 1;
+          // tb_word_cnt <= (data[23:0] + 3) / 4 + 1;
+          tb_byte_cnt <= data[23:0];
         end else if (hdr == "DAT") begin
           void'($fscanf(fd, "%h", data));
-          tb_word_cnt <= tb_word_cnt - {23'd0, (tb_word_cnt > 0)};
+          // tb_word_cnt <= tb_word_cnt - {23'd0, (tb_word_cnt > 0)};
+          tb_byte_cnt <= tb_byte_cnt < 'd4 ? 'd0 : tb_byte_cnt - 'd4; //tb_byte_cnt - {23'd0, (tb_word_cnt > 0)*4};
         end
       end
     end
@@ -108,15 +112,16 @@ module tb;
 
   // Set interface signals according to current line of test vector file
   always_comb begin
-    key = 0;
-    key_valid = 0;
-    bdi = 0;
-    bdi_valid = 0;
-    bdi_type = D_NULL;
-    bdi_eot = 0;
-    bdi_eoi = 0;
-    bdo_ready = 0;
-    auth_ready = 0;
+    key             = '0;
+    key_valid       = '0;
+    bdi             = '0;
+    bdi_valid       = '0;
+    bdi_type        = D_NULL;
+    bdi_eot         = '0;
+    bdi_eoi         = '0;
+    bdi_valid_bytes = '0;
+    bdo_ready       = '0;
+    auth_ready      = '0;
     if (hdr == "DAT") begin
       if (op == OP_LD_KEY) begin
         key = data;
@@ -124,7 +129,8 @@ module tb;
       end
       if (op == OP_LD_NONCE | op == OP_LD_AD | op == OP_LD_PT | op == OP_LD_CT | op == OP_LD_TAG) begin
         bdi = data;
-        bdi_valid = 1;
+        bdi_valid = '1;
+        bdi_valid_bytes = 'hF;
         if (op == OP_LD_NONCE) bdi_type = D_NONCE;
         if (op == OP_LD_AD) bdi_type = D_AD;
         if (op == OP_LD_PT) begin
@@ -139,10 +145,13 @@ module tb;
           bdi_type   = D_TAG;
           auth_ready = 1;
         end
-        if (tb_word_cnt == 0) bdi_type = D_NULL;
-        if (tb_word_cnt == 1) begin
+        // if (tb_word_cnt == 0) bdi_type = D_NULL;
+        // if (tb_word_cnt == 1) begin
+        if (tb_byte_cnt == 0) bdi_type = D_NULL;
+        else if (tb_byte_cnt <= 4) begin
           bdi_eot = 1;
           bdi_eoi = flags[0:0];
+          bdi_valid_bytes = {(tb_byte_cnt>=3),(tb_byte_cnt>=2),(tb_byte_cnt>=1),1'b1};
         end
       end
     end

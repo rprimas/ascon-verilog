@@ -1,19 +1,19 @@
 [*]
-[*] GTKWave Analyzer v3.3.119 (w)1999-2024 BSI
-[*] Thu Sep 19 08:54:03 2024
+[*] GTKWave Analyzer v3.3.121 (w)1999-2024 BSI
+[*] Sat Nov  9 17:58:32 2024
 [*]
 [dumpfile] "/home/rprimas/Git/ascon-verilog/tb.vcd"
-[dumpfile_mtime] "Thu Sep 19 08:52:56 2024"
-[dumpfile_size] 26886
+[dumpfile_mtime] "Sat Nov  9 17:57:53 2024"
+[dumpfile_size] 10166
 [savefile] "/home/rprimas/Git/ascon-verilog/config.gtkw"
 [timestart] 0
-[size] 2560 1361
-[pos] 0 32
-*-16.014292 171400 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[size] 1280 1361
+[pos] 2534 32
+*-18.714293 60000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.tb.
 [sst_width] 273
-[signals_width] 348
+[signals_width] 341
 [sst_expanded] 1
 [sst_vpaned_height] 611
 @28
@@ -35,6 +35,8 @@ TOP.tb.bdi[31:0]
 @28
 TOP.tb.bdi_ready
 TOP.tb.bdi_valid
+@23
+TOP.tb.bdi_valid_bytes[3:0]
 @22
 TOP.tb.bdi_type[3:0]
 @28
@@ -59,11 +61,12 @@ TOP.tb.bdo_type[3:0]
 TOP.tb.bdo_eot
 @200
 -ASCON CORE
-@100000029
+@100000028
 TOP.tb.ascon_core_i.fsm[63:0]
-@23
+@22
 TOP.tb.ascon_core_i.state_idx[3:0]
-@25
+TOP.tb.ascon_core_i.word_cnt[3:0]
+@24
 TOP.tb.ascon_core_i.round_cnt[3:0]
 @22
 TOP.tb.ascon_core_i.x0[63:0]

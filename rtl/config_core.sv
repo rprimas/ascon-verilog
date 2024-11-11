@@ -26,7 +26,8 @@ parameter unsigned KEY_BITS = 128;
 // // Ascon-128a //
 // ////////////////
 
-parameter logic [63:0] IV_AEAD = 64'h0000000080800c08;
+// parameter logic [63:0] IV_AEAD = 64'h0000000080800c08;
+parameter logic [63:0] IV_AEAD = 64'h808c000100001000;
 parameter unsigned ROUNDS_A = 12;
 parameter unsigned ROUNDS_B = 8;
 parameter unsigned RATE_AEAD_BITS = 128;
@@ -45,7 +46,8 @@ parameter unsigned RATE_AEAD_WORDS = RATE_AEAD_BITS/32;
 // // ASCON-Hash256 //
 // ///////////////////
 
-parameter logic [63:0] IV_HASH = 64'h0000010000400c00;
+// parameter logic [63:0] IV_HASH = 64'h0000010000400c00;
+parameter logic [63:0] IV_HASH = 64'h00cc000200000801;
 // parameter unsigned RATE_HASH_BITS = 64;
 
 ///////////////////
