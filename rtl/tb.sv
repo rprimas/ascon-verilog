@@ -55,6 +55,7 @@ module tb;
       .key_ready(key_ready),
       .bdi(bdi),
       .bdi_valid(bdi_valid),
+      .bdi_valid_bytes(bdi_valid_bytes),
       .bdi_ready(bdi_ready),
       .bdi_type(bdi_type),
       .bdi_eot(bdi_eot),
@@ -80,12 +81,10 @@ module tb;
           void'($fscanf(fd, "%h", data));
           op <= data[31:28];
           flags <= data[27:24];
-          // tb_word_cnt <= (data[23:0] + 3) / 4 + 1;
-          tb_byte_cnt <= data[23:0];
+          tb_byte_cnt <= data[23:0] + 'd4;
         end else if (hdr == "DAT") begin
           void'($fscanf(fd, "%h", data));
-          // tb_word_cnt <= tb_word_cnt - {23'd0, (tb_word_cnt > 0)};
-          tb_byte_cnt <= tb_byte_cnt < 'd4 ? 'd0 : tb_byte_cnt - 'd4; //tb_byte_cnt - {23'd0, (tb_word_cnt > 0)*4};
+          tb_byte_cnt <= tb_byte_cnt <= 'd4 ? 'd0 : tb_byte_cnt - 'd4;
         end
       end
     end
@@ -128,7 +127,7 @@ module tb;
         key_valid = 1;
       end
       if (op == OP_LD_NONCE | op == OP_LD_AD | op == OP_LD_PT | op == OP_LD_CT | op == OP_LD_TAG) begin
-        bdi = data;
+        bdi = data << ((tb_byte_cnt <= 4) ? ((4-tb_byte_cnt)*8) : 0);
         bdi_valid = '1;
         bdi_valid_bytes = 'hF;
         if (op == OP_LD_NONCE) bdi_type = D_NONCE;
@@ -145,13 +144,21 @@ module tb;
           bdi_type   = D_TAG;
           auth_ready = 1;
         end
-        // if (tb_word_cnt == 0) bdi_type = D_NULL;
-        // if (tb_word_cnt == 1) begin
         if (tb_byte_cnt == 0) bdi_type = D_NULL;
         else if (tb_byte_cnt <= 4) begin
           bdi_eot = 1;
           bdi_eoi = flags[0:0];
-          bdi_valid_bytes = {(tb_byte_cnt>=3),(tb_byte_cnt>=2),(tb_byte_cnt>=1),1'b1};
+          bdi_valid_bytes = {(tb_byte_cnt>=4),(tb_byte_cnt>=3),(tb_byte_cnt>=2),(tb_byte_cnt>=1)};
+        end
+      end
+    end
+    if (hdr == "INS") begin
+      if (hash == 1) begin
+        if (data[27:24] == 1) begin
+          bdi_eot         = '1;
+          bdi_eoi         = '1;
+          bdi_type        = D_AD;
+          bdi_valid       = '1;
         end
       end
     end
@@ -167,8 +174,8 @@ module tb;
   always @(posedge clk) begin
     if (bdo_valid) begin
       if (bdo_type == D_PTCT) begin
-        if (decrypt) $display("pt   => %h", bdo);
-        else $display("ct   => %h", bdo);
+        if (decrypt) $display("pt   => %h", bdo);// >> ((tb_byte_cnt <= 4) ? ((4-tb_byte_cnt)*8) : 0));
+        else $display("ct   => %h", bdo);// >> ((tb_byte_cnt <= 4) ? ((4-tb_byte_cnt)*8) : 0));
       end
       if (bdo_type == D_TAG) $display("tag  => %h", bdo);
       if (bdo_type == D_HASH) $display("hash => %h", bdo);

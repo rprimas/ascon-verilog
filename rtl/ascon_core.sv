@@ -13,6 +13,7 @@ module ascon_core (
     output logic            key_ready,
     input  logic [ CCW-1:0] bdi,
     input  logic            bdi_valid,
+    input  logic [     3:0] bdi_valid_bytes,
     output logic            bdi_ready,
     input  logic [     3:0] bdi_type,
     input  logic            bdi_eot,
@@ -35,13 +36,13 @@ module ascon_core (
   logic [            3:0] round_cnt;
   logic [            3:0] word_cnt;
   logic [            1:0] hash_cnt;
-  logic flag_ad_eot, flag_dec, flag_eoi, flag_hash, auth_intern;
+  logic flag_ad_eot, flag_ad_pad, flag_ptct_pad, flag_dec, flag_eoi, flag_hash, auth_intern;
 
   // Utility signals
   logic op_ld_key_req, op_aead_req, op_hash_req;
   assign op_ld_key_req = key_valid;
   assign op_aead_req = (bdi_type == D_NONCE) & bdi_valid;
-  assign op_hash_req = (bdi_type == D_AD) & bdi_valid & hash;
+  assign op_hash_req = (bdi_type == D_AD) & hash & bdi_valid;// | ((~bdi_valid) & bdi_eoi));
 
   logic idle_done, ld_key, ld_key_done, ld_nonce, ld_nonce_done, init, init_done, key_add_2_done;
   assign idle_done = (fsm == IDLE) & (op_ld_key_req | op_aead_req | op_hash_req);
@@ -94,9 +95,11 @@ module ascon_core (
     INIT         = "INIT",
     KEY_ADD_2    = "KEY_ADD2",
     ABS_AD       = "ABS_AD",
+    PAD_AD       = "PAD_AD",
     PRO_AD       = "PRO_AD",
     DOM_SEP      = "DOM_SEP",
     ABS_PTCT     = "ABS_PTCT",
+    PAD_PTCT     = "PAD_PTCT",
     PRO_PTCT     = "PRO_PTCT",
     KEY_ADD_3    = "KEY_ADD3",
     FINAL        = "FINAL",
@@ -123,6 +126,11 @@ module ascon_core (
       .x4_o({asconp_o[4][0], asconp_o[4][1]})
   );
 
+  logic [31:0] state_ii;
+  logic [31:0] state_iii;
+  logic [31:0] state_iiii;
+  logic [31:0] state_iiiii;
+
   /////////////////////
   // Control Signals //
   /////////////////////
@@ -147,19 +155,52 @@ module ascon_core (
       ABS_AD: begin
         state_idx = word_cnt;
         bdi_ready = 1;
-        state_i   = state_slice ^ {bdi[7:0],bdi[15:8],bdi[23:16],bdi[31:24]};
+        state_i   = state_slice ^ {
+          (bdi[ 7: 0] & {8{bdi_valid_bytes[3]}}) | (8'h01&{8{~bdi_valid_bytes[3]&(bdi_valid_bytes[2])}}),
+          (bdi[15: 8] & {8{bdi_valid_bytes[2]}}) | (8'h01&{8{~bdi_valid_bytes[2]&(bdi_valid_bytes[1])}}),
+          (bdi[23:16] & {8{bdi_valid_bytes[1]}}) | (8'h01&{8{~bdi_valid_bytes[1]&(bdi_valid_bytes[0])}}),
+          (bdi[31:24] & {8{bdi_valid_bytes[0]}})
+        };
+        state_ii = state_i ^ state_slice;
         // state_i   = state_slice ^ bdi;
+      end
+      PAD_AD, PAD_PTCT: begin
+        state_idx = word_cnt;
       end
       ABS_PTCT: begin
         state_idx = word_cnt;
         if (flag_dec) begin
           // state_i = bdi;
-          state_i = {bdi[7:0],bdi[15:8],bdi[23:16],bdi[31:24]};
+          // state_i = {bdi[7:0],bdi[15:8],bdi[23:16],bdi[31:24]};
+          state_i = {
+            bdi_valid_bytes[3] ? bdi[ 7: 0] : (bdi_valid_bytes[2] ? (8'h01 ^ (state_slice[31:24])) : (state_slice[31:24])),
+            bdi_valid_bytes[2] ? bdi[15: 8] : (bdi_valid_bytes[1] ? (8'h01 ^ (state_slice[23:16])) : (state_slice[23:16])),
+            bdi_valid_bytes[1] ? bdi[23:16] : (bdi_valid_bytes[0] ? (8'h01 ^ (state_slice[15: 8])) : (state_slice[15: 8])),
+            bdi_valid_bytes[0] ? bdi[31:24] : (state_slice[7:0])
+          };
+          state_ii  = {{8{bdi_valid_bytes[3]}},{8{bdi_valid_bytes[2]}},{8{bdi_valid_bytes[1]}},{8{bdi_valid_bytes[0]}}};
+          state_iii = {bdi[ 7: 0],bdi[15: 8],bdi[23:16],bdi[31:24]};
+          state_iiii = state_slice;
+          state_iiiii = {
+            bdi_valid_bytes[3] ? bdi[ 7: 0] : (bdi_valid_bytes[2] ? (8'h01 ^ (state_slice[31:24])) : (state_slice[31:24])),
+            bdi_valid_bytes[2] ? bdi[15: 8] : (bdi_valid_bytes[1] ? (8'h01 ^ (state_slice[23:16])) : (state_slice[23:16])),
+            bdi_valid_bytes[1] ? bdi[23:16] : (bdi_valid_bytes[0] ? (8'h01 ^ (state_slice[15: 8])) : (state_slice[15: 8])),
+            bdi_valid_bytes[0] ? bdi[31:24] : (state_slice[7:0])
+          };
+
           // bdo = state_slice ^ state_i;
-          bdo = {state_slice[7:0],state_slice[15:8],state_slice[23:16],state_slice[31:24]} ^ {state_i[7:0],state_i[15:8],state_i[23:16],state_i[31:24]};
+          // bdo = {state_slice[7:0],state_slice[15:8],state_slice[23:16],state_slice[31:24]} ^ {state_i[7:0],state_i[15:8],state_i[23:16],state_i[31:24]};
+          {bdo[7:0],bdo[15:8],bdo[23:16],bdo[31:24]} = (state_slice[31:0] ^ state_i[31:0]) & {{8{bdi_valid_bytes[3]}},{8{bdi_valid_bytes[2]}},{8{bdi_valid_bytes[1]}},{8{bdi_valid_bytes[0]}}};
         end else begin
           // state_i = state_slice ^ bdi;
-          state_i = state_slice ^ {bdi[7:0],bdi[15:8],bdi[23:16],bdi[31:24]};
+          // state_i = state_slice ^ {bdi[7:0],bdi[15:8],bdi[23:16],bdi[31:24]};
+        state_i   = state_slice ^ {
+          (bdi[ 7: 0] & {8{bdi_valid_bytes[3]}}) | (8'h01&{8{~bdi_valid_bytes[3]&(bdi_valid_bytes[2])}}),
+          (bdi[15: 8] & {8{bdi_valid_bytes[2]}}) | (8'h01&{8{~bdi_valid_bytes[2]&(bdi_valid_bytes[1])}}),
+          (bdi[23:16] & {8{bdi_valid_bytes[1]}}) | (8'h01&{8{~bdi_valid_bytes[1]&(bdi_valid_bytes[0])}}),
+          (bdi[31:24] & {8{bdi_valid_bytes[0]}})
+        };
+          state_ii = state_i ^ state_slice;
           bdo = {state_i[7:0],state_i[15:8],state_i[23:16],state_i[31:24]};
           // bdo = state_i;
         end
@@ -205,20 +246,53 @@ module ascon_core (
     end
     if (ld_key_done) fsm_nx = LOAD_NONCE;
     if (ld_nonce_done) fsm_nx = INIT;
-    if (init_done) fsm_nx = flag_hash === 1 ? ABS_AD : KEY_ADD_2;
+    if (init_done) fsm_nx = flag_hash ? (flag_eoi ? PAD_AD : ABS_AD) : KEY_ADD_2;
     if (key_add_2_done) begin
       if (flag_eoi) fsm_nx = DOM_SEP;
       else if (bdi_type == D_AD) fsm_nx = ABS_AD;
       else if (bdi_type == D_PTCT) fsm_nx = DOM_SEP;
     end
-    if (abs_ad_done) fsm_nx = PRO_AD;
+    if (abs_ad_done) begin
+      if (bdi_valid_bytes != 4'b1111) begin
+        fsm_nx = PRO_AD;
+      end else begin
+        if (word_cnt < 3) fsm_nx = PAD_AD;
+        else fsm_nx = PRO_AD;
+      end
+    end
+    if (fsm == PAD_AD) fsm_nx = PRO_AD;
     if (pro_ad_done) begin
-      if (flag_hash) fsm_nx = flag_ad_eot === 1 ? SQUEEZE_HASH : ABS_AD;
-      else fsm_nx = flag_ad_eot === 1 ? DOM_SEP : ABS_AD;
+      if (flag_hash) fsm_nx = flag_eoi ? SQUEEZE_HASH : ABS_AD;
+      else begin
+        if (flag_ad_eot == 0) begin
+          fsm_nx = ABS_AD;
+        end else if (flag_ad_pad == 0) begin
+          fsm_nx = PAD_AD;
+        end else begin
+          fsm_nx = DOM_SEP;
+        end
+      end
     end
     if (fsm == DOM_SEP) fsm_nx = flag_eoi === 1 ? KEY_ADD_3 : ABS_PTCT;
-    if (abs_ptct_done) fsm_nx = bdi_eot === 1 ? KEY_ADD_3 : PRO_PTCT;
-    if (pro_ptct_done) fsm_nx = flag_eoi === 1 ? KEY_ADD_3 : ABS_PTCT;
+    if (abs_ptct_done) begin
+      if (bdi_valid_bytes != 4'b1111) begin
+        fsm_nx = KEY_ADD_3;
+      end else begin
+        if (word_cnt < 3) fsm_nx = PAD_PTCT;
+        else fsm_nx = PRO_PTCT;
+      end
+    end
+    if (fsm == PAD_PTCT) fsm_nx = KEY_ADD_3;
+
+    if (pro_ptct_done) begin
+        if (flag_eoi == 0) begin
+          fsm_nx = ABS_PTCT;
+        end else if (flag_ptct_pad == 0) begin
+          fsm_nx = PAD_PTCT;
+        end
+    end
+
+    // if (pro_ptct_done) fsm_nx = flag_eoi === 1 ? KEY_ADD_3 : ABS_PTCT;
     if (fsm == KEY_ADD_3) fsm_nx = FINAL;
     if (fin_done) fsm_nx = KEY_ADD_4;
     if (fsm == KEY_ADD_4) fsm_nx = flag_dec === 1 ? VERIF_TAG : SQUEEZE_TAG;
@@ -250,11 +324,21 @@ module ascon_core (
         // state[state_idx/2][state_idx%2] <= state_i;
         state[state_idx/2][1-(state_idx%2)] <= state_i;
       end
+      if (fsm inside {PAD_AD}) begin
+        state[state_idx/2][1-(state_idx%2)] ^= 32'h00000001;
+        flag_ad_pad <= 'd1;
+      end
+      if (fsm inside {PAD_PTCT}) begin
+        state[state_idx/2][1-(state_idx%2)] ^= 32'h00000001;
+        // state[0][0] ^= 32'h00000001;
+        flag_ptct_pad <= 'd1;
+      end
       // State initialization, hashing
       if (idle_done & op_hash_req) begin
         state[0][0] <= IV_HASH[31:0];
         state[0][1] <= IV_HASH[63:32];
         for (int i = 2; i < 10; i++) state[i/2][i%2] <= 0;
+        if (bdi_eoi) flag_eoi <= 1;//fsm_nx = INIT;
       end
       // State initialization, key addition 1
       if (ld_nonce_done) begin
@@ -303,15 +387,32 @@ module ascon_core (
       if (ld_key | ld_nonce | abs_ad | abs_ptct | sqz_tag | sqz_hash | ver_tag) begin
         word_cnt <= word_cnt + 1;
       end
-      if (ld_key_done|ld_nonce_done|abs_ad_done|abs_ptct_done|sqz_tag_done|sqz_hash_done1|ver_tag_done) begin
+      if (ld_key_done|ld_nonce_done||sqz_tag_done|sqz_hash_done1|ver_tag_done) begin
         word_cnt <= 0;
       end
+      if (abs_ad_done) begin
+        if (fsm_nx == PAD_AD) begin
+          word_cnt <= word_cnt + 1;
+        end else begin
+          word_cnt <= 0;
+        end
+      end
+      if (abs_ptct_done) begin
+        if (fsm_nx == PAD_PTCT) begin
+          word_cnt <= word_cnt + 1;
+        end else begin
+          word_cnt <= 0;
+        end
+      end
+      if (fsm == PAD_AD) word_cnt <= 0;
+      if (fsm == PAD_PTCT) word_cnt <= 0;
       if (sqz_hash_done1) hash_cnt <= hash_cnt + 1;
       if (flag_hash & abs_ad_done & bdi_eoi) hash_cnt <= 0;
       // Setting round counter
       if ((idle_done & op_hash_req) | ld_nonce_done | fsm == KEY_ADD_3) round_cnt <= ROUNDS_A;
       if (((abs_ad_done & flag_hash) | sqz_hash_done1) & !sqz_hash_done2) round_cnt <= ROUNDS_A;
-      if ((abs_ad_done & !flag_hash) | (abs_ptct_done & !bdi_eot)) round_cnt <= ROUNDS_B;
+      if ((abs_ad_done & !flag_hash) | (abs_ptct_done & (fsm_nx == PRO_PTCT))) round_cnt <= ROUNDS_B;
+      if (fsm == PAD_AD) round_cnt <= flag_hash ? ROUNDS_A : ROUNDS_B;
       if (init | pro_ad | pro_ptct | fin) round_cnt <= round_cnt - UROL;
     end
   end
@@ -327,11 +428,14 @@ module ascon_core (
         flag_dec <= 0;
         flag_eoi <= 0;
         flag_hash <= 0;
+        flag_ad_pad <= 0;
+        flag_ptct_pad <= 0;
         auth <= 0;
         auth_intern <= 0;
         auth_valid <= 0;
       end
       if (idle_done & op_hash_req) flag_hash <= 1;
+      if (idle_done & bdi_eoi) flag_eoi <= 1;
       if (ld_nonce_done) begin
         if (bdi_eoi) flag_eoi <= 1;
         flag_dec <= decrypt;
@@ -339,10 +443,16 @@ module ascon_core (
       if (abs_ad_done) begin
         if (bdi_eot == 1) flag_ad_eot <= 1;
         if (bdi_eoi == 1) flag_eoi <= 1;
+        if ((bdi_eot == 1) && (bdi_valid_bytes != 4'b1111)) flag_ad_pad <= 1;
       end
-      if (abs_ptct_done) if (bdi_eoi == 1) flag_eoi <= 1;
+      if (fsm == PAD_AD) flag_ad_pad <= 1;
+      if (abs_ptct_done) begin
+        if (bdi_eoi == 1) flag_eoi <= 1;
+        if ((bdi_eot == 1) && (bdi_valid_bytes != 4'b1111)) flag_ptct_pad <= 1;
+      end
+      if (fsm == PAD_PTCT) flag_ad_pad <= 1;
       if ((fsm == KEY_ADD_4) & flag_dec) auth_intern <= 1;
-      if (ver_tag) auth_intern <= auth_intern & (bdi == state_slice);
+      if (ver_tag) auth_intern <= auth_intern & ({bdi[7:0],bdi[15:8],bdi[23:16],bdi[31:24]} == state_slice);
       if (ver_tag_done) begin
         auth_valid <= 1;
         auth <= auth_intern;
