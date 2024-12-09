@@ -27,7 +27,7 @@ module ascon_core (
     output logic            bdo_eot,
     output logic            auth,
     output logic            auth_valid,
-    input  logic            auth_ready
+    output logic            done
 );
 
   // Core registers
@@ -84,8 +84,7 @@ module ascon_core (
   logic [        CCW-1:0] state_i;
   logic [        CCW-1:0] state_slice;
 
-  assign state_slice = state[state_idx/2][1-(state_idx%2)];  // Dynamic slicing
-  // assign state_slice = state[state_idx/2][state_idx%2];  // Dynamic slicing
+  assign state_slice = state[state_idx/2][state_idx%2];  // Dynamic slicing
 
   // Finate state machine
   typedef enum bit [63:0] {
@@ -114,16 +113,16 @@ module ascon_core (
   // Instantiation of Ascon-p permutation
   asconp asconp_i (
       .round_cnt(round_cnt),
-      .x0_i({state[0][0], state[0][1]}),
-      .x1_i({state[1][0], state[1][1]}),
-      .x2_i({state[2][0], state[2][1]}),
-      .x3_i({state[3][0], state[3][1]}),
-      .x4_i({state[4][0], state[4][1]}),
-      .x0_o({asconp_o[0][0], asconp_o[0][1]}),
-      .x1_o({asconp_o[1][0], asconp_o[1][1]}),
-      .x2_o({asconp_o[2][0], asconp_o[2][1]}),
-      .x3_o({asconp_o[3][0], asconp_o[3][1]}),
-      .x4_o({asconp_o[4][0], asconp_o[4][1]})
+      .x0_i({state[0][1], state[0][0]}),
+      .x1_i({state[1][1], state[1][0]}),
+      .x2_i({state[2][1], state[2][0]}),
+      .x3_i({state[3][1], state[3][0]}),
+      .x4_i({state[4][1], state[4][0]}),
+      .x0_o({asconp_o[0][1], asconp_o[0][0]}),
+      .x1_o({asconp_o[1][1], asconp_o[1][0]}),
+      .x2_o({asconp_o[2][1], asconp_o[2][0]}),
+      .x3_o({asconp_o[3][1], asconp_o[3][0]}),
+      .x4_o({asconp_o[4][1], asconp_o[4][0]})
   );
 
   logic [31:0] state_ii;
@@ -149,20 +148,18 @@ module ascon_core (
       LOAD_NONCE: begin
         state_idx = word_cnt + 6;
         bdi_ready = 1;
-        // state_i   = bdi;
-        state_i = {bdi[7:0],bdi[15:8],bdi[23:16],bdi[31:24]};
+        state_i   = bdi;
       end
       ABS_AD: begin
         state_idx = word_cnt;
         bdi_ready = 1;
         state_i   = state_slice ^ {
-          (bdi[ 7: 0] & {8{bdi_valid_bytes[3]}}) | (8'h01&{8{~bdi_valid_bytes[3]&(bdi_valid_bytes[2])}}),
-          (bdi[15: 8] & {8{bdi_valid_bytes[2]}}) | (8'h01&{8{~bdi_valid_bytes[2]&(bdi_valid_bytes[1])}}),
+          (bdi[31:24] & {8{bdi_valid_bytes[0]}}),
           (bdi[23:16] & {8{bdi_valid_bytes[1]}}) | (8'h01&{8{~bdi_valid_bytes[1]&(bdi_valid_bytes[0])}}),
-          (bdi[31:24] & {8{bdi_valid_bytes[0]}})
+          (bdi[15: 8] & {8{bdi_valid_bytes[2]}}) | (8'h01&{8{~bdi_valid_bytes[2]&(bdi_valid_bytes[1])}}),
+          (bdi[ 7: 0] & {8{bdi_valid_bytes[3]}}) | (8'h01&{8{~bdi_valid_bytes[3]&(bdi_valid_bytes[2])}})
         };
         state_ii = state_i ^ state_slice;
-        // state_i   = state_slice ^ bdi;
       end
       PAD_AD, PAD_PTCT: begin
         state_idx = word_cnt;
@@ -170,39 +167,22 @@ module ascon_core (
       ABS_PTCT: begin
         state_idx = word_cnt;
         if (flag_dec) begin
-          // state_i = bdi;
-          // state_i = {bdi[7:0],bdi[15:8],bdi[23:16],bdi[31:24]};
           state_i = {
-            bdi_valid_bytes[3] ? bdi[ 7: 0] : (bdi_valid_bytes[2] ? (8'h01 ^ (state_slice[31:24])) : (state_slice[31:24])),
-            bdi_valid_bytes[2] ? bdi[15: 8] : (bdi_valid_bytes[1] ? (8'h01 ^ (state_slice[23:16])) : (state_slice[23:16])),
-            bdi_valid_bytes[1] ? bdi[23:16] : (bdi_valid_bytes[0] ? (8'h01 ^ (state_slice[15: 8])) : (state_slice[15: 8])),
-            bdi_valid_bytes[0] ? bdi[31:24] : (state_slice[7:0])
+            bdi_valid_bytes[3] ? bdi[31:24] : (bdi_valid_bytes[2] ? (8'h01 ^ (state_slice[31:24])) : (state_slice[31:24])),
+            bdi_valid_bytes[2] ? bdi[23:16] : (bdi_valid_bytes[1] ? (8'h01 ^ (state_slice[23:16])) : (state_slice[23:16])),
+            bdi_valid_bytes[1] ? bdi[15: 8] : (bdi_valid_bytes[0] ? (8'h01 ^ (state_slice[15: 8])) : (state_slice[15: 8])),
+            bdi_valid_bytes[0] ? bdi[ 7: 0] : (state_slice[7:0])
           };
-          state_ii  = {{8{bdi_valid_bytes[3]}},{8{bdi_valid_bytes[2]}},{8{bdi_valid_bytes[1]}},{8{bdi_valid_bytes[0]}}};
-          state_iii = {bdi[ 7: 0],bdi[15: 8],bdi[23:16],bdi[31:24]};
-          state_iiii = state_slice;
-          state_iiiii = {
-            bdi_valid_bytes[3] ? bdi[ 7: 0] : (bdi_valid_bytes[2] ? (8'h01 ^ (state_slice[31:24])) : (state_slice[31:24])),
-            bdi_valid_bytes[2] ? bdi[15: 8] : (bdi_valid_bytes[1] ? (8'h01 ^ (state_slice[23:16])) : (state_slice[23:16])),
-            bdi_valid_bytes[1] ? bdi[23:16] : (bdi_valid_bytes[0] ? (8'h01 ^ (state_slice[15: 8])) : (state_slice[15: 8])),
-            bdi_valid_bytes[0] ? bdi[31:24] : (state_slice[7:0])
-          };
-
-          // bdo = state_slice ^ state_i;
-          // bdo = {state_slice[7:0],state_slice[15:8],state_slice[23:16],state_slice[31:24]} ^ {state_i[7:0],state_i[15:8],state_i[23:16],state_i[31:24]};
-          {bdo[7:0],bdo[15:8],bdo[23:16],bdo[31:24]} = (state_slice[31:0] ^ state_i[31:0]) & {{8{bdi_valid_bytes[3]}},{8{bdi_valid_bytes[2]}},{8{bdi_valid_bytes[1]}},{8{bdi_valid_bytes[0]}}};
+          bdo = state_slice ^ state_i;
         end else begin
-          // state_i = state_slice ^ bdi;
-          // state_i = state_slice ^ {bdi[7:0],bdi[15:8],bdi[23:16],bdi[31:24]};
-        state_i   = state_slice ^ {
-          (bdi[ 7: 0] & {8{bdi_valid_bytes[3]}}) | (8'h01&{8{~bdi_valid_bytes[3]&(bdi_valid_bytes[2])}}),
-          (bdi[15: 8] & {8{bdi_valid_bytes[2]}}) | (8'h01&{8{~bdi_valid_bytes[2]&(bdi_valid_bytes[1])}}),
-          (bdi[23:16] & {8{bdi_valid_bytes[1]}}) | (8'h01&{8{~bdi_valid_bytes[1]&(bdi_valid_bytes[0])}}),
-          (bdi[31:24] & {8{bdi_valid_bytes[0]}})
-        };
+          state_i   = state_slice ^ {
+            (bdi[31:24] & {8{bdi_valid_bytes[0]}}),
+            (bdi[23:16] & {8{bdi_valid_bytes[1]}}) | (8'h01&{8{~bdi_valid_bytes[1]&(bdi_valid_bytes[0])}}),
+            (bdi[15: 8] & {8{bdi_valid_bytes[2]}}) | (8'h01&{8{~bdi_valid_bytes[2]&(bdi_valid_bytes[1])}}),
+            (bdi[ 7: 0] & {8{bdi_valid_bytes[3]}}) | (8'h01&{8{~bdi_valid_bytes[3]&(bdi_valid_bytes[2])}})
+          };
           state_ii = state_i ^ state_slice;
-          bdo = {state_i[7:0],state_i[15:8],state_i[23:16],state_i[31:24]};
-          // bdo = state_i;
+          bdo = state_i;
         end
         bdi_ready = 1;
         bdo_valid = bdi_valid;
@@ -211,16 +191,14 @@ module ascon_core (
       end
       SQUEEZE_TAG: begin
         state_idx = word_cnt + 6;
-        // bdo       = state_slice;
-        bdo = {state_slice[7:0],state_slice[15:8],state_slice[23:16],state_slice[31:24]};
+        bdo       = state_slice;
         bdo_valid = 1;
         bdo_type  = D_TAG;
         bdo_eot   = word_cnt == 3;
       end
       SQUEEZE_HASH: begin
         state_idx = word_cnt;
-        // bdo       = state_slice;
-        bdo       = {state_slice[7:0],state_slice[15:8],state_slice[23:16],state_slice[31:24]};
+        bdo       = state_slice;
         bdo_valid = 1;
         bdo_type  = D_HASH;
         bdo_eot   = (hash_cnt == 3) & (word_cnt == 1);
@@ -229,7 +207,7 @@ module ascon_core (
         state_idx = word_cnt + 6;
         bdi_ready = 1;
       end
-      default:  ;
+      default: ;
     endcase
   end
 
@@ -291,8 +269,6 @@ module ascon_core (
           fsm_nx = PAD_PTCT;
         end
     end
-
-    // if (pro_ptct_done) fsm_nx = flag_eoi === 1 ? KEY_ADD_3 : ABS_PTCT;
     if (fsm == KEY_ADD_3) fsm_nx = FINAL;
     if (fin_done) fsm_nx = KEY_ADD_4;
     if (fsm == KEY_ADD_4) fsm_nx = flag_dec === 1 ? VERIF_TAG : SQUEEZE_TAG;
@@ -321,16 +297,14 @@ module ascon_core (
   always @(posedge clk) begin
     if (rst == 0) begin
       if (ld_nonce || abs_ad || abs_ptct) begin
-        // state[state_idx/2][state_idx%2] <= state_i;
-        state[state_idx/2][1-(state_idx%2)] <= state_i;
+        state[state_idx/2][state_idx%2] <= state_i;
       end
       if (fsm inside {PAD_AD}) begin
-        state[state_idx/2][1-(state_idx%2)] ^= 32'h00000001;
+        state[state_idx/2][state_idx%2] ^= 32'h00000001;
         flag_ad_pad <= 'd1;
       end
       if (fsm inside {PAD_PTCT}) begin
-        state[state_idx/2][1-(state_idx%2)] ^= 32'h00000001;
-        // state[0][0] ^= 32'h00000001;
+        state[state_idx/2][state_idx%2] ^= 32'h00000001;
         flag_ptct_pad <= 'd1;
       end
       // State initialization, hashing
@@ -338,14 +312,13 @@ module ascon_core (
         state[0][0] <= IV_HASH[31:0];
         state[0][1] <= IV_HASH[63:32];
         for (int i = 2; i < 10; i++) state[i/2][i%2] <= 0;
-        if (bdi_eoi) flag_eoi <= 1;//fsm_nx = INIT;
+        if (bdi_eoi) flag_eoi <= 1;
       end
       // State initialization, key addition 1
       if (ld_nonce_done) begin
         state[0][0] <= IV_AEAD[31:0];
         state[0][1] <= IV_AEAD[63:32];
-        // for (int i = 0; i < 4; i++) state[1+i/2][i%2] <= ascon_key[i];
-        for (int i = 0; i < 4; i++) state[1+i/2][1-(i%2)] <= ascon_key[i];
+        for (int i = 0; i < 4; i++) state[1+i/2][i%2] <= ascon_key[i];
       end
       // Compute Ascon-p
       if (init || pro_ad || pro_ptct || fin) begin
@@ -353,24 +326,20 @@ module ascon_core (
       end
       // Key addition 2/4
       if (key_add_2_done | fsm == KEY_ADD_4) begin
-        for (int i = 0; i < 4; i++) state[3+i/2][1-(i%2)] <= state[3+i/2][1-(i%2)] ^ ascon_key[i];
-        // for (int i = 0; i < 4; i++) state[3+i/2][i%2] <= state[3+i/2][i%2] ^ ascon_key[i];
+        for (int i = 0; i < 4; i++) state[3+i/2][i%2] <= state[3+i/2][i%2] ^ ascon_key[i];
       end
       // Domain separation
       if (fsm == DOM_SEP) begin
-        // state[4][0] <= state[4][0] ^ 32'h00000001;
-        state[4][0] <= state[4][0] ^ 32'h80000000;
-        if (flag_eoi) state[0][1] <= state[0][1] ^ 32'h00000001;  // Padding of empty message
+        state[4][1] <= state[4][1] ^ 32'h80000000;
+        if (flag_eoi) state[0][0] <= state[0][0] ^ 32'h00000001;  // Padding of empty message
       end
       // Key addition 3
       if (fsm == KEY_ADD_3) begin
-        // for (int i = 0; i < 4; i++) state[2+i/2][i%2] <= state[2+i/2][i%2] ^ ascon_key[i];
-        for (int i = 0; i < 4; i++) state[2+i/2][1-(i%2)] <= state[2+i/2][1-(i%2)] ^ ascon_key[i];
+        for (int i = 0; i < 4; i++) state[2+i/2][i%2] <= state[2+i/2][i%2] ^ ascon_key[i];
       end
       // Store key
       if (ld_key) begin
-        // ascon_key[word_cnt[1:0]] <= key;
-        ascon_key[word_cnt[1:0]] <= {key[7:0],key[15:8],key[23:16],key[31:24]};
+        ascon_key[word_cnt[1:0]] <= key;
       end
     end
   end
@@ -433,6 +402,7 @@ module ascon_core (
         auth <= 0;
         auth_intern <= 0;
         auth_valid <= 0;
+        done <= 0;
       end
       if (idle_done & op_hash_req) flag_hash <= 1;
       if (idle_done & bdi_eoi) flag_eoi <= 1;
@@ -452,11 +422,12 @@ module ascon_core (
       end
       if (fsm == PAD_PTCT) flag_ad_pad <= 1;
       if ((fsm == KEY_ADD_4) & flag_dec) auth_intern <= 1;
-      if (ver_tag) auth_intern <= auth_intern & ({bdi[7:0],bdi[15:8],bdi[23:16],bdi[31:24]} == state_slice);
+      if (ver_tag) auth_intern <= auth_intern & (bdi[31:0] == state_slice);
       if (ver_tag_done) begin
         auth_valid <= 1;
         auth <= auth_intern;
       end
+      if ((fsm != IDLE) && (fsm_nx == IDLE)) done <= 'd1;
     end
   end
 
@@ -465,11 +436,11 @@ module ascon_core (
   //////////////////////////////////////////////////
 
   logic [63:0] x0, x1, x2, x3, x4;
-  assign x0 = {state[0][0], state[0][1]};
-  assign x1 = {state[1][0], state[1][1]};
-  assign x2 = {state[2][0], state[2][1]};
-  assign x3 = {state[3][0], state[3][1]};
-  assign x4 = {state[4][0], state[4][1]};
+  assign x0 = {state[0][1], state[0][0]};
+  assign x1 = {state[1][1], state[1][0]};
+  assign x2 = {state[2][1], state[2][0]};
+  assign x3 = {state[3][1], state[3][0]};
+  assign x4 = {state[4][1], state[4][0]};
 
   initial begin
     $dumpfile("tb.vcd");

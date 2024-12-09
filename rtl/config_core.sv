@@ -27,7 +27,8 @@ parameter unsigned KEY_BITS = 128;
 // ////////////////
 
 // parameter logic [63:0] IV_AEAD = 64'h0000000080800c08;
-parameter logic [63:0] IV_AEAD = 64'h808c000100001000;
+// parameter logic [63:0] IV_AEAD = 64'h808c000100001000;
+parameter logic [63:0] IV_AEAD =    64'h00001000808c0001;
 parameter unsigned ROUNDS_A = 12;
 parameter unsigned ROUNDS_B = 8;
 parameter unsigned RATE_AEAD_BITS = 128;
@@ -82,5 +83,6 @@ parameter logic [3:0] D_NULL = 4'h0;
 parameter logic [3:0] D_NONCE = 4'h1;
 parameter logic [3:0] D_AD = 4'h2;      // Also used for hash output
 parameter logic [3:0] D_PTCT = 4'h3;    // Plaintext or ciphertext
+parameter logic [3:0] D_MSG = 4'h3;    // Plaintext or ciphertext
 parameter logic [3:0] D_TAG = 4'h4;
 parameter logic [3:0] D_HASH = 4'h5;

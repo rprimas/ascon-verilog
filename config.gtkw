@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.121 (w)1999-2024 BSI
-[*] Wed Nov 20 19:05:44 2024
+[*] Mon Dec  9 13:45:24 2024
 [*]
 [dumpfile] "/home/rprimas/Git/ascon-verilog/tb.vcd"
-[dumpfile_mtime] "Wed Nov 20 19:05:00 2024"
-[dumpfile_size] 27764
+[dumpfile_mtime] "Mon Dec  9 13:44:35 2024"
+[dumpfile_size] 25848
 [savefile] "/home/rprimas/Git/ascon-verilog/config.gtkw"
-[timestart] 42900
-[size] 1280 1361
-[pos] 3788 32
-*-15.714293 104800 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[timestart] 240800
+[size] 2560 1361
+[pos] 2508 32
+*-14.814291 353500 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.tb.
 [sst_width] 273
@@ -21,8 +21,17 @@ TOP.tb.clk
 TOP.tb.rst
 @200
 -TB
+@28
+TOP.tb.start_tb
+@100000028
+TOP.tb.fsm[63:0]
+TOP.tb.mode[63:0]
 @24
-TOP.tb.tb_byte_cnt[23:0]
+TOP.tb.ad_len[31:0]
+TOP.tb.msg_len[31:0]
+TOP.tb.ad_byte_cnt[31:0]
+TOP.tb.msg_byte_cnt[31:0]
+TOP.tb.byte_cnt[6:0]
 @200
 -KEY
 @22
@@ -64,20 +73,21 @@ TOP.tb.bdo_valid
 TOP.tb.bdo_type[3:0]
 @28
 TOP.tb.bdo_eot
+TOP.tb.ascon_core_i.done
 @200
 -FLAGS
 @28
 TOP.tb.ascon_core_i.flag_dec
 TOP.tb.ascon_core_i.flag_hash
-TOP.tb.ascon_core_i.flag_ad_pad
-TOP.tb.ascon_core_i.flag_ptct_pad
 TOP.tb.ascon_core_i.flag_ad_eot
 TOP.tb.ascon_core_i.flag_eoi
 @200
 -EVENTS
 @28
 TOP.tb.ascon_core_i.abs_ad
+@29
 TOP.tb.ascon_core_i.abs_ad_done
+@28
 TOP.tb.ascon_core_i.abs_ptct
 TOP.tb.ascon_core_i.abs_ptct_done
 @200
@@ -86,11 +96,9 @@ TOP.tb.ascon_core_i.abs_ptct_done
 TOP.tb.ascon_core_i.fsm[63:0]
 @22
 TOP.tb.ascon_core_i.state_idx[3:0]
+TOP.tb.ascon_core_i.state_slice[31:0]
 TOP.tb.ascon_core_i.state_i[31:0]
 TOP.tb.ascon_core_i.state_ii[31:0]
-TOP.tb.ascon_core_i.state_iii[31:0]
-TOP.tb.ascon_core_i.state_iiii[31:0]
-TOP.tb.ascon_core_i.state_iiiii[31:0]
 TOP.tb.ascon_core_i.word_cnt[3:0]
 @24
 TOP.tb.ascon_core_i.round_cnt[3:0]

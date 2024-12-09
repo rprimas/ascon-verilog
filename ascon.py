@@ -6,8 +6,8 @@ NIST SP 800-232
 https://ascon.iaik.tugraz.at/
 """
 
-debug = True
-debugpermutation = True
+debug = False
+debugpermutation = False
 
 # === Ascon hash/xof ===
 
