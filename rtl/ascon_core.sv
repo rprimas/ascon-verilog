@@ -42,7 +42,7 @@ module ascon_core (
   logic op_ld_key_req, op_aead_req, op_hash_req;
   assign op_ld_key_req = key_valid;
   assign op_aead_req = (bdi_type == D_NONCE) & bdi_valid;
-  assign op_hash_req = (bdi_type == D_AD) & hash & bdi_valid;// | ((~bdi_valid) & bdi_eoi));
+  assign op_hash_req = (bdi_type == D_MSG) & hash & bdi_valid;// | ((~bdi_valid) & bdi_eoi));
 
   logic idle_done, ld_key, ld_key_done, ld_nonce, ld_nonce_done, init, init_done, key_add_2_done;
   assign idle_done = (fsm == IDLE) & (op_ld_key_req | op_aead_req | op_hash_req);
@@ -188,6 +188,12 @@ module ascon_core (
         bdo_valid = bdi_valid;
         bdo_type  = D_PTCT;
         bdo_eot   = bdi_eot;
+        if (flag_hash) begin
+          bdo = 'd0;
+          bdo_valid = 'd0;
+          bdo_type  = D_NULL;
+          bdo_eot   = 'd0;
+        end
       end
       SQUEEZE_TAG: begin
         state_idx = word_cnt + 6;
@@ -224,7 +230,8 @@ module ascon_core (
     end
     if (ld_key_done) fsm_nx = LOAD_NONCE;
     if (ld_nonce_done) fsm_nx = INIT;
-    if (init_done) fsm_nx = flag_hash ? (flag_eoi ? PAD_AD : ABS_AD) : KEY_ADD_2;
+        // if (init_done) fsm_nx = flag_hash ? (flag_eoi ? PAD_PTCT : ABS_PTCT) : KEY_ADD_2;
+    if (init_done) fsm_nx = flag_hash ? (flag_eoi ? PAD_PTCT : ABS_PTCT) : KEY_ADD_2;
     if (key_add_2_done) begin
       if (flag_eoi) fsm_nx = DOM_SEP;
       else if (bdi_type == D_AD) fsm_nx = ABS_AD;
@@ -240,8 +247,9 @@ module ascon_core (
     end
     if (fsm == PAD_AD) fsm_nx = PRO_AD;
     if (pro_ad_done) begin
-      if (flag_hash) fsm_nx = flag_eoi ? SQUEEZE_HASH : ABS_AD;
-      else begin
+      // if (flag_hash) fsm_nx = flag_eoi ? SQUEEZE_HASH : ABS_AD;
+      // else
+      begin
         if (flag_ad_eot == 0) begin
           fsm_nx = ABS_AD;
         end else if (flag_ad_pad == 0) begin
@@ -254,25 +262,31 @@ module ascon_core (
     if (fsm == DOM_SEP) fsm_nx = flag_eoi === 1 ? KEY_ADD_3 : ABS_PTCT;
     if (abs_ptct_done) begin
       if (bdi_valid_bytes != 4'b1111) begin
-        fsm_nx = KEY_ADD_3;
+        if (flag_hash) fsm_nx = FINAL;
+        else fsm_nx = KEY_ADD_3;
       end else begin
         if (word_cnt < 3) fsm_nx = PAD_PTCT;
         else fsm_nx = PRO_PTCT;
       end
     end
-    if (fsm == PAD_PTCT) fsm_nx = KEY_ADD_3;
-
+    if (fsm == PAD_PTCT) begin
+      if (flag_hash) fsm_nx = FINAL;
+      else fsm_nx = KEY_ADD_3;
+    end
     if (pro_ptct_done) begin
-        if (flag_eoi == 0) begin
-          fsm_nx = ABS_PTCT;
-        end else if (flag_ptct_pad == 0) begin
-          fsm_nx = PAD_PTCT;
-        end
+      if (flag_eoi == 0) begin
+        fsm_nx = ABS_PTCT;
+      end else if (flag_ptct_pad == 0) begin
+        fsm_nx = PAD_PTCT;
+      end
     end
     if (fsm == KEY_ADD_3) fsm_nx = FINAL;
-    if (fin_done) fsm_nx = KEY_ADD_4;
+    if (fin_done) begin
+      if (flag_hash) fsm_nx = SQUEEZE_HASH;
+      else fsm_nx = KEY_ADD_4;
+    end
     if (fsm == KEY_ADD_4) fsm_nx = flag_dec === 1 ? VERIF_TAG : SQUEEZE_TAG;
-    if (sqz_hash_done1) fsm_nx = PRO_AD;
+    if (sqz_hash_done1) fsm_nx = FINAL;
     if (sqz_hash_done2) fsm_nx = IDLE;
     if (sqz_tag_done) fsm_nx = IDLE;
     if (ver_tag_done) fsm_nx = IDLE;
@@ -379,7 +393,7 @@ module ascon_core (
       if (flag_hash & abs_ad_done & bdi_eoi) hash_cnt <= 0;
       // Setting round counter
       if ((idle_done & op_hash_req) | ld_nonce_done | fsm == KEY_ADD_3) round_cnt <= ROUNDS_A;
-      if (((abs_ad_done & flag_hash) | sqz_hash_done1) & !sqz_hash_done2) round_cnt <= ROUNDS_A;
+      if (((abs_ptct_done & flag_hash) | sqz_hash_done1) & !sqz_hash_done2) round_cnt <= ROUNDS_A;
       if ((abs_ad_done & !flag_hash) | (abs_ptct_done & (fsm_nx == PRO_PTCT))) round_cnt <= ROUNDS_B;
       if (fsm == PAD_AD) round_cnt <= flag_hash ? ROUNDS_A : ROUNDS_B;
       if (init | pro_ad | pro_ptct | fin) round_cnt <= round_cnt - UROL;

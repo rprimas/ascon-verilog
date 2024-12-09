@@ -42,7 +42,7 @@ module tb;
     XOF         = "XOF",
     NONE        = "NONE"
   } mode_t;
-  mode_t [1:0] modes = {AEAD_ENC, AEAD_DEC, HASH};//, XOF};
+  mode_t [2:0] modes = {AEAD_ENC, AEAD_DEC, HASH};//, XOF};
   mode_t mode;
 
   //////////////////////////
@@ -155,6 +155,7 @@ module tb;
       bdi_type  = D_MSG;
       bdi       = tb_msg[msg_byte_cnt*8+:'d32];
       if (mode == AEAD_DEC) bdi = tb_ct[msg_byte_cnt*8+:'d32];
+      if (mode == HASH) bdi = tb_msg[msg_byte_cnt*8+:'d32];
       bdi_eoi   = fsm_nx != fsm;
     end
     if (fsm == WR_TAG) begin
@@ -255,7 +256,8 @@ module tb;
       #10;
       start_tb = 0;
       #100;
-      wait(done);
+      // wait(done);
+      #600;
       #10;
     end
     $finish;

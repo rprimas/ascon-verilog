@@ -48,7 +48,7 @@ parameter unsigned RATE_AEAD_WORDS = RATE_AEAD_BITS/32;
 // ///////////////////
 
 // parameter logic [63:0] IV_HASH = 64'h0000010000400c00;
-parameter logic [63:0] IV_HASH = 64'h00cc000200000801;
+parameter logic [63:0] IV_HASH = 64'h0000080100cc0002;
 // parameter unsigned RATE_HASH_BITS = 64;
 
 ///////////////////

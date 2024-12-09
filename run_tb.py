@@ -25,8 +25,8 @@ VERBOSE_AEAD_SW = 0
 VERBOSE_HASH_SW = 0
 
 # Specify encryption, decryption, and/or hash operations for the Ascon core
-INCL_ENC = 0
-INCL_DEC = 0
+INCL_ENC = 1
+INCL_DEC = 1
 INCL_HASH = 1
 
 # Print inputs/outputs of Ascon software implementation
