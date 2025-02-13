@@ -2,17 +2,20 @@
 
 [Ascon](https://ascon.iaik.tugraz.at) is a family of authenticated encryption and hashing algorithms designed to be lightweight and easy to implement, even with added countermeasures against side-channel attacks. Ascon has been selected as new standard for lightweight cryptography in the [NIST Lightweight Cryptography competition](https://www.nist.gov/news-events/news/2023/02/nist-selects-lightweight-cryptography-algorithms-protect-small-devices) (2019–2023). The current draft standard of Ascon is available [here](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-232.ipd.pdf).
 
+> [!NOTE]
+> This is a work-in-progress hardware implementation of the Ascon family of lightweight cryptographic algorithms that is compatible with the current draft standard [NIST SP 800-232](https://csrc.nist.gov/pubs/sp/800/232/ipd).
+
 ## Available Variants
 
-- **v1**
+- **UROL_1**
   - Ascon-AEAD128 + Ascon-Hash256.
   - 32-bit block data interface.
   - 1 permutation round per clock cycle.
-- **v2**
+- **UROL_2**
   - Ascon-AEAD128 + Ascon-Hash256.
   - 32-bit block data interface.
   - 2 permutation rounds per clock cycle.
-- **v3**
+- **UROL_4**
   - Ascon-AEAD128 + Ascon-Hash256.
   - 32-bit block data interface.
   - 4 permutation rounds per clock cycle.
@@ -22,15 +25,12 @@
 - `rtl/ascon_core.sv`: Verilog implementation of the Ascon core.
 - `rtl/asconp.sv`: Verilog implementation of the Ascon permutation.
 - `rtl/config_core.sv`: Configuration file for the Ascon core and test bench.
-- `rtl/config_v*.sv`: Configuration files for the Ascon core.
-- `rtl/tb.sv`: Verilog test bench for the Ascon core.
-- `tv/*`: Test vector files for the verilog test bench.
+- `ascon.py`: Reference software implementation of Ascon, used by `test.py`.
 - `LICENSE`: License file.
-- `Makefile`: Commands for running verilog test bench and optionally showing waveforms in GTKWave.
+- `Makefile`: Commands for running [cocotb](https://www.cocotb.org/) verilator test bench.
 - `README.md`: This README.
-- `ascon.py`: Python software implementation of Ascon, used by `run_tb.py`.
-- `config.gtkw`: Optional configuration file for the GTKWave waveform viewer.
-- `run_tb.py`: Python script for running Ascon in both verilog/python and comparing the results.
+- `surfer.ron`: Configuration file for the [Surfer](https://surfer-project.org/) waveform viewer.
+- `test.py`: Python script for running test bench, used by cocotb.
 
 ## Interface
 
@@ -87,23 +87,16 @@ You can have a look at `rtl/tb.sv` for an example of how the Ascon core interfac
     - `dnf install verilator-devel`
   - Build from source:
     - [Git Quick Install](https://verilator.org/guide/latest/install.html#git-quick-install)
-- Execute verilog test bench:
+- Install the [cocotb](https://www.cocotb.org/) open-source verilog test bench environment:    
+  - `pip install cocotb`
+- Execute cocotb test bench:
   - `make`
-  - Runs `rtl/tb.sv` using the **v1** variant of the Ascon core and `tv/tv.txt` as input.
-  - For other variants use `make v2` etc..
-- Execute verilog test bench and show resulting waveforms:
-  - `make wave`
-  - Same as `make` but also opens the resulting `tb.vcd` in GTKWave.
-  - For other variants use `make v2_wave` etc..
 
-## Automatic Generation and Execution of Test Vectors
+## View waveforms
 
-- `python run_tb.py -s`
-  - Generate a new `tv/tv.txt`, run `rtl/tb.sv` using **v1** of the Ascon core, and compare output to the Ascon software implementation in `ascon.py`.
-  - For other variants add `-v 2` etc..
-- `python run_tb.py -w`
-  - Same as `python run_tb.py -s` except the entire process is repeated for many inputs with different lengths.
-  - For other variants add `-v 2` etc..
+- Install the [Surfer](https://surfer-project.org/) waveform viewer.
+- View waveform of cocotb test bench run:
+  - `make surf`
 
 ## Contact
 

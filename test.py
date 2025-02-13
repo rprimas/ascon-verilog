@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: CC0-1.0
 
 import cocotb
-from cocotb.triggers import Timer
 from cocotb.triggers import RisingEdge
 from cocotb.clock import Clock
 

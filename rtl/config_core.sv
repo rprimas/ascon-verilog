@@ -58,3 +58,11 @@ parameter logic [3:0] D_PTCT = 4'h3;
 parameter logic [3:0] D_MSG = 4'h3;
 parameter logic [3:0] D_TAG = 4'h4;
 parameter logic [3:0] D_HASH = 4'h5;
+
+`ifdef UROL1
+parameter logic [3:0] UROL = 1;
+`elsif UROL2
+parameter logic [3:0] UROL = 2;
+`elsif UROL4
+parameter logic [3:0] UROL = 4;
+`endif
