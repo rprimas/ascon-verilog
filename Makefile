@@ -1,46 +1,23 @@
-# Licensed under the Creative Commons 1.0 Universal License (CC0), see LICENSE
-# for details.
-#
-# Author: Robert Primas (rprimas 'at' proton.me, https://rprimas.github.io)
-#
-# Makefile for running verilog test bench and optionally viewing wave forms
-# in GTKWave.
+# This file is public domain, it can be freely copied without restrictions.
+# SPDX-License-Identifier: CC0-1.0
 
-SRC = rtl/config_core.sv rtl/tb.sv rtl/ascon_core.sv rtl/asconp.sv
+# Makefile
 
-VARGS = --binary -j 8 --trace-fst --top-module tb # Generate FST waveforms
-# VARGS = --binary -j 8 --trace --top-module tb # Generate VCD waveforms
+# defaults
+SIM ?= verilator
+TOPLEVEL_LANG ?= verilog
+EXTRA_ARGS += --trace --trace-structs
 
-GTKARGS = -6
+VERILOG_SOURCES += $(PWD)/rtl/config_v1.sv $(PWD)/rtl/config_core.sv $(PWD)/rtl/ascon_core.sv $(PWD)/rtl/asconp.sv
 
-v1:
-	verilator $(VARGS) rtl/config_v1.sv $(SRC)
-	./obj_dir/Vtb
+# TOPLEVEL is the name of the toplevel module in your Verilog or VHDL file
+TOPLEVEL = ascon_core
 
-v2:
-	verilator $(VARGS) rtl/config_v2.sv $(SRC)
-	./obj_dir/Vtb
+# MODULE is the basename of the Python test file
+MODULE = test
 
-v3:
-	verilator $(VARGS) rtl/config_v3.sv $(SRC)
-	./obj_dir/Vtb
+# include cocotb's make rules to take care of the simulator setup
+include $(shell cocotb-config --makefiles)/Makefile.sim
 
-v4:
-	verilator $(VARGS) rtl/config_v4.sv $(SRC)
-	./obj_dir/Vtb
-
-v1wave: v1
-	gtkwave ./tb.vcd config.gtkw $(GTKARGS)
-
-v2_wave: v2
-	gtkwave ./tb.vcd config.gtkw $(GTKARGS)
-
-v3_wave: v3
-	gtkwave ./tb.vcd config.gtkw $(GTKARGS)
-
-v4_wave: v4
-	gtkwave ./tb.vcd config.gtkw $(GTKARGS)
-
-.PHONY: clean
-clean:
-	rm -f -r tb tb.vcd obj_dir/
+surf:
+	surfer -s surfer.ron dump.vcd

@@ -1,4 +1,5 @@
-tb.vcd
-obj_dir/
-.vscode
+sim_build/
 __pycache__/
+.vscode/
+results.xml
+*.vcd

@@ -1,6 +1,0 @@
-# Specify hashing
-INS 20000000
-
-# Load message data
-INS 51000000
-

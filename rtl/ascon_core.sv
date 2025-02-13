@@ -41,8 +41,8 @@ module ascon_core (
   // Utility signals
   logic op_ld_key_req, op_aead_req, op_hash_req;
   assign op_ld_key_req = key_valid;
-  assign op_aead_req = (bdi_type == D_NONCE) & bdi_valid;
-  assign op_hash_req = (bdi_type == D_MSG) & hash & bdi_valid;// | ((~bdi_valid) & bdi_eoi));
+  assign op_aead_req   = (bdi_type == D_NONCE) & bdi_valid;
+  assign op_hash_req   = (bdi_type == D_MSG) & hash & bdi_valid;
 
   logic idle_done, ld_key, ld_key_done, ld_nonce, ld_nonce_done, init, init_done, key_add_2_done;
   assign idle_done = (fsm == IDLE) & (op_ld_key_req | op_aead_req | op_hash_req);
@@ -56,13 +56,13 @@ module ascon_core (
 
   logic abs_ad, abs_ad_done, pro_ad, pro_ad_done;
   assign abs_ad = (fsm == ABS_AD) & (bdi_type == D_AD) & bdi_valid & bdi_ready;
-  assign abs_ad_done = ((word_cnt == (flag_hash == 0 ? 4 : 2)) | bdi_eot) & abs_ad;
+  assign abs_ad_done = ((word_cnt == 4) | bdi_eot) & abs_ad;
   assign pro_ad = (fsm == PRO_AD);
   assign pro_ad_done = (round_cnt == UROL) & pro_ad;
 
   logic abs_ptct, abs_ptct_done, pro_ptct, pro_ptct_done;
-  assign abs_ptct = (fsm == ABS_PTCT) & (bdi_type == D_PTCT) & bdi_valid & bdi_ready & bdo_ready;
-  assign abs_ptct_done = ((word_cnt == 4) | bdi_eot) & abs_ptct;
+  assign abs_ptct = (fsm == ABS_PTCT) & (bdi_type == D_PTCT) & bdi_valid & bdi_ready & (flag_hash == 0 ? bdo_ready : 1);
+  assign abs_ptct_done = ((word_cnt == (flag_hash == 0 ? 3 : 1)) | bdi_eot) & abs_ptct;
   assign pro_ptct = (fsm == PRO_PTCT);
   assign pro_ptct_done = (round_cnt == UROL) & pro_ptct;
 
@@ -87,7 +87,7 @@ module ascon_core (
   assign state_slice = state[state_idx/2][state_idx%2];  // Dynamic slicing
 
   // Finate state machine
-  typedef enum bit [63:0] {
+  typedef enum logic [63:0] {
     IDLE         = "IDLE",
     LOAD_KEY     = "LD_KEY",
     LOAD_NONCE   = "LD_NONCE",
@@ -125,11 +125,6 @@ module ascon_core (
       .x4_o({asconp_o[4][1], asconp_o[4][0]})
   );
 
-  logic [31:0] state_ii;
-  logic [31:0] state_iii;
-  logic [31:0] state_iiii;
-  logic [31:0] state_iiiii;
-
   /////////////////////
   // Control Signals //
   /////////////////////
@@ -154,12 +149,11 @@ module ascon_core (
         state_idx = word_cnt;
         bdi_ready = 1;
         state_i   = state_slice ^ {
-          (bdi[31:24] & {8{bdi_valid_bytes[0]}}),
-          (bdi[23:16] & {8{bdi_valid_bytes[1]}}) | (8'h01&{8{~bdi_valid_bytes[1]&(bdi_valid_bytes[0])}}),
-          (bdi[15: 8] & {8{bdi_valid_bytes[2]}}) | (8'h01&{8{~bdi_valid_bytes[2]&(bdi_valid_bytes[1])}}),
-          (bdi[ 7: 0] & {8{bdi_valid_bytes[3]}}) | (8'h01&{8{~bdi_valid_bytes[3]&(bdi_valid_bytes[2])}})
+          (bdi[31:24] & {8{bdi_valid_bytes[3]}}) | (8'h01&{8{~bdi_valid_bytes[3]&(bdi_valid_bytes[2])}}),
+          (bdi[23:16] & {8{bdi_valid_bytes[2]}}) | (8'h01&{8{~bdi_valid_bytes[2]&(bdi_valid_bytes[1])}}),
+          (bdi[15: 8] & {8{bdi_valid_bytes[1]}}) | (8'h01&{8{~bdi_valid_bytes[1]&(bdi_valid_bytes[0])}}),
+          (bdi[ 7: 0] & {8{bdi_valid_bytes[0]}})
         };
-        state_ii = state_i ^ state_slice;
       end
       PAD_AD, PAD_PTCT: begin
         state_idx = word_cnt;
@@ -171,17 +165,16 @@ module ascon_core (
             bdi_valid_bytes[3] ? bdi[31:24] : (bdi_valid_bytes[2] ? (8'h01 ^ (state_slice[31:24])) : (state_slice[31:24])),
             bdi_valid_bytes[2] ? bdi[23:16] : (bdi_valid_bytes[1] ? (8'h01 ^ (state_slice[23:16])) : (state_slice[23:16])),
             bdi_valid_bytes[1] ? bdi[15: 8] : (bdi_valid_bytes[0] ? (8'h01 ^ (state_slice[15: 8])) : (state_slice[15: 8])),
-            bdi_valid_bytes[0] ? bdi[ 7: 0] : (state_slice[7:0])
+            bdi_valid_bytes[0] ? bdi[7:0] : (state_slice[7:0])
           };
           bdo = state_slice ^ state_i;
         end else begin
           state_i   = state_slice ^ {
-            (bdi[31:24] & {8{bdi_valid_bytes[0]}}),
-            (bdi[23:16] & {8{bdi_valid_bytes[1]}}) | (8'h01&{8{~bdi_valid_bytes[1]&(bdi_valid_bytes[0])}}),
-            (bdi[15: 8] & {8{bdi_valid_bytes[2]}}) | (8'h01&{8{~bdi_valid_bytes[2]&(bdi_valid_bytes[1])}}),
-            (bdi[ 7: 0] & {8{bdi_valid_bytes[3]}}) | (8'h01&{8{~bdi_valid_bytes[3]&(bdi_valid_bytes[2])}})
+            (bdi[31:24] & {8{bdi_valid_bytes[3]}}) | (8'h01&{8{~bdi_valid_bytes[3]&(bdi_valid_bytes[2])}}),
+            (bdi[23:16] & {8{bdi_valid_bytes[2]}}) | (8'h01&{8{~bdi_valid_bytes[2]&(bdi_valid_bytes[1])}}),
+            (bdi[15: 8] & {8{bdi_valid_bytes[1]}}) | (8'h01&{8{~bdi_valid_bytes[1]&(bdi_valid_bytes[0])}}),
+            (bdi[ 7: 0] & {8{bdi_valid_bytes[0]}})
           };
-          state_ii = state_i ^ state_slice;
           bdo = state_i;
         end
         bdi_ready = 1;
@@ -191,20 +184,20 @@ module ascon_core (
         if (flag_hash) begin
           bdo = 'd0;
           bdo_valid = 'd0;
-          bdo_type  = D_NULL;
-          bdo_eot   = 'd0;
+          bdo_type = D_NULL;
+          bdo_eot = 'd0;
         end
       end
       SQUEEZE_TAG: begin
         state_idx = word_cnt + 6;
-        bdo       = state_slice;
+        bdo       = {state_slice[7:0], state_slice[15:8], state_slice[23:16], state_slice[31:24]};
         bdo_valid = 1;
         bdo_type  = D_TAG;
         bdo_eot   = word_cnt == 3;
       end
       SQUEEZE_HASH: begin
         state_idx = word_cnt;
-        bdo       = state_slice;
+        bdo       = {state_slice[7:0], state_slice[15:8], state_slice[23:16], state_slice[31:24]};
         bdo_valid = 1;
         bdo_type  = D_HASH;
         bdo_eot   = (hash_cnt == 3) & (word_cnt == 1);
@@ -213,7 +206,7 @@ module ascon_core (
         state_idx = word_cnt + 6;
         bdi_ready = 1;
       end
-      default: ;
+      default:  ;
     endcase
   end
 
@@ -230,7 +223,6 @@ module ascon_core (
     end
     if (ld_key_done) fsm_nx = LOAD_NONCE;
     if (ld_nonce_done) fsm_nx = INIT;
-        // if (init_done) fsm_nx = flag_hash ? (flag_eoi ? PAD_PTCT : ABS_PTCT) : KEY_ADD_2;
     if (init_done) fsm_nx = flag_hash ? (flag_eoi ? PAD_PTCT : ABS_PTCT) : KEY_ADD_2;
     if (key_add_2_done) begin
       if (flag_eoi) fsm_nx = DOM_SEP;
@@ -265,7 +257,8 @@ module ascon_core (
         if (flag_hash) fsm_nx = FINAL;
         else fsm_nx = KEY_ADD_3;
       end else begin
-        if (word_cnt < 3) fsm_nx = PAD_PTCT;
+        if ((word_cnt < 3) && (flag_hash == 'd0)) fsm_nx = PAD_PTCT;
+        else if ((word_cnt < 1) && (flag_hash == 'd1)) fsm_nx = PAD_PTCT;
         else fsm_nx = PRO_PTCT;
       end
     end
@@ -370,7 +363,7 @@ module ascon_core (
       if (ld_key | ld_nonce | abs_ad | abs_ptct | sqz_tag | sqz_hash | ver_tag) begin
         word_cnt <= word_cnt + 1;
       end
-      if (ld_key_done|ld_nonce_done||sqz_tag_done|sqz_hash_done1|ver_tag_done) begin
+      if (ld_key_done | ld_nonce_done || sqz_tag_done | sqz_hash_done1 | ver_tag_done) begin
         word_cnt <= 0;
       end
       if (abs_ad_done) begin
@@ -394,9 +387,17 @@ module ascon_core (
       // Setting round counter
       if ((idle_done & op_hash_req) | ld_nonce_done | fsm == KEY_ADD_3) round_cnt <= ROUNDS_A;
       if (((abs_ptct_done & flag_hash) | sqz_hash_done1) & !sqz_hash_done2) round_cnt <= ROUNDS_A;
-      if ((abs_ad_done & !flag_hash) | (abs_ptct_done & (fsm_nx == PRO_PTCT))) round_cnt <= ROUNDS_B;
+      // if ((abs_ad_done & !flag_hash) | (abs_ptct_done & (fsm_nx == PRO_PTCT))) round_cnt <= ROUNDS_B; // todo!flaghash?
+      if (abs_ad_done & !flag_hash) round_cnt <= ROUNDS_B;  // todo!flaghash?
+      if ((abs_ptct_done & (fsm_nx == PRO_PTCT))) round_cnt <= ROUNDS_B;  // todo!flaghash?
+      if ((abs_ptct_done & flag_hash & (fsm_nx == PRO_PTCT)))
+        round_cnt <= ROUNDS_A;  // todo!flaghash?
+
+
+
       if (fsm == PAD_AD) round_cnt <= flag_hash ? ROUNDS_A : ROUNDS_B;
       if (init | pro_ad | pro_ptct | fin) round_cnt <= round_cnt - UROL;
+      if ((fsm == PAD_PTCT) && (fsm_nx == FINAL)) round_cnt <= ROUNDS_A;
     end
   end
 
@@ -456,10 +457,10 @@ module ascon_core (
   assign x3 = {state[3][1], state[3][0]};
   assign x4 = {state[4][1], state[4][0]};
 
-  initial begin
-    $dumpfile("tb.vcd");
-    $dumpvars(0, fsm, flag_ad_eot, flag_dec, flag_eoi, flag_hash, word_cnt, round_cnt, hash_cnt,
-              x0, x1, x2, x3, x4);
-  end
+  // initial begin
+  //   $dumpfile("tb.vcd");
+  //   $dumpvars(0, fsm, flag_ad_eot, flag_dec, flag_eoi, flag_hash, word_cnt, round_cnt, hash_cnt,
+  //             x0, x1, x2, x3, x4);
+  // end
 
 endmodule  // ascon_core
