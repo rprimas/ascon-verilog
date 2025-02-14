@@ -10,8 +10,9 @@ from enum import Enum
 
 from ascon import *
 
-VERBOSE = 0
+VERBOSE = 1
 RUNS = 5
+
 
 class Mode(Enum):
     Ascon_Nop = 0
@@ -71,6 +72,12 @@ async def receive_data(dut, type, len=16):
     return data
 
 
+async def toggle(dut, signalStr, value):
+    eval(signalStr, locals=dict(dut=cocotb.top)).value = value
+    await RisingEdge(dut.clk)
+    eval(signalStr, locals=dict(dut=cocotb.top)).value = 0
+
+
 # ,------.                                      ,--.
 # |  .---',--,--,  ,---.,--.--.,--. ,--.,---. ,-'  '-.
 # |  `--, |      \| .--'|  .--' \  '  /| .-. |'-.  .-'
@@ -84,11 +91,10 @@ async def test_enc(dut):
 
     # init test
     random.seed(31415)
+    mode = Mode.Ascon_AEAD128_Enc
     clock = Clock(dut.clk, 1, units="ns")
     cocotb.start_soon(clock.start(start_high=False))
-    dut.rst.value = 1
-    await RisingEdge(dut.clk)
-    dut.rst.value = 0
+    await cocotb.start(toggle(dut, "dut.rst", 1))
     await RisingEdge(dut.clk)
 
     key = bytearray(bytes.fromhex(""))
@@ -104,9 +110,7 @@ async def test_enc(dut):
 
     for msglen in range(RUNS):
         for adlen in range(RUNS):
-            dut._log.info(
-                "test      %s %d %d", Mode.Ascon_AEAD128_Dec.name, adlen, msglen
-            )
+            dut._log.info("test      %s %d %d", mode.name, adlen, msglen)
 
             ad = bytearray(bytes.fromhex(""))
             for i in range(adlen):
@@ -125,6 +129,8 @@ async def test_enc(dut):
                 dut._log.info("ct        " + "".join("{:02X}".format(x) for x in ct))
                 dut._log.info("tag       " + "".join("{:02X}".format(x) for x in tag))
 
+            await cocotb.start(toggle(dut, "dut.mode", mode.value))
+
             # send key
             k = 0
             while k < 4:
@@ -135,7 +141,6 @@ async def test_enc(dut):
                     k += 1
             dut.key.value = 0
             dut.key_valid.value = 0
-            dut.decrypt.value = 0
 
             # send npub
             await send_data(dut, npub, 1, 0, (adlen == 0) and (msglen == 0))
@@ -183,11 +188,10 @@ async def test_dec(dut):
 
     # init test
     random.seed(31415)
+    mode = Mode.Ascon_AEAD128_Dec
     clock = Clock(dut.clk, 1, units="ns")
     cocotb.start_soon(clock.start(start_high=False))
-    dut.rst.value = 1
-    await RisingEdge(dut.clk)
-    dut.rst.value = 0
+    await cocotb.start(toggle(dut, "dut.rst", 1))
     await RisingEdge(dut.clk)
 
     key = bytearray(bytes.fromhex(""))
@@ -203,9 +207,7 @@ async def test_dec(dut):
 
     for msglen in range(RUNS):
         for adlen in range(RUNS):
-            dut._log.info(
-                "test      %s %d %d", Mode.Ascon_AEAD128_Dec.name, adlen, msglen
-            )
+            dut._log.info("test      %s %d %d", mode.name, adlen, msglen)
 
             ad = bytearray(bytes.fromhex(""))
             for i in range(adlen):
@@ -224,6 +226,8 @@ async def test_dec(dut):
                 dut._log.info("ct        " + "".join("{:02X}".format(x) for x in ct))
                 dut._log.info("tag       " + "".join("{:02X}".format(x) for x in tag))
 
+            await cocotb.start(toggle(dut, "dut.mode", mode.value))
+
             # send key
             k = 0
             while k < 4:
@@ -234,7 +238,6 @@ async def test_dec(dut):
                     k += 1
             dut.key.value = 0
             dut.key_valid.value = 0
-            dut.decrypt.value = 1
 
             # send npub
             await send_data(dut, npub, 1, 0, (adlen == 0) and (msglen == 0))
@@ -280,18 +283,17 @@ async def test_hash(dut):
 
     # init test
     random.seed(31415)
+    mode = Mode.Ascon_Hash256
     clock = Clock(dut.clk, 1, units="ns")
     cocotb.start_soon(clock.start(start_high=False))
-    dut.rst.value = 1
-    await RisingEdge(dut.clk)
-    dut.rst.value = 0
+    await cocotb.start(toggle(dut, "dut.rst", 1))
     await RisingEdge(dut.clk)
 
     if VERBOSE >= 1:
         dut._log.info("------------------------------------------")
 
     for msglen in range(RUNS**2):
-        dut._log.info("test      %s %d", Mode.Ascon_Hash256.name, msglen)
+        dut._log.info("test      %s %d", mode.name, msglen)
 
         msg = bytearray(bytes.fromhex(""))
         for i in range(msglen):
@@ -304,7 +306,7 @@ async def test_hash(dut):
             dut._log.info("msg       " + "".join("{:02X}".format(x) for x in msg))
             dut._log.info("hash      " + "".join("{:02X}".format(x) for x in hash))
 
-        dut.hash.value = 1
+        await cocotb.start(toggle(dut, "dut.mode", mode.value))
         dut.bdi_valid.value = 1
         dut.bdi_type.value = 3
         if msglen == 0:

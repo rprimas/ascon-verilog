@@ -39,16 +39,13 @@ parameter unsigned RATE_HASH_WORDS = RATE_HASH_BITS / 32;
 parameter unsigned CCW = 32;
 parameter unsigned CCSW = 32;
 
-// Operation types
-parameter logic [3:0] OP_DO_ENC = 4'h0;
-parameter logic [3:0] OP_DO_DEC = 4'h1;
-parameter logic [3:0] OP_DO_HASH = 4'h2;
-parameter logic [3:0] OP_LD_KEY = 4'h3;
-parameter logic [3:0] OP_LD_NONCE = 4'h4;
-parameter logic [3:0] OP_LD_AD = 4'h5;
-parameter logic [3:0] OP_LD_PT = 4'h6;
-parameter logic [3:0] OP_LD_CT = 4'h7;
-parameter logic [3:0] OP_LD_TAG = 4'h8;
+// Mode types
+typedef enum logic [3:0] {
+  M_NOP  = 0,
+  M_ENC  = 1,
+  M_DEC  = 2,
+  M_HASH = 3
+} mode_e;
 
 // Interface data types
 parameter logic [3:0] D_NULL = 4'h0;
