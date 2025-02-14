@@ -56,10 +56,10 @@ parameter logic [3:0] D_MSG = 4'h3;
 parameter logic [3:0] D_TAG = 4'h4;
 parameter logic [3:0] D_HASH = 4'h5;
 
-`ifdef UROL1
+`ifdef V1
 parameter logic [3:0] UROL = 1;
-`elsif UROL2
+`elsif V2
 parameter logic [3:0] UROL = 2;
-`elsif UROL4
+`elsif V3
 parameter logic [3:0] UROL = 4;
 `endif

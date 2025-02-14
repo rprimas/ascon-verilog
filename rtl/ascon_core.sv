@@ -12,7 +12,7 @@ module ascon_core (
     input  logic            key_valid,
     output logic            key_ready,
     input  logic [ CCW-1:0] bdi,
-    input  logic            bdi_valid,
+    // input  logic            bdi_valid,
     input  logic [     3:0] bdi_valid_bytes,
     output logic            bdi_ready,
     input  logic [     3:0] bdi_type,
@@ -29,6 +29,32 @@ module ascon_core (
     output logic            done
 );
 
+  function static logic [31:0] swap(logic [31:0] in);
+    begin
+      swap = {in[7:0], in[15:8], in[23:16], in[31:24]};
+    end
+  endfunction
+
+  // Pad input of: absorb ad, absorb msg (during enc)
+  function static logic [31:0] pad(logic [31:0] in, logic [3:0] val);
+    begin
+      pad[31:24] = val[3] ? (in[31:24]) : (val[2] ? 'd1 : 'd0);
+      pad[23:16] = val[2] ? (in[23:16]) : (val[1] ? 'd1 : 'd0);
+      pad[15:8]  = val[1] ? (in[15:8]) : (val[0] ? 'd1 : 'd0);
+      pad[7:0]   = val[0] ? in[7:0] : 'd0;
+    end
+  endfunction
+
+  // Pad input of: absorb msg (during enc)
+  function static logic [31:0] pad2(logic [31:0] in1, logic [31:0] in2, logic [3:0] val);
+    begin
+      pad2[31:24] = val[3] ? (in1[31:24]) : (val[2] ? 'd1 ^ in2[31:24] : in2[31:24]);
+      pad2[23:16] = val[2] ? (in1[23:16]) : (val[1] ? 'd1 ^ in2[23:16] : in2[23:16]);
+      pad2[15:8]  = val[1] ? (in1[15:8]) : (val[0] ? 'd1 ^ in2[15:8] : in2[15:8]);
+      pad2[7:0]   = val[0] ? in1[7:0] : in2[7:0];
+    end
+  endfunction
+
   // Core registers
   logic [LANE_BITS/2-1:0] state     [      LANES] [2];
   logic [LANE_BITS/2-1:0] ascon_key [KEY_BITS/32];
@@ -36,71 +62,76 @@ module ascon_core (
   logic [            3:0] word_cnt;
   logic [            1:0] hash_cnt;
   logic flag_ad_eot, flag_ad_pad, flag_msg_pad, flag_eoi, auth_intern;
-  logic [3:0] mode_r;
+  logic [ 3:0] mode_r;
+
+  logic [31:0] paddy;
+  logic bdi_valid;
+  assign bdi_valid = bdi_valid_bytes > 'd0;
 
   // Utility signals
   logic idle_done, ld_key, ld_key_done, ld_npub, ld_npub_done, init, init_done, kadd_2_done;
-  assign idle_done = (fsm == IDLE) & (mode > 'd0);
-  assign ld_key = (fsm == LD_KEY) & key_valid & key_ready;
-  assign ld_key_done = (word_cnt == 3) & ld_key;
-  assign ld_npub = (fsm == LD_NPUB) & (bdi_type == D_NONCE) & bdi_valid & bdi_ready;
-  assign ld_npub_done = (word_cnt == 3) & ld_npub;
-  assign init = (fsm == INIT);
-  assign init_done = (round_cnt == UROL) & init;
-  assign kadd_2_done = (fsm == KADD_2) & (flag_eoi | bdi_valid);
+  assign idle_done    = (fsm == IDLE) & (mode > 'd0);
+  assign ld_key       = (fsm == LD_KEY) & key_valid & key_ready;
+  assign ld_key_done  = (word_cnt == 'd3) & ld_key;
+  assign ld_npub      = (fsm == LD_NPUB) & (bdi_type == D_NONCE) & bdi_valid & bdi_ready;
+  assign ld_npub_done = (word_cnt == 'd3) & ld_npub;
+  assign init         = (fsm == INIT);
+  assign init_done    = (round_cnt == UROL) & init;
+  assign kadd_2_done  = (fsm == KADD_2) & (flag_eoi | bdi_valid);
 
   logic abs_ad, abs_ad_done, pro_ad, pro_ad_done;
   assign abs_ad = (fsm == ABS_AD) & (bdi_type == D_AD) & bdi_valid & bdi_ready;
-  assign abs_ad_done = ((word_cnt == 4) | bdi_eot) & abs_ad;
+  assign abs_ad_done = ((word_cnt == 'd4) | bdi_eot) & abs_ad;
   assign pro_ad = (fsm == PRO_AD);
   assign pro_ad_done = (round_cnt == UROL) & pro_ad;
 
   logic abs_msg, abs_msg_done, pro_msg, pro_msg_done;
-  assign abs_msg = (fsm == ABS_MSG) & (bdi_type == D_MSG) & bdi_valid & bdi_ready & ((mode_r inside {M_ENC, M_DEC}) ? bdo_ready : 1);
-  assign abs_msg_done = ((word_cnt == ((mode_r inside {M_ENC, M_DEC}) ? 3 : 1)) | bdi_eot) & abs_msg;
+  assign abs_msg      = (fsm == ABS_MSG) & (bdi_type == D_MSG) & bdi_valid & bdi_ready & ((mode_r inside {M_ENC, M_DEC}) ? bdo_ready : 1);
+  assign abs_msg_done = ((word_cnt == ((mode_r inside {M_ENC, M_DEC}) ? 'd3 : 'd1)) | bdi_eot) & abs_msg;
   assign pro_msg = (fsm == PRO_MSG);
   assign pro_msg_done = (round_cnt == UROL) & pro_msg;
 
   logic fin, fin_done;
-  assign fin = (fsm == FINAL);
+  assign fin      = (fsm == FINAL);
   assign fin_done = (round_cnt == UROL) & fin;
 
   logic sqz_hash, sqz_hash_done1, sqz_hash_done2, sqz_tag, sqz_tag_done, ver_tag, ver_tag_done;
-  assign sqz_hash = (fsm == SQZ_HASH) & bdo_ready;
-  assign sqz_hash_done1 = (word_cnt == 1) & sqz_hash;
-  assign sqz_hash_done2 = (hash_cnt == 3) & sqz_hash_done1;
-  assign sqz_tag = (fsm == SQZ_TAG) & bdo_ready;
-  assign sqz_tag_done = (word_cnt == 3) & sqz_tag;
-  assign ver_tag = (fsm == VER_TAG) & (bdi_type == D_TAG) & bdi_valid & bdi_ready;
-  assign ver_tag_done = (word_cnt == 3) & ver_tag;
+  assign sqz_hash       = (fsm == SQZ_HASH) & bdo_ready;
+  assign sqz_hash_done1 = (word_cnt == 'd1) & sqz_hash;
+  assign sqz_hash_done2 = (hash_cnt == 'd3) & sqz_hash_done1;
+  assign sqz_tag        = (fsm == SQZ_TAG) & bdo_ready;
+  assign sqz_tag_done   = (word_cnt == 'd3) & sqz_tag;
+  assign ver_tag        = (fsm == VER_TAG) & (bdi_type == D_TAG) & bdi_valid & bdi_ready;
+  assign ver_tag_done   = (word_cnt == 'd3) & ver_tag;
 
   logic [            3:0] state_idx;
   logic [LANE_BITS/2-1:0] asconp_o    [LANES][2];
   logic [        CCW-1:0] state_i;
   logic [        CCW-1:0] state_slice;
 
-  assign state_slice = state[state_idx/2][state_idx%2];  // Dynamic slicing
+  // Dynamic slicing
+  assign state_slice = state[state_idx/2][state_idx%2];  
 
   // Finate state machine
   typedef enum logic [63:0] {
-    IDLE        = "IDLE",
-    LD_KEY      = "LD_KEY",
-    LD_NPUB     = "LD_NPUB",
-    INIT        = "INIT",
-    KADD_2      = "KADD_2",
-    ABS_AD      = "ABS_AD",
-    PAD_AD      = "PAD_AD",
-    PRO_AD      = "PRO_AD",
-    DOM_SEP     = "DOM_SEP",
-    ABS_MSG     = "ABS_MSG",
-    PAD_MSG     = "PAD_MSG",
-    PRO_MSG     = "PRO_MSG",
-    KADD_3      = "KADD_3",
-    FINAL       = "FINAL",
-    KADD_4      = "KADD_4",
-    SQZ_TAG     = "SQZ_TAG",
-    SQZ_HASH    = "SQZ_HASH",
-    VER_TAG     = "VER_TAG"
+    IDLE     = "IDLE",
+    LD_KEY   = "LD_KEY",
+    LD_NPUB  = "LD_NPUB",
+    INIT     = "INIT",
+    KADD_2   = "KADD_2",
+    ABS_AD   = "ABS_AD",
+    PAD_AD   = "PAD_AD",
+    PRO_AD   = "PRO_AD",
+    DOM_SEP  = "DOM_SEP",
+    ABS_MSG  = "ABS_MSG",
+    PAD_MSG  = "PAD_MSG",
+    PRO_MSG  = "PRO_MSG",
+    KADD_3   = "KADD_3",
+    FINAL    = "FINAL",
+    KADD_4   = "KADD_4",
+    SQZ_TAG  = "SQZ_TAG",
+    SQZ_HASH = "SQZ_HASH",
+    VER_TAG  = "VER_TAG"
   } fsms_t;
   fsms_t fsm;  // Current state
   fsms_t fsm_nx;  // Next state
@@ -125,16 +156,17 @@ module ascon_core (
   /////////////////////
 
   always_comb begin
-    state_i = 32'h0;
-    state_idx = 0;
-    key_ready = 0;
-    bdi_ready = 0;
-    bdo = 0;
-    bdo_valid = 0;
-    bdo_type = D_NULL;
-    bdo_eot = 0;
+    state_i   = 32'h0;
+    state_idx = 'd0;
+    key_ready = 'd0;
+    bdi_ready = 'd0;
+    bdo       = 'd0;
+    bdo_valid = 'd0;
+    bdo_type  = D_NULL;
+    bdo_eot   = 'd0;
+    paddy     = 'd0;
     case (fsm)
-      LD_KEY: key_ready = 1;
+      LD_KEY:  key_ready = 1;
       LD_NPUB: begin
         state_idx = word_cnt + 6;
         bdi_ready = 1;
@@ -143,65 +175,48 @@ module ascon_core (
       ABS_AD: begin
         state_idx = word_cnt;
         bdi_ready = 1;
-        state_i   = state_slice ^ {
-          (bdi[31:24] & {8{bdi_valid_bytes[3]}}) | (8'h01&{8{~bdi_valid_bytes[3]&(bdi_valid_bytes[2])}}),
-          (bdi[23:16] & {8{bdi_valid_bytes[2]}}) | (8'h01&{8{~bdi_valid_bytes[2]&(bdi_valid_bytes[1])}}),
-          (bdi[15: 8] & {8{bdi_valid_bytes[1]}}) | (8'h01&{8{~bdi_valid_bytes[1]&(bdi_valid_bytes[0])}}),
-          (bdi[ 7: 0] & {8{bdi_valid_bytes[0]}})
-        };
+        paddy = pad(bdi, bdi_valid_bytes);
+        state_i = state_slice ^ paddy;
       end
       PAD_AD, PAD_MSG: begin
         state_idx = word_cnt;
       end
       ABS_MSG: begin
         state_idx = word_cnt;
-        if (mode_r inside {M_DEC}) begin
-          state_i = {
-            bdi_valid_bytes[3] ? bdi[31:24] : (bdi_valid_bytes[2] ? (8'h01 ^ (state_slice[31:24])) : (state_slice[31:24])),
-            bdi_valid_bytes[2] ? bdi[23:16] : (bdi_valid_bytes[1] ? (8'h01 ^ (state_slice[23:16])) : (state_slice[23:16])),
-            bdi_valid_bytes[1] ? bdi[15: 8] : (bdi_valid_bytes[0] ? (8'h01 ^ (state_slice[15: 8])) : (state_slice[15: 8])),
-            bdi_valid_bytes[0] ? bdi[7:0] : (state_slice[7:0])
-          };
-          bdo = state_slice ^ state_i;
-        end else begin
-          state_i   = state_slice ^ {
-            (bdi[31:24] & {8{bdi_valid_bytes[3]}}) | (8'h01&{8{~bdi_valid_bytes[3]&(bdi_valid_bytes[2])}}),
-            (bdi[23:16] & {8{bdi_valid_bytes[2]}}) | (8'h01&{8{~bdi_valid_bytes[2]&(bdi_valid_bytes[1])}}),
-            (bdi[15: 8] & {8{bdi_valid_bytes[1]}}) | (8'h01&{8{~bdi_valid_bytes[1]&(bdi_valid_bytes[0])}}),
-            (bdi[ 7: 0] & {8{bdi_valid_bytes[0]}})
-          };
+        if (mode_r inside {M_ENC, M_HASH}) begin
+          paddy = pad(bdi, bdi_valid_bytes);
+          state_i = state_slice ^ paddy;
           bdo = state_i;
+        end else if (mode_r inside {M_DEC}) begin
+          paddy = pad2(bdi, state_slice, bdi_valid_bytes);
+          state_i = paddy;
+          bdo = state_slice ^ state_i;
         end
-        bdi_ready = 1;
-        bdo_valid = bdi_valid;
-        bdo_type  = D_MSG;
-        bdo_eot   = bdi_eot;
-        if (mode_r inside {M_HASH}) begin
-          bdo = 'd0;
-          bdo_valid = 'd0;
-          bdo_type = D_NULL;
-          bdo_eot = 'd0;
-        end
+        bdi_ready = 'd1;
+        bdo_valid = (mode_r inside {M_ENC, M_DEC}) ? 'd1 : 'd0;
+        bdo_type = (mode_r inside {M_ENC, M_DEC}) ? D_MSG : D_NULL;
+        bdo_eot = (mode_r inside {M_ENC, M_DEC}) ? bdi_eot : 'd0;
+        if (mode_r == M_HASH) bdo = 'd0;
       end
       SQZ_TAG: begin
-        state_idx = word_cnt + 6;
-        bdo       = {state_slice[7:0], state_slice[15:8], state_slice[23:16], state_slice[31:24]};
-        bdo_valid = 1;
+        state_idx = word_cnt + 'd6;
+        bdo       = swap(state_slice);
+        bdo_valid = 'd1;
         bdo_type  = D_TAG;
-        bdo_eot   = word_cnt == 3;
+        bdo_eot   = word_cnt == 'd3;
       end
       SQZ_HASH: begin
         state_idx = word_cnt;
-        bdo       = {state_slice[7:0], state_slice[15:8], state_slice[23:16], state_slice[31:24]};
-        bdo_valid = 1;
+        bdo       = swap(state_slice);
+        bdo_valid = 'd1;
         bdo_type  = D_HASH;
-        bdo_eot   = (hash_cnt == 3) & (word_cnt == 1);
+        bdo_eot   = (hash_cnt == 'd3) & (word_cnt == 'd1);
       end
       VER_TAG: begin
-        state_idx = word_cnt + 6;
-        bdi_ready = 1;
+        state_idx = word_cnt + 'd6;
+        bdi_ready = 'd1;
       end
-      default:  ;
+      default: ;
     endcase
   end
 
@@ -295,16 +310,15 @@ module ascon_core (
 
   always @(posedge clk) begin
     if (rst == 0) begin
+      // Absorb padded input
       if (ld_npub || abs_ad || abs_msg) begin
         state[state_idx/2][state_idx%2] <= state_i;
       end
-      if (fsm inside {PAD_AD}) begin
+      // Add 32-bit block of padding
+      if (fsm inside {PAD_AD, PAD_MSG}) begin
         state[state_idx/2][state_idx%2] ^= 32'h00000001;
-        flag_ad_pad <= 'd1;
-      end
-      if (fsm inside {PAD_MSG}) begin
-        state[state_idx/2][state_idx%2] ^= 32'h00000001;
-        flag_msg_pad <= 'd1;
+        flag_ad_pad  <= fsm == PAD_AD;
+        flag_msg_pad <= fsm == PAD_MSG;
       end
       // State initialization, hashing
       if (idle_done & (mode inside {M_HASH})) begin

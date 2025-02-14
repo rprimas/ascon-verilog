@@ -7,15 +7,15 @@
 
 ## Available Variants
 
-- **UROL_1**
+- **V1**
   - Ascon-AEAD128 + Ascon-Hash256.
   - 32-bit block data interface.
   - 1 permutation round per clock cycle.
-- **UROL_2**
+- **V2**
   - Ascon-AEAD128 + Ascon-Hash256.
   - 32-bit block data interface.
   - 2 permutation rounds per clock cycle.
-- **UROL_4**
+- **V3**
   - Ascon-AEAD128 + Ascon-Hash256.
   - 32-bit block data interface.
   - 4 permutation rounds per clock cycle.
@@ -34,22 +34,6 @@
 
 ## Interface
 
-The interface of the Ascon core is similar to [GMU's crypto core interface (Figure 5.1)](https://cryptography.gmu.edu/athena/LWC/LWC_HW_Implementers_Guide.pdf) that was often used during the [NIST standardization for lightweight authenticated encryption](https://csrc.nist.gov/projects/lightweight-cryptography/).
-The following changes to the GMU crypto core interface were made:
-- Removed signals:
-  - `bdi_valid_bytes`, `bdi_pad_loc`, `bdi_size`
-  - `fdi_ready`, `fdi_valid`, `fdi_data`
-  - `fdo_ready`, `fdo_valid`, `fdo_data`
-  - `bdo_valid_bytes`, `end_of_block`, `key_update`
-- Renamed signals:
-  - `decrypt_in` -> `decrypt`
-  - `hash_in` -> `hash`
-  - `msg_auth`, `msg_auth_valid`, `msg_auth_ready` -> `auth`, `auth_valid`, `auth_ready` 
-
-The resulting (simplified) interface of the Ascon core is shown here:
-
-![Ascon Core Interface](interface.png "Ascon Core Interface")
-
 The following table contains a description of the interface signals:
 
 | **Name**   | **Description**                                                              |
@@ -60,7 +44,7 @@ The following table contains a description of the interface signals:
 | key_valid  | Key data is valid.                                                           |
 | key_ready  | Ascon core is ready to receive a new key.                                    |
 | bdi_data   | Block data input (BDI).                                                      |
-| bdi_valid  | BDI data is valid.                                                           |
+| bdi_valid  | Valid BDI data bytes.                                                        |
 | bdi_ready  | Ascon core is ready to receive data.                                         |
 | bdi_eot    | The current BDI block is the last block of its type.                         |
 | bdi_eoi    | The current BDI block is the last block of input other than the tag segment. |
@@ -75,8 +59,6 @@ The following table contains a description of the interface signals:
 | auth_valid | Authentication output is valid.                                              |
 | auth_ready | Test bench is ready to accept authentication result.                         |
 
-You can have a look at `rtl/tb.sv` for an example of how the Ascon core interface can be used.
-
 ## Quick Start
 
 - Install the Verilator open-source verilog simulator with **version >= 5.0**:
@@ -87,9 +69,9 @@ You can have a look at `rtl/tb.sv` for an example of how the Ascon core interfac
     - `dnf install verilator-devel`
   - Build from source:
     - [Git Quick Install](https://verilator.org/guide/latest/install.html#git-quick-install)
-- Install the [cocotb](https://www.cocotb.org/) open-source verilog test bench environment:    
+- Install the [cocotb](https://www.cocotb.org/) open-source verilog test bench environment:
   - `pip install cocotb`
-- Execute cocotb test bench:
+- Execute the cocotb test bench:
   - `make`
 
 ## View waveforms
