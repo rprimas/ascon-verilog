@@ -12,8 +12,7 @@ module ascon_core (
     input  logic            key_valid,
     output logic            key_ready,
     input  logic [ CCW-1:0] bdi,
-    // input  logic            bdi_valid,
-    input  logic [     3:0] bdi_valid_bytes,
+    input  logic [     3:0] bdi_valid,
     output logic            bdi_ready,
     input  logic [     3:0] bdi_type,
     input  logic            bdi_eot,
@@ -64,29 +63,25 @@ module ascon_core (
   logic flag_ad_eot, flag_ad_pad, flag_msg_pad, flag_eoi, auth_intern;
   logic [ 3:0] mode_r;
 
-  logic [31:0] paddy;
-  logic bdi_valid;
-  assign bdi_valid = bdi_valid_bytes > 'd0;
-
   // Utility signals
   logic idle_done, ld_key, ld_key_done, ld_npub, ld_npub_done, init, init_done, kadd_2_done;
   assign idle_done    = (fsm == IDLE) & (mode > 'd0);
   assign ld_key       = (fsm == LD_KEY) & key_valid & key_ready;
   assign ld_key_done  = (word_cnt == 'd3) & ld_key;
-  assign ld_npub      = (fsm == LD_NPUB) & (bdi_type == D_NONCE) & bdi_valid & bdi_ready;
+  assign ld_npub      = (fsm == LD_NPUB) & (bdi_type == D_NONCE) & (bdi_valid > 'd0) & bdi_ready;
   assign ld_npub_done = (word_cnt == 'd3) & ld_npub;
   assign init         = (fsm == INIT);
   assign init_done    = (round_cnt == UROL) & init;
-  assign kadd_2_done  = (fsm == KADD_2) & (flag_eoi | bdi_valid);
+  assign kadd_2_done  = (fsm == KADD_2) & (flag_eoi | (bdi_valid > 'd0));
 
   logic abs_ad, abs_ad_done, pro_ad, pro_ad_done;
-  assign abs_ad = (fsm == ABS_AD) & (bdi_type == D_AD) & bdi_valid & bdi_ready;
+  assign abs_ad = (fsm == ABS_AD) & (bdi_type == D_AD) & (bdi_valid > 'd0) & bdi_ready;
   assign abs_ad_done = ((word_cnt == 'd4) | bdi_eot) & abs_ad;
   assign pro_ad = (fsm == PRO_AD);
   assign pro_ad_done = (round_cnt == UROL) & pro_ad;
 
   logic abs_msg, abs_msg_done, pro_msg, pro_msg_done;
-  assign abs_msg      = (fsm == ABS_MSG) & (bdi_type == D_MSG) & bdi_valid & bdi_ready & ((mode_r inside {M_ENC, M_DEC}) ? bdo_ready : 1);
+  assign abs_msg      = (fsm == ABS_MSG) & (bdi_type == D_MSG) & (bdi_valid>'d0) & bdi_ready & ((mode_r inside {M_ENC, M_DEC}) ? bdo_ready : 1);
   assign abs_msg_done = ((word_cnt == ((mode_r inside {M_ENC, M_DEC}) ? 'd3 : 'd1)) | bdi_eot) & abs_msg;
   assign pro_msg = (fsm == PRO_MSG);
   assign pro_msg_done = (round_cnt == UROL) & pro_msg;
@@ -101,7 +96,7 @@ module ascon_core (
   assign sqz_hash_done2 = (hash_cnt == 'd3) & sqz_hash_done1;
   assign sqz_tag        = (fsm == SQZ_TAG) & bdo_ready;
   assign sqz_tag_done   = (word_cnt == 'd3) & sqz_tag;
-  assign ver_tag        = (fsm == VER_TAG) & (bdi_type == D_TAG) & bdi_valid & bdi_ready;
+  assign ver_tag        = (fsm == VER_TAG) & (bdi_type == D_TAG) & (bdi_valid > 'd0) & bdi_ready;
   assign ver_tag_done   = (word_cnt == 'd3) & ver_tag;
 
   logic [            3:0] state_idx;
@@ -109,8 +104,11 @@ module ascon_core (
   logic [        CCW-1:0] state_i;
   logic [        CCW-1:0] state_slice;
 
+  // Padded bdi data
+  logic [31:0] paddy;
+
   // Dynamic slicing
-  assign state_slice = state[state_idx/2][state_idx%2];  
+  assign state_slice = state[state_idx/2][state_idx%2];
 
   // Finate state machine
   typedef enum logic [63:0] {
@@ -175,7 +173,7 @@ module ascon_core (
       ABS_AD: begin
         state_idx = word_cnt;
         bdi_ready = 1;
-        paddy = pad(bdi, bdi_valid_bytes);
+        paddy = pad(bdi, bdi_valid);
         state_i = state_slice ^ paddy;
       end
       PAD_AD, PAD_MSG: begin
@@ -184,18 +182,18 @@ module ascon_core (
       ABS_MSG: begin
         state_idx = word_cnt;
         if (mode_r inside {M_ENC, M_HASH}) begin
-          paddy = pad(bdi, bdi_valid_bytes);
+          paddy = pad(bdi, bdi_valid);
           state_i = state_slice ^ paddy;
           bdo = state_i;
         end else if (mode_r inside {M_DEC}) begin
-          paddy = pad2(bdi, state_slice, bdi_valid_bytes);
+          paddy = pad2(bdi, state_slice, bdi_valid);
           state_i = paddy;
           bdo = state_slice ^ state_i;
         end
         bdi_ready = 'd1;
         bdo_valid = (mode_r inside {M_ENC, M_DEC}) ? 'd1 : 'd0;
-        bdo_type = (mode_r inside {M_ENC, M_DEC}) ? D_MSG : D_NULL;
-        bdo_eot = (mode_r inside {M_ENC, M_DEC}) ? bdi_eot : 'd0;
+        bdo_type  = (mode_r inside {M_ENC, M_DEC}) ? D_MSG : D_NULL;
+        bdo_eot   = (mode_r inside {M_ENC, M_DEC}) ? bdi_eot : 'd0;
         if (mode_r == M_HASH) bdo = 'd0;
       end
       SQZ_TAG: begin
@@ -239,7 +237,7 @@ module ascon_core (
       else if (bdi_type == D_MSG) fsm_nx = DOM_SEP;
     end
     if (abs_ad_done) begin
-      if (bdi_valid_bytes != 4'b1111) begin
+      if (bdi_valid != 'hF) begin
         fsm_nx = PRO_AD;
       end else begin
         if (word_cnt < 3) fsm_nx = PAD_AD;
@@ -258,9 +256,9 @@ module ascon_core (
         end
       end
     end
-    if (fsm == DOM_SEP) fsm_nx = flag_eoi === 1 ? KADD_3 : ABS_MSG;
+    if (fsm == DOM_SEP) fsm_nx = flag_eoi ? KADD_3 : ABS_MSG;
     if (abs_msg_done) begin
-      if (bdi_valid_bytes != 4'b1111) begin
+      if (bdi_valid != 'hF) begin
         if (mode_r inside {M_HASH}) fsm_nx = FINAL;
         else fsm_nx = KADD_3;
       end else begin
@@ -419,12 +417,12 @@ module ascon_core (
       if (abs_ad_done) begin
         if (bdi_eot == 1) flag_ad_eot <= 1;
         if (bdi_eoi == 1) flag_eoi <= 1;
-        if ((bdi_eot == 1) && (bdi_valid_bytes != 4'b1111)) flag_ad_pad <= 1;
+        if ((bdi_eot == 1) && (bdi_valid != 'hF)) flag_ad_pad <= 1;
       end
       if (fsm == PAD_AD) flag_ad_pad <= 1;
       if (abs_msg_done) begin
         if (bdi_eoi == 1) flag_eoi <= 1;
-        if ((bdi_eot == 1) && (bdi_valid_bytes != 4'b1111)) flag_msg_pad <= 1;
+        if ((bdi_eot == 1) && (bdi_valid != 'hF)) flag_msg_pad <= 1;
       end
       if (fsm == PAD_MSG) flag_ad_pad <= 1;
       if ((fsm == KADD_4) & (mode_r inside {M_DEC})) auth_intern <= 1;

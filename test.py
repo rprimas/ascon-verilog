@@ -23,7 +23,7 @@ class Mode(Enum):
 
 async def clear_bdi(dut):
     dut.bdi.value = 0
-    dut.bdi_valid_bytes.value = 0
+    dut.bdi_valid.value = 0
     dut.bdi_type.value = 0
     dut.bdi_eot.value = 0
     dut.bdi_eoi.value = 0
@@ -36,12 +36,12 @@ async def send_data(dut, data_in, bdi_type, bdo_ready, bdi_eoi):
     data_out = []
     while d < dlen:
         bdi = 0
-        bdi_valid_bytes = 0
+        bdi_valid = 0
         for dd in range(d, min(d + 4, dlen)):
             bdi |= data_in[dd] << 8 * (dd % 4)
-            bdi_valid_bytes |= 1 << (dd % 4)
+            bdi_valid |= 1 << (dd % 4)
         dut.bdi.value = bdi
-        dut.bdi_valid_bytes.value = bdi_valid_bytes
+        dut.bdi_valid.value = bdi_valid
         dut.bdi_type.value = bdi_type
         dut.bdi_eot.value = d + 4 >= dlen
         dut.bdi_eoi.value = d + 4 >= dlen and bdi_eoi
@@ -50,7 +50,7 @@ async def send_data(dut, data_in, bdi_type, bdo_ready, bdi_eoi):
         if dut.bdi_ready.value:
             bdoo = int(dut.bdo.value).to_bytes(4)
             for dd in range(4):
-                if bdi_valid_bytes & (1 << dd):
+                if bdi_valid & (1 << dd):
                     data_out.append(bdoo[3 - dd])
             d += 4
     return data_out
