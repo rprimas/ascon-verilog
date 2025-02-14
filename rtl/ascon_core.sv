@@ -239,8 +239,6 @@ module ascon_core (
     end
     if (fsm == PAD_AD) fsm_nx = PRO_AD;
     if (pro_ad_done) begin
-      // if (flag_hash) fsm_nx = flag_eoi ? SQUEEZE_HASH : ABS_AD;
-      // else
       begin
         if (flag_ad_eot == 0) begin
           fsm_nx = ABS_AD;
@@ -360,21 +358,14 @@ module ascon_core (
       word_cnt <= 0;
     end else begin
       // Setting word counter
-      if (ld_key | ld_nonce | abs_ad | abs_ptct | sqz_tag | sqz_hash | ver_tag) begin
+      if (ld_key || ld_nonce || abs_ad || abs_ptct || sqz_tag || sqz_hash || ver_tag) begin
         word_cnt <= word_cnt + 1;
       end
-      if (ld_key_done | ld_nonce_done || sqz_tag_done | sqz_hash_done1 | ver_tag_done) begin
+      if (ld_key_done || ld_nonce_done || sqz_tag_done || sqz_hash_done1 || ver_tag_done) begin
         word_cnt <= 0;
       end
-      if (abs_ad_done) begin
-        if (fsm_nx == PAD_AD) begin
-          word_cnt <= word_cnt + 1;
-        end else begin
-          word_cnt <= 0;
-        end
-      end
-      if (abs_ptct_done) begin
-        if (fsm_nx == PAD_PTCT) begin
+      if (abs_ad_done | abs_ptct_done) begin
+        if (fsm_nx inside {PAD_AD, PAD_PTCT}) begin
           word_cnt <= word_cnt + 1;
         end else begin
           word_cnt <= 0;
@@ -385,19 +376,14 @@ module ascon_core (
       if (sqz_hash_done1) hash_cnt <= hash_cnt + 1;
       if (flag_hash & abs_ad_done & bdi_eoi) hash_cnt <= 0;
       // Setting round counter
-      if ((idle_done & op_hash_req) | ld_nonce_done | fsm == KEY_ADD_3) round_cnt <= ROUNDS_A;
-      if (((abs_ptct_done & flag_hash) | sqz_hash_done1) & !sqz_hash_done2) round_cnt <= ROUNDS_A;
-      // if ((abs_ad_done & !flag_hash) | (abs_ptct_done & (fsm_nx == PRO_PTCT))) round_cnt <= ROUNDS_B; // todo!flaghash?
-      if (abs_ad_done & !flag_hash) round_cnt <= ROUNDS_B;  // todo!flaghash?
-      if ((abs_ptct_done & (fsm_nx == PRO_PTCT))) round_cnt <= ROUNDS_B;  // todo!flaghash?
-      if ((abs_ptct_done & flag_hash & (fsm_nx == PRO_PTCT)))
-        round_cnt <= ROUNDS_A;  // todo!flaghash?
-
-
-
-      if (fsm == PAD_AD) round_cnt <= flag_hash ? ROUNDS_A : ROUNDS_B;
+      case (fsm_nx)
+        INIT: round_cnt <= ROUNDS_A;
+        PRO_AD: round_cnt <= ROUNDS_B;
+        PRO_PTCT: round_cnt <= flag_hash ? ROUNDS_A : ROUNDS_B;
+        FINAL: round_cnt <= ROUNDS_A;
+        default: round_cnt <= 'd0;
+      endcase
       if (init | pro_ad | pro_ptct | fin) round_cnt <= round_cnt - UROL;
-      if ((fsm == PAD_PTCT) && (fsm_nx == FINAL)) round_cnt <= ROUNDS_A;
     end
   end
 
@@ -456,11 +442,5 @@ module ascon_core (
   assign x2 = {state[2][1], state[2][0]};
   assign x3 = {state[3][1], state[3][0]};
   assign x4 = {state[4][1], state[4][0]};
-
-  // initial begin
-  //   $dumpfile("tb.vcd");
-  //   $dumpvars(0, fsm, flag_ad_eot, flag_dec, flag_eoi, flag_hash, word_cnt, round_cnt, hash_cnt,
-  //             x0, x1, x2, x3, x4);
-  // end
 
 endmodule  // ascon_core
