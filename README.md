@@ -7,6 +7,7 @@
 
 ## Available Variants
 
+<div align="center">
 | **Variant** | **Modes**                    | **Bus Width** | **Unrolled Rounds** |
 |-------------|------------------------------|:-------------:|:-------------------:|
 | v1          | Ascon-AEAD128, Ascon-Hash256 |     32-bit    |          1          |
@@ -15,11 +16,13 @@
 | v4          | Ascon-AEAD128, Ascon-Hash256 |     64-bit    |          1          |
 | v5          | Ascon-AEAD128, Ascon-Hash256 |     64-bit    |          2          |
 | v6          | Ascon-AEAD128, Ascon-Hash256 |     64-bit    |          4          |
+</div>
 
 ## Performance
 
 The following table shoes the performance of Ascon-AEAD128 authenticated encryption/decryption using **x** bytes of message and **y** bytes of associated data **(x,y)**:
 
+<div align="center">
 | **Variant** | **Mode**      | **Cycles (0,0)** | **Cycles (16,16)** | **Cycles (1536,1536)** |
 |-------------|---------------|:---------------:|:-----------------:|:---------------------:|
 | v1          | Ascon-AEAD128 |        41       |         75        |          2355         |
@@ -28,6 +31,7 @@ The following table shoes the performance of Ascon-AEAD128 authenticated encrypt
 | v4          | Ascon-AEAD128 |        35       |         65        |          1965         |
 | v5          | Ascon-AEAD128 |        23       |         41        |          1181         |
 | v6          | Ascon-AEAD128 |        17       |         29        |           789         |
+</div>
 
 ## Files
 
@@ -45,6 +49,7 @@ The following table shoes the performance of Ascon-AEAD128 authenticated encrypt
 
 The following table contains a description of the interface signals:
 
+<div align="center">
 | **Name**   | **Bits** | **Description**                                     |
 |------------|:--------:|-----------------------------------------------------|
 | clk        |     1    | Clock signal.                                       |
@@ -65,6 +70,7 @@ The following table contains a description of the interface signals:
 | bdo_type   |     4    | Type of BDO data.                                   |
 | auth       |     1    | 1=Authentication success, 0=Authentication failure. |
 | auth_valid |     1    | Authentication output is valid.                     |
+</div>
 
 ## Quick Start
 
