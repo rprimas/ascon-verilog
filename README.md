@@ -18,9 +18,9 @@
 
 ## Performance
 
-The following table shoes the performance of Ascon-AEAD128 authenticated encryption/decryption using *x* bytes of message and *y* bytes of associated data (*x*,*y*):
+The following table shoes the performance of Ascon-AEAD128 authenticated encryption/decryption using **x** bytes of message and **y** bytes of associated data **(x,y)**:
 
-| **Variant** | **Mode**      | **Cycles(0,0)** | **Cycles(16,16)** | **Cycles(1536,1536)** |
+| **Variant** | **Mode**      | **Cycles (0,0)** | **Cycles (16,16)** | **Cycles (1536,1536)** |
 |-------------|---------------|:---------------:|:-----------------:|:---------------------:|
 | v1          | Ascon-AEAD128 |        41       |         75        |          2355         |
 | v2          | Ascon-AEAD128 |        29       |         51        |          1571         |
@@ -86,11 +86,10 @@ The following table contains a description of the interface signals:
 - Install the [Surfer](https://surfer-project.org/) waveform viewer.
 - View waveform of cocotb test bench run:
   - `make surf`
-
-Viewing test bench output using Surfer:
+- Example waveform output of test bench:
 
 <p align="center">
-<img src="surfer.png" alt="Surfer waveform viewer" width="800"/>
+<img src="surfer.png" alt="Surfer waveform viewer" width="600"/>
 </p>
 
 ## Contact
