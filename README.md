@@ -73,8 +73,12 @@ The following table contains a description of the interface signals:
 - Install the [Surfer](https://surfer-project.org/) waveform viewer.
 - View waveform of cocotb test bench run:
   - `make surf`
-  
-<img src="surfer.png" alt="Surfer waveform viewer" width="400"/>
+
+Example of viewing test bench output using Surfer:
+
+<p align="center">
+<img src="surfer.png" alt="Surfer waveform viewer" width="800"/>
+</p>
 
 ## Contact
 
