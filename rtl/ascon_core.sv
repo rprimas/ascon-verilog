@@ -28,8 +28,10 @@ module ascon_core (
     output logic             done
 );
 
-  // Swap byte order of bit vector
-  // [0x00,0x01,0x02,0x03] -> [0x03,0x02,0x01,0x00]
+  // Swap byte order of bit vector:
+  // in:   [0x00, 0x01, 0x02, 0x03]
+  // =>
+  // swap: [0x03, 0x02, 0x01, 0x00]
   function static logic [CCW-1:0] swap(logic [CCW-1:0] in);
     begin
       for (int i = 0; i < (CCW / 8); i += 1) begin
@@ -38,8 +40,11 @@ module ascon_core (
     end
   endfunction
 
-  // Pad input of: absorb ad, absorb msg (during enc)
-  // [0x00,0x00,0xA5,0xA5], [0,0,1,1] -> [0x00,0x01,0xA5,0xA5]
+  // Pad input during ABS_AD, ABS_MSG (encryption):
+  // in:  [0x00, 0x00, 0x11, 0x22]
+  // val: [   0,    0,    1,    1]
+  // =>
+  // pad: [0x00, 0x01, 0x11, 0x22]
   function static logic [CCW-1:0] pad(logic [CCW-1:0] in, logic [CCW/8-1:0] val);
     begin
       pad[7:0] = val[0] ? in[7:0] : 'd0;
@@ -49,7 +54,12 @@ module ascon_core (
     end
   endfunction
 
-  // Pad input of: absorb msg (during enc)
+  // Pad input during ABS_MSG (decryption):
+  // in1:  [0x00, 0x11, 0x22, 0x33]
+  // in2:  [0x44, 0x55, 0x66, 0x77]
+  // val:  [   0,    0,    1,    1]
+  // =>
+  // pad2: [0x44, 0x54, 0x22, 0x33]
   function static logic [CCW-1:0] pad2(logic [CCW-1:0] in1, logic [CCW-1:0] in2,
                                        logic [CCW/8-1:0] val);
     begin
@@ -71,22 +81,6 @@ module ascon_core (
       wordy = (CCW == 32) ? int'(word_idx) % 2 : 0;
     end
   endfunction
-
-  //   function static logic [63:0] to64(logic [CCW-1:0] inn[lanny(2)]);
-  //     begin
-  //       to64[CCW-1:0] = inn[0];
-  //       if (CCW == 32) to64[CCW+:CCW] = inn[lanny(2)];
-  //     end
-  //   endfunction
-
-  // typedef logic [CCW-1:0] intDA_t;
-  // typedef [lanny(2):0] intDA_t  intDA_tt;
-  //   function static intDA_tt  from64 (logic [63:0] inn);
-  //     begin
-  //       intDA_tt[0] = inn[0+:CCW];
-  //       if (CCW == 32) intDA_tt[lanny(2)] = inn[32+:32];
-  //     end
-  //   endfunction
 
   // Core registers
   logic [CCW-1:0] state     [       LANES] [LANE_BITS/CCW];

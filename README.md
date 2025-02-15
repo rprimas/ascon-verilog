@@ -8,13 +8,26 @@
 ## Available Variants
 
 | **Variant** | **Modes**                    | **Bus Width** | **Unrolled Rounds** |
-|-------------|------------------------------|--------------:|:-------------------:|
-| v1          | Ascon-AEAD128, Ascon-Hash256 |        32-bit |          1          |
-| v2          | Ascon-AEAD128, Ascon-Hash256 |        32-bit |          2          |
-| v3          | Ascon-AEAD128, Ascon-Hash256 |        32-bit |          4          |
-| v4          | Ascon-AEAD128, Ascon-Hash256 |        64-bit |          1          |
-| v5          | Ascon-AEAD128, Ascon-Hash256 |        64-bit |          2          |
-| v6          | Ascon-AEAD128, Ascon-Hash256 |        64-bit |          4          |
+|-------------|------------------------------|:-------------:|:-------------------:|
+| v1          | Ascon-AEAD128, Ascon-Hash256 |     32-bit    |          1          |
+| v2          | Ascon-AEAD128, Ascon-Hash256 |     32-bit    |          2          |
+| v3          | Ascon-AEAD128, Ascon-Hash256 |     32-bit    |          4          |
+| v4          | Ascon-AEAD128, Ascon-Hash256 |     64-bit    |          1          |
+| v5          | Ascon-AEAD128, Ascon-Hash256 |     64-bit    |          2          |
+| v6          | Ascon-AEAD128, Ascon-Hash256 |     64-bit    |          4          |
+
+## Performance
+
+The following table shoes the performance of Ascon-AEAD128 authenticated encryption/decryption using *x* bytes of message and *y* bytes of associated data (*x*,*y*):
+
+| **Variant** | **Mode**      | **Cycles(0,0)** | **Cycles(16,16)** | **Cycles(1536,1536)** |
+|-------------|---------------|:---------------:|:-----------------:|:---------------------:|
+| v1          | Ascon-AEAD128 |        41       |         75        |          2355         |
+| v2          | Ascon-AEAD128 |        29       |         51        |          1571         |
+| v3          | Ascon-AEAD128 |        23       |         39        |          1179         |
+| v4          | Ascon-AEAD128 |        35       |         65        |          1965         |
+| v5          | Ascon-AEAD128 |        23       |         41        |          1181         |
+| v6          | Ascon-AEAD128 |        17       |         29        |           789         |
 
 ## Files
 
@@ -74,7 +87,7 @@ The following table contains a description of the interface signals:
 - View waveform of cocotb test bench run:
   - `make surf`
 
-Example of viewing test bench output using Surfer:
+Viewing test bench output using Surfer:
 
 <p align="center">
 <img src="surfer.png" alt="Surfer waveform viewer" width="800"/>
