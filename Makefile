@@ -7,6 +7,9 @@ EXTRA_ARGS += --trace --trace-structs
 EXTRA_ARGS += -DV1
 # EXTRA_ARGS += -DV2
 # EXTRA_ARGS += -DV3
+# EXTRA_ARGS += -DV4
+# EXTRA_ARGS += -DV5
+# EXTRA_ARGS += -DV6
 
 VERILOG_SOURCES += $(PWD)/rtl/config_core.sv $(PWD)/rtl/ascon_core.sv $(PWD)/rtl/asconp.sv
 

@@ -7,18 +7,14 @@
 
 ## Available Variants
 
-- **V1**
-  - Ascon-AEAD128 + Ascon-Hash256.
-  - 32-bit block data interface.
-  - 1 permutation round per clock cycle.
-- **V2**
-  - Ascon-AEAD128 + Ascon-Hash256.
-  - 32-bit block data interface.
-  - 2 permutation rounds per clock cycle.
-- **V3**
-  - Ascon-AEAD128 + Ascon-Hash256.
-  - 32-bit block data interface.
-  - 4 permutation rounds per clock cycle.
+| **Variant** | **Modes**                    | **Bus Width** | **Unrolled Rounds** |
+|-------------|------------------------------|--------------:|:-------------------:|
+| v1          | Ascon-AEAD128, Ascon-Hash256 |        32-bit |          1          |
+| v2          | Ascon-AEAD128, Ascon-Hash256 |        32-bit |          2          |
+| v3          | Ascon-AEAD128, Ascon-Hash256 |        32-bit |          4          |
+| v4          | Ascon-AEAD128, Ascon-Hash256 |        64-bit |          1          |
+| v5          | Ascon-AEAD128, Ascon-Hash256 |        64-bit |          2          |
+| v6          | Ascon-AEAD128, Ascon-Hash256 |        64-bit |          4          |
 
 ## Files
 
@@ -36,28 +32,26 @@
 
 The following table contains a description of the interface signals:
 
-| **Name**   | **Description**                                                              |
-| ---------- | ---------------------------------------------------------------------------- |
-| clk        | Clock signal.                                                                |
-| rst        | Reset signal. Note: Synchronous active high.                                 |
-| key        | Key data input.                                                              |
-| key_valid  | Key data is valid.                                                           |
-| key_ready  | Ascon core is ready to receive a new key.                                    |
-| bdi_data   | Block data input (BDI).                                                      |
-| bdi_valid  | Valid BDI data bytes.                                                        |
-| bdi_ready  | Ascon core is ready to receive data.                                         |
-| bdi_eot    | The current BDI block is the last block of its type.                         |
-| bdi_eoi    | The current BDI block is the last block of input other than the tag segment. |
-| bdi_type   | Type of BDI data. See `rtl/config_core.sv`.                                  |
-| decrypt    | 0=Encryption, 1=Decryption.                                                  |
-| hash       | 0=Encryption/Decryption, 1=Hash.                                             |
-| bdo_data   | Block data output (BDO).                                                     |
-| bdo_valid  | BDO data is valid.                                                           |
-| bdo_ready  | Test bench is ready to receive data.                                         |
-| bdo_type   | Type of BDO data. See `rtl/config_core.sv`.                                  |
-| auth       | 1=Authentication success, 0=Authentication failure.                          |
-| auth_valid | Authentication output is valid.                                              |
-| auth_ready | Test bench is ready to accept authentication result.                         |
+| **Name**   | **Bits** | **Description**                                     |
+|------------|:--------:|-----------------------------------------------------|
+| clk        |     1    | Clock signal.                                       |
+| rst        |     1    | Reset signal. Note: Synchronous active high.        |
+| key        |   32/64  | Key data input.                                     |
+| key_valid  |     1    | Key data is valid.                                  |
+| key_ready  |     1    | Ascon core is ready to receive a new key.           |
+| bdi_data   |   32/64  | Block data input (BDI).                             |
+| bdi_valid  |    4/8   | Valid BDI data bytes.                               |
+| bdi_ready  |     1    | Ascon core is ready to receive data.                |
+| bdi_eot    |     1    | Current BDI block is the last block of its type.    |
+| bdi_eoi    |     1    | Current BDI block is the last block of input.       |
+| bdi_type   |     4    | Type of BDI data.                                   |
+| mode       |     4    | Ascon mode.                                         |
+| bdo_data   |   32/64  | Block data output (BDO).                            |
+| bdo_valid  |    4/8   | Valid BDO data bytes.                               |
+| bdo_ready  |     1    | Test bench is ready to receive data.                |
+| bdo_type   |     4    | Type of BDO data.                                   |
+| auth       |     1    | 1=Authentication success, 0=Authentication failure. |
+| auth_valid |     1    | Authentication output is valid.                     |
 
 ## Quick Start
 
@@ -79,6 +73,8 @@ The following table contains a description of the interface signals:
 - Install the [Surfer](https://surfer-project.org/) waveform viewer.
 - View waveform of cocotb test bench run:
   - `make surf`
+  
+<img src="surfer.png" alt="Surfer waveform viewer" width="400"/>
 
 ## Contact
 

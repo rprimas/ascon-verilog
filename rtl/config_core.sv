@@ -5,6 +5,32 @@
 //
 // Configuration parameters for the Ascon core.
 
+`ifdef V1
+`define CCW32
+parameter logic [3:0] UROL = 1;
+parameter unsigned CCW = 32;
+`elsif V2
+`define CCW32
+parameter logic [3:0] UROL = 2;
+parameter unsigned CCW = 32;
+`elsif V3
+`define CCW32
+parameter logic [3:0] UROL = 4;
+parameter unsigned CCW = 32;
+`elsif V4
+`define CCW64
+parameter logic [3:0] UROL = 1;
+parameter unsigned CCW = 64;
+`elsif V5
+`define CCW64
+parameter logic [3:0] UROL = 2;
+parameter unsigned CCW = 64;
+`elsif V6
+`define CCW64
+parameter logic [3:0] UROL = 4;
+parameter unsigned CCW = 64;
+`endif
+
 ///////////
 // Ascon //
 ///////////
@@ -35,10 +61,6 @@ parameter unsigned RATE_HASH_WORDS = RATE_HASH_BITS / 32;
 // Interface //
 ///////////////
 
-// Bus width
-parameter unsigned CCW = 32;
-parameter unsigned CCSW = 32;
-
 // Mode types
 typedef enum logic [3:0] {
   M_NOP  = 0,
@@ -55,11 +77,3 @@ parameter logic [3:0] D_PTCT = 4'h3;
 parameter logic [3:0] D_MSG = 4'h3;
 parameter logic [3:0] D_TAG = 4'h4;
 parameter logic [3:0] D_HASH = 4'h5;
-
-`ifdef V1
-parameter logic [3:0] UROL = 1;
-`elsif V2
-parameter logic [3:0] UROL = 2;
-`elsif V3
-parameter logic [3:0] UROL = 4;
-`endif
