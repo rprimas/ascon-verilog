@@ -5,6 +5,8 @@
 //
 // Configuration parameters for the Ascon core.
 
+// UROL: Number of Ascon-p rounds per clock cycle.
+// CCW: Width of the data buses.
 `ifdef V1
 parameter logic [3:0] UROL = 1;
 parameter unsigned CCW = 32;
@@ -25,13 +27,15 @@ parameter logic [3:0] UROL = 4;
 parameter unsigned CCW = 64;
 `endif
 
+parameter unsigned CCWD8 = CCW / 8;  // Number of bytes in one word
+parameter unsigned W64 = 64 / CCW;  // Number of words in 64-bit
+parameter unsigned W128 = 128 / CCW;  // Number of words in 128-bit
+
 ///////////
 // Ascon //
 ///////////
 
 parameter unsigned LANES = 5;
-parameter unsigned LANE_BITS = 64;
-parameter unsigned KEY_BITS = 128;
 
 // ///////////////////
 // // Ascon-AEAD128 //
@@ -40,16 +44,13 @@ parameter unsigned KEY_BITS = 128;
 parameter logic [63:0] IV_AEAD = 64'h00001000808c0001;
 parameter unsigned ROUNDS_A = 12;
 parameter unsigned ROUNDS_B = 8;
-parameter unsigned RATE_AEAD_BITS = 128;
-parameter unsigned RATE_AEAD_WORDS = RATE_AEAD_BITS / 32;
 
 // ///////////////////
 // // ASCON-Hash256 //
 // ///////////////////
 
 parameter logic [63:0] IV_HASH = 64'h0000080100cc0002;
-parameter unsigned RATE_HASH_BITS = 64;
-parameter unsigned RATE_HASH_WORDS = RATE_HASH_BITS / 32;
+// parameter unsigned RATE_HASH_BITS = 64;
 
 ///////////////
 // Interface //

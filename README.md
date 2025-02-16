@@ -1,33 +1,33 @@
-# Hardware Design of [Ascon-AEAD128](https://ascon.iaik.tugraz.at)
+# Hardware Design of Ascon (SP 800-232)
 
-[Ascon](https://ascon.iaik.tugraz.at) is a family of authenticated encryption and hashing algorithms designed to be lightweight and easy to implement, even with added countermeasures against side-channel attacks. Ascon has been selected as new standard for lightweight cryptography in the [NIST Lightweight Cryptography competition](https://www.nist.gov/news-events/news/2023/02/nist-selects-lightweight-cryptography-algorithms-protect-small-devices) (2019–2023). The current draft standard of Ascon is available [here](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-232.ipd.pdf).
+[Ascon](https://ascon.iaik.tugraz.at) is a family of authenticated encryption and hashing algorithms designed to be lightweight and easy to implement, even with added countermeasures against side-channel attacks. Ascon has been selected as new standard for lightweight cryptography in the [NIST Lightweight Cryptography competition](https://csrc.nist.gov/Projects/Lightweight-Cryptography) (2019–2023). The current draft standard of Ascon is available [here](https://doi.org/10.6028/NIST.SP.800-232.ipd).
 
 > [!NOTE]
-> This is a work-in-progress hardware implementation of the Ascon family of lightweight cryptographic algorithms that is compatible with the current draft standard [NIST SP 800-232](https://csrc.nist.gov/pubs/sp/800/232/ipd).
+> This is a work-in-progress hardware implementation of the Ascon family of lightweight cryptographic algorithms that is compatible with the current draft standard [NIST SP 800-232](https://doi.org/10.6028/NIST.SP.800-232.ipd).
 
 ## Available Variants
 
-| **Variant** | **Modes**                    | **Bus Width** | **Unrolled Rounds** |
-|-------------|------------------------------|:-------------:|:-------------------:|
-| v1          | Ascon-AEAD128, Ascon-Hash256 |     32-bit    |          1          |
-| v2          | Ascon-AEAD128, Ascon-Hash256 |     32-bit    |          2          |
-| v3          | Ascon-AEAD128, Ascon-Hash256 |     32-bit    |          4          |
-| v4          | Ascon-AEAD128, Ascon-Hash256 |     64-bit    |          1          |
-| v5          | Ascon-AEAD128, Ascon-Hash256 |     64-bit    |          2          |
-| v6          | Ascon-AEAD128, Ascon-Hash256 |     64-bit    |          4          |
+| **Variant** | **Modes**                        | **Bus Width** | **Unrolled Rounds** |
+|-------------|----------------------------------|:-------------:|:-------------------:|
+| v1          | `Ascon-AEAD128`, `Ascon-Hash256` |     32-bit    |          1          |
+| v2          | `Ascon-AEAD128`, `Ascon-Hash256` |     32-bit    |          2          |
+| v3          | `Ascon-AEAD128`, `Ascon-Hash256` |     32-bit    |          4          |
+| v4          | `Ascon-AEAD128`, `Ascon-Hash256` |     64-bit    |          1          |
+| v5          | `Ascon-AEAD128`, `Ascon-Hash256` |     64-bit    |          2          |
+| v6          | `Ascon-AEAD128`, `Ascon-Hash256` |     64-bit    |          4          |
 
 ## Performance
 
 The following table shoes the performance of Ascon-AEAD128 authenticated encryption/decryption using **x** bytes of message and **y** bytes of associated data **(x,y)**:
 
-| **Variant** | **Mode**      | **Cycles (0,0)** | **Cycles (16,16)** | **Cycles (1536,1536)** |
-|-------------|---------------|:---------------:|:-----------------:|:---------------------:|
-| v1          | Ascon-AEAD128 |        41       |         75        |          2355         |
-| v2          | Ascon-AEAD128 |        29       |         51        |          1571         |
-| v3          | Ascon-AEAD128 |        23       |         39        |          1179         |
-| v4          | Ascon-AEAD128 |        35       |         65        |          1965         |
-| v5          | Ascon-AEAD128 |        23       |         41        |          1181         |
-| v6          | Ascon-AEAD128 |        17       |         29        |           789         |
+| **Variant** | **Mode**        | **Cycles (0,0)** | **Cycles (16,16)** | **Cycles (1536,1536)** |
+|-------------|-----------------|:----------------:|:------------------:|:----------------------:|
+| v1          | `Ascon-AEAD128` |        41        |         75         |          2355          |
+| v2          | `Ascon-AEAD128` |        29        |         51         |          1571          |
+| v3          | `Ascon-AEAD128` |        23        |         39         |          1179          |
+| v4          | `Ascon-AEAD128` |        35        |         65         |          1965          |
+| v5          | `Ascon-AEAD128` |        23        |         41         |          1181          |
+| v6          | `Ascon-AEAD128` |        17        |         29         |           789          |
 
 ## Files
 

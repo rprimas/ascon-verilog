@@ -10,9 +10,10 @@ from enum import Enum
 
 from ascon import *
 
-VERBOSE = 0
+VERBOSE = 1
 RUNS = range(5)
 CCW = 32
+CCWD8 = CCW//8
 
 
 class Mode(Enum):
@@ -38,22 +39,22 @@ async def send_data(dut, data_in, bdi_type, bdo_ready, bdi_eoi):
     while d < dlen:
         bdi = 0
         bdi_valid = 0
-        for dd in range(d, min(d + (CCW // 8), dlen)):
-            bdi |= data_in[dd] << 8 * (dd % (CCW // 8))
-            bdi_valid |= 1 << (dd % (CCW // 8))
+        for dd in range(d, min(d + CCWD8, dlen)):
+            bdi |= data_in[dd] << 8 * (dd % CCWD8)
+            bdi_valid |= 1 << (dd % CCWD8)
         dut.bdi.value = bdi
         dut.bdi_valid.value = bdi_valid
         dut.bdi_type.value = bdi_type
-        dut.bdi_eot.value = d + (CCW // 8) >= dlen
-        dut.bdi_eoi.value = d + (CCW // 8) >= dlen and bdi_eoi
+        dut.bdi_eot.value = d + CCWD8 >= dlen
+        dut.bdi_eoi.value = d + CCWD8 >= dlen and bdi_eoi
         dut.bdo_ready.value = bdo_ready
         await RisingEdge(dut.clk)
         if dut.bdi_ready.value:
-            bdoo = int(dut.bdo.value).to_bytes((CCW // 8))
-            for dd in range((CCW // 8)):
+            bdoo = int(dut.bdo.value).to_bytes(CCWD8)
+            for dd in range(CCWD8):
                 if bdi_valid & (1 << dd):
-                    data_out.append(bdoo[(CCW // 8) - 1 - dd])
-            d += CCW // 8
+                    data_out.append(bdoo[CCWD8 - 1 - dd])
+            d += CCWD8
     return data_out
 
 
@@ -61,13 +62,13 @@ async def send_key(dut, key_in):
     k = 0
     while k < 16:
         key2 = 0
-        for kk in range(k, min(k + (CCW // 8), 16)):
-            key2 |= key_in[kk] << 8 * (kk % (CCW // 8))
+        for kk in range(k, min(k + CCWD8, 16)):
+            key2 |= key_in[kk] << 8 * (kk % CCWD8)
         dut.key.value = key2
         dut.key_valid.value = 1
         await RisingEdge(dut.clk)
         if dut.key_ready.value:
-            k += CCW // 8
+            k += CCWD8
     dut.key.value = 0
     dut.key_valid.value = 0
 
@@ -79,9 +80,9 @@ async def receive_data(dut, type, len=16):
         dut.bdo_ready.value = 1
         await RisingEdge(dut.clk)
         if dut.bdo_valid and dut.bdo_type.value == type:
-            for x in int(dut.bdo.value).to_bytes(CCW // 8):
+            for x in int(dut.bdo.value).to_bytes(CCWD8):
                 data.append(x)
-            d += CCW // 8
+            d += CCWD8
     dut.bdo_ready.value = 0
     return data
 
@@ -92,7 +93,7 @@ async def toggle(dut, signalStr, value):
     eval(signalStr, locals=dict(dut=cocotb.top)).value = 0
 
 
-def log2(dut, verbose, dash, **kwargs):
+def log(dut, verbose, dashes, **kwargs):
     if verbose <= VERBOSE:
         for k, val in kwargs.items():
             dut._log.info(
@@ -101,7 +102,7 @@ def log2(dut, verbose, dash, **kwargs):
                 " " * (8 - len(k)),
                 "".join("{:02X}".format(x) for x in val),
             )
-        if dash:
+        if dashes:
             dut._log.info("------------------------------------------")
 
 
@@ -111,8 +112,8 @@ async def cycle_cnt(dut):
     while 1:
         await RisingEdge(dut.clk)
         if int(dut.fsm.value) == int.from_bytes("IDLE".encode("ascii")):
-            # await RisingEdge(dut.clk)
-            dut._log.info("cycles    %d", cycles)
+            if VERBOSE >= 1:
+                dut._log.info("cycles    %d", cycles)
             return
         cycles += 1
 
@@ -139,7 +140,7 @@ async def test_enc(dut):
     key = bytearray([random.randint(0, 255) for x in range(16)])
     npub = bytearray([random.randint(0, 255) for x in range(16)])
 
-    log2(dut, verbose=1, dash=1, key=key, npub=npub)
+    log(dut, verbose=2, dashes=1, key=key, npub=npub)
 
     for msglen in RUNS:
         for adlen in RUNS:
@@ -151,7 +152,7 @@ async def test_enc(dut):
             # compute in software
             (ct, tag) = ascon_encrypt(key, npub, ad, pt)
 
-            log2(dut, verbose=1, dash=0, ad=ad, pt=pt, ct=ct, tag=tag)
+            log(dut, verbose=2, dashes=0, ad=ad, pt=pt, ct=ct, tag=tag)
 
             await cocotb.start(cycle_cnt(dut))
             await cocotb.start(toggle(dut, "dut.mode", mode.value))
@@ -169,12 +170,12 @@ async def test_enc(dut):
             # send pt/ct
             if msglen > 0:
                 ct_hw = await send_data(dut, pt, 3, 1, 1)
-                log2(dut, 1, 0, ct_hw=ct_hw)
+                log(dut, verbose=2, dashes=0, ct_hw=ct_hw)
                 await clear_bdi(dut)
 
             # receive tag
             tag_hw = await receive_data(dut, 4)
-            log2(dut, 1, 0, tag_hw=tag_hw)
+            log(dut, verbose=2, dashes=0, tag_hw=tag_hw)
 
             # check tag
             for i in range(16):
@@ -182,7 +183,7 @@ async def test_enc(dut):
 
             await RisingEdge(dut.clk)
 
-            log2(dut, 1, 1)
+            log(dut, verbose=1, dashes=1)
 
 
 # ,------.                                       ,--.
@@ -207,7 +208,7 @@ async def test_dec(dut):
     key = bytearray([random.randint(0, 255) for x in range(16)])
     npub = bytearray([random.randint(0, 255) for x in range(16)])
 
-    log2(dut, 1, 1, key=key, npub=npub)
+    log(dut, verbose=2, dashes=1, key=key, npub=npub)
 
     for msglen in RUNS:
         for adlen in RUNS:
@@ -218,9 +219,10 @@ async def test_dec(dut):
 
             # compute in software
             (ct, tag) = ascon_encrypt(key, npub, ad, pt)
+
             await RisingEdge(dut.clk)
 
-            log2(dut, 1, 0, ad=ad, pt=pt, ct=ct, tag=tag)
+            log(dut, verbose=2, dashes=0, ad=ad, pt=pt, ct=ct, tag=tag)
 
             await cocotb.start(cycle_cnt(dut))
             await cocotb.start(toggle(dut, "dut.mode", mode.value))
@@ -239,7 +241,7 @@ async def test_dec(dut):
             # send pt/ct
             if msglen > 0:
                 pt_hw = await send_data(dut, ct, 3, 1, 1)
-                log2(dut, 1, 0, pt_hw=pt_hw)
+                log(dut, verbose=2, dashes=0, pt_hw=pt_hw)
                 await clear_bdi(dut)
 
             # send tag
@@ -250,7 +252,7 @@ async def test_dec(dut):
             await RisingEdge(dut.clk)
             assert dut.auth.value == 1
 
-            log2(dut, 1, 1)
+            log(dut, verbose=1, dashes=1)
 
 
 # ,--.  ,--.               ,--.
@@ -271,7 +273,7 @@ async def test_hash(dut):
     await cocotb.start(toggle(dut, "dut.rst", 1))
     await RisingEdge(dut.clk)
 
-    log2(dut, 1, 1)
+    log(dut, verbose=1, dashes=1)
 
     for msglen in RUNS:
         dut._log.info("test      %s %d", mode.name, msglen)
@@ -281,7 +283,7 @@ async def test_hash(dut):
         # compute in software
         hash = ascon_hash(msg)
 
-        log2(dut, 1, 0, msg=msg, hash=hash)
+        log(dut, verbose=2, dashes=0, msg=msg, hash=hash)
 
         await cocotb.start(cycle_cnt(dut))
         await cocotb.start(toggle(dut, "dut.mode", mode.value))
@@ -299,10 +301,12 @@ async def test_hash(dut):
 
         # receive hash
         hash_hw = await receive_data(dut, 5, 32)
-        log2(dut, 1, 0, hash_hw=hash_hw)
+        log(dut, verbose=2, dashes=0, hash_hw=hash_hw)
+
+        # check hash
         for i in range(32):
             assert hash_hw[i] == hash[i], "hash incorrect"
 
         await RisingEdge(dut.clk)
 
-        log2(dut, 1, 1)
+        log(dut, 1, 1)
