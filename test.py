@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: CC0-1.0
 
 import cocotb
+import cocotb.result
 from cocotb.triggers import RisingEdge
 from cocotb.clock import Clock
 
@@ -11,9 +12,9 @@ from enum import Enum
 from ascon import *
 
 VERBOSE = 1
-RUNS = range(5)
+RUNS = range(0, 10)
 CCW = 32
-CCWD8 = CCW//8
+CCWD8 = CCW // 8
 
 
 class Mode(Enum):
@@ -21,6 +22,7 @@ class Mode(Enum):
     Ascon_AEAD128_Enc = 1
     Ascon_AEAD128_Dec = 2
     Ascon_Hash256 = 3
+    Ascon_XOF128 = 4
 
 
 async def clear_bdi(dut):
@@ -73,17 +75,19 @@ async def send_key(dut, key_in):
     dut.key_valid.value = 0
 
 
-async def receive_data(dut, type, len=16):
+async def receive_data(dut, type, len=16, bdo_eoo=0):
     data = []
     d = 0
     while d < len:
         dut.bdo_ready.value = 1
+        dut.bdo_eoo.value = (d + CCWD8 >= len) & bdo_eoo
         await RisingEdge(dut.clk)
         if dut.bdo_valid and dut.bdo_type.value == type:
             for x in int(dut.bdo.value).to_bytes(CCWD8):
                 data.append(x)
             d += CCWD8
     dut.bdo_ready.value = 0
+    dut.bdo_eoo.value = 0
     return data
 
 
@@ -118,6 +122,18 @@ async def cycle_cnt(dut):
         cycles += 1
 
 
+async def timeout(dut, tcycles):
+    cycles = 1
+    await RisingEdge(dut.clk)
+    while 1:
+        await RisingEdge(dut.clk)
+        if int(dut.fsm.value) == int.from_bytes("IDLE".encode("ascii")):
+            return
+        if cycles >= tcycles:
+            assert False, "Timeout"
+        cycles += 1
+
+
 # ,------.                                      ,--.
 # |  .---',--,--,  ,---.,--.--.,--. ,--.,---. ,-'  '-.
 # |  `--, |      \| .--'|  .--' \  '  /| .-. |'-.  .-'
@@ -144,7 +160,7 @@ async def test_enc(dut):
 
     for msglen in RUNS:
         for adlen in RUNS:
-            dut._log.info("test      %s %d %d", mode.name, adlen, msglen)
+            dut._log.info("test      %s ad:%d msg:%d", mode.name, adlen, msglen)
 
             ad = bytearray([random.randint(0, 255) for x in range(adlen)])
             pt = bytearray([random.randint(0, 255) for x in range(msglen)])
@@ -212,7 +228,7 @@ async def test_dec(dut):
 
     for msglen in RUNS:
         for adlen in RUNS:
-            dut._log.info("test      %s %d %d", mode.name, adlen, msglen)
+            dut._log.info("test      %s ad:%d msg:%d", mode.name, adlen, msglen)
 
             ad = bytearray([random.randint(0, 255) for x in range(adlen)])
             pt = bytearray([random.randint(0, 255) for x in range(msglen)])
@@ -276,7 +292,7 @@ async def test_hash(dut):
     log(dut, verbose=1, dashes=1)
 
     for msglen in RUNS:
-        dut._log.info("test      %s %d", mode.name, msglen)
+        dut._log.info("test      %s msg:%d", mode.name, msglen)
 
         msg = bytearray([random.randint(0, 255) for x in range(msglen)])
 
@@ -310,3 +326,69 @@ async def test_hash(dut):
         await RisingEdge(dut.clk)
 
         log(dut, 1, 1)
+
+
+# ,--.   ,--.,-----. ,------.
+#  \  `.'  /'  .-.  '|  .---'
+#   .'    \ |  | |  ||  `--,
+#  /  .'.  \'  '-'  '|  |`
+# '--'   '--'`-----' `--'
+
+
+@cocotb.test()
+async def test_xof(dut):
+
+    # init test
+    random.seed(31415)
+    mode = Mode.Ascon_XOF128
+    clock = Clock(dut.clk, 1, units="ns")
+    cocotb.start_soon(clock.start(start_high=False))
+    await cocotb.start(toggle(dut, "dut.rst", 1))
+    await RisingEdge(dut.clk)
+
+    log(dut, verbose=1, dashes=1)
+
+    for msglen in RUNS:
+        for xlen in RUNS:
+            xoflen = max(((xlen + 7) // 8) * 8, 8)
+            dut._log.info("test      %s msg:%d xof:%d", mode.name, msglen, xoflen)
+
+            msg = bytearray([random.randint(0, 255) for x in range(msglen)])
+
+            # compute in software
+            xof = ascon_hash(msg, variant="Ascon-XOF128", hashlength=xoflen)
+
+            log(dut, verbose=2, dashes=0, msg=msg, xof=xof)
+
+            await cocotb.start(cycle_cnt(dut))
+            await cocotb.start(toggle(dut, "dut.mode", mode.value))
+
+            if msglen == 0:
+                await cocotb.start(toggle(dut, "dut.bdi_eot", 1))
+                await cocotb.start(toggle(dut, "dut.bdi_eoi", 1))
+
+            await RisingEdge(dut.clk)
+
+            # send msg
+            if msglen > 0:
+                await send_data(dut, msg, bdi_type=3, bdo_ready=0, bdi_eoi=1)
+            await clear_bdi(dut)
+
+            # receive xof
+            xof_hw = await receive_data(dut, 5, xoflen, bdo_eoo=1)
+            log(dut, verbose=2, dashes=0, xof_hw=xof_hw)
+
+            await RisingEdge(dut.clk)
+
+            # check hash
+            for i in range(xoflen):
+                assert hex(xof_hw[i]) == hex(xof[i]), "xof incorrect"
+
+            log(dut, 1, 1)
+
+
+#  ,-----.,--.   ,--.,-----. ,------.
+# '  .--./ \  `.'  /'  .-.  '|  .---'
+# |  |      .'    \ |  | |  ||  `--,
+# '  '--'\ /  .'.  \'  '-'  '|  |`
+#  `-----''--'   '--'`-----' `--'

@@ -7,33 +7,33 @@
 
 ## Available Variants
 
-| **Variant** | **Modes**                        | **Bus Width** | **Unrolled Rounds** |
-|-------------|----------------------------------|:-------------:|:-------------------:|
-| v1          | `Ascon-AEAD128`, `Ascon-Hash256` |     32-bit    |          1          |
-| v2          | `Ascon-AEAD128`, `Ascon-Hash256` |     32-bit    |          2          |
-| v3          | `Ascon-AEAD128`, `Ascon-Hash256` |     32-bit    |          4          |
-| v4          | `Ascon-AEAD128`, `Ascon-Hash256` |     64-bit    |          1          |
-| v5          | `Ascon-AEAD128`, `Ascon-Hash256` |     64-bit    |          2          |
-| v6          | `Ascon-AEAD128`, `Ascon-Hash256` |     64-bit    |          4          |
+| **Variant** | **Modes**                                      | **Bus Width** | **Unrolled Rounds** |
+|-------------|------------------------------------------------|:-------------:|:-------------------:|
+| **v1**      | `Ascon-AEAD128`,`Ascon-Hash256`,`Ascon-Xof128` |     32-bit    |          1          |
+| **v2**      | `Ascon-AEAD128`,`Ascon-Hash256`,`Ascon-Xof128` |     32-bit    |          2          |
+| **v3**      | `Ascon-AEAD128`,`Ascon-Hash256`,`Ascon-Xof128` |     32-bit    |          4          |
+| **v4**      | `Ascon-AEAD128`,`Ascon-Hash256`,`Ascon-Xof128` |     64-bit    |          1          |
+| **v5**      | `Ascon-AEAD128`,`Ascon-Hash256`,`Ascon-Xof128` |     64-bit    |          2          |
+| **v6**      | `Ascon-AEAD128`,`Ascon-Hash256`,`Ascon-Xof128` |     64-bit    |          4          |
 
 ## Performance
 
-The following table shoes the performance of Ascon-AEAD128 authenticated encryption/decryption using **x** bytes of message and **y** bytes of associated data **(x,y)**:
+The following table shows encryption performance using **x** bytes of message and **y** bytes of associated data **(x,y)**:
 
 | **Variant** | **Mode**        | **Cycles (0,0)** | **Cycles (16,16)** | **Cycles (1536,1536)** |
 |-------------|-----------------|:----------------:|:------------------:|:----------------------:|
-| v1          | `Ascon-AEAD128` |        41        |         75         |          2355          |
-| v2          | `Ascon-AEAD128` |        29        |         51         |          1571          |
-| v3          | `Ascon-AEAD128` |        23        |         39         |          1179          |
-| v4          | `Ascon-AEAD128` |        35        |         65         |          1965          |
-| v5          | `Ascon-AEAD128` |        23        |         41         |          1181          |
-| v6          | `Ascon-AEAD128` |        17        |         29         |           789          |
+| **v1**      | `Ascon-AEAD128` |        41        |         75         |          2355          |
+| **v2**      | `Ascon-AEAD128` |        29        |         51         |          1571          |
+| **v3**      | `Ascon-AEAD128` |        23        |         39         |          1179          |
+| **v4**      | `Ascon-AEAD128` |        35        |         65         |          1965          |
+| **v5**      | `Ascon-AEAD128` |        23        |         41         |          1181          |
+| **v6**      | `Ascon-AEAD128` |        17        |         29         |           789          |
 
 ## Files
 
 - `rtl/ascon_core.sv`: Verilog implementation of the Ascon core.
 - `rtl/asconp.sv`: Verilog implementation of the Ascon permutation.
-- `rtl/config_core.sv`: Configuration file for the Ascon core and test bench.
+- `rtl/config_core.sv`: Configuration of the Ascon core.
 - `ascon.py`: Reference software implementation of Ascon, used by `test.py`.
 - `LICENSE`: License file.
 - `Makefile`: Commands for running [cocotb](https://www.cocotb.org/) verilator test bench.
@@ -45,26 +45,27 @@ The following table shoes the performance of Ascon-AEAD128 authenticated encrypt
 
 The following table contains a description of the interface signals:
 
-| **Name**   | **Bits** | **Description**                                     |
-|------------|:--------:|-----------------------------------------------------|
-| clk        |     1    | Clock signal.                                       |
-| rst        |     1    | Reset signal. Note: Synchronous active high.        |
-| key        |   32/64  | Key data input.                                     |
-| key_valid  |     1    | Key data is valid.                                  |
-| key_ready  |     1    | Ascon core is ready to receive a new key.           |
-| bdi_data   |   32/64  | Block data input (BDI).                             |
-| bdi_valid  |    4/8   | Valid BDI data bytes.                               |
-| bdi_ready  |     1    | Ascon core is ready to receive data.                |
-| bdi_eot    |     1    | Current BDI block is the last block of its type.    |
-| bdi_eoi    |     1    | Current BDI block is the last block of input.       |
-| bdi_type   |     4    | Type of BDI data.                                   |
-| mode       |     4    | Ascon mode.                                         |
-| bdo_data   |   32/64  | Block data output (BDO).                            |
-| bdo_valid  |    4/8   | Valid BDO data bytes.                               |
-| bdo_ready  |     1    | Test bench is ready to receive data.                |
-| bdo_type   |     4    | Type of BDO data.                                   |
-| auth       |     1    | 1=Authentication success, 0=Authentication failure. |
-| auth_valid |     1    | Authentication output is valid.                     |
+| **Name**     | **Bits** | **Description**                                  |
+|--------------|:--------:|--------------------------------------------------|
+| `clk`        |     1    | Clock signal.                                    |
+| `rst`        |     1    | Reset signal. Note: Synchronous active high.     |
+| `key`        |   32/64  | Key data input.                                  |
+| `key_valid`  |     1    | Key data is valid.                               |
+| `key_ready`  |     1    | Ascon core is ready to receive a new key.        |
+| `bdi_data`   |   32/64  | Block data input (BDI).                          |
+| `bdi_valid`  |    4/8   | Valid BDI data bytes.                            |
+| `bdi_ready`  |     1    | Ascon core is ready to receive data.             |
+| `bdi_eot`    |     1    | Last BDI block of this type.                     |
+| `bdi_eoi`    |     1    | Last BDI block.                                  |
+| `bdi_type`   |     4    | Type of BDI data.                                |
+| `mode`       |     4    | Ascon mode.                                      |
+| `bdo_data`   |   32/64  | Block data output (BDO).                         |
+| `bdo_valid`  |    4/8   | Valid BDO data bytes.                            |
+| `bdo_ready`  |     1    | Test bench is ready to receive data.             |
+| `bdo_type`   |     4    | Type of BDO data.                                |
+| `bdo_eoo`    |     1    | Last BDO block.                                  |
+| `auth`       |     1    | Authentication success.                          |
+| `auth_valid` |     1    | Authentication output is valid.                  |
 
 ## Quick Start
 
