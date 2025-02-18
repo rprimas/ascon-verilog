@@ -38,7 +38,7 @@ parameter unsigned ROUNDS_B = 8;
 
 parameter logic [63:0] IV_AEAD = 64'h00001000808c0001;  // Ascon-AEAD128
 parameter logic [63:0] IV_HASH = 64'h0000080100cc0002;  // ASCON-Hash256
-parameter logic [63:0] IV_XOF  = 64'h0000080000cc0003;  // Ascon-XOF128
+parameter logic [63:0] IV_XOF = 64'h0000080000cc0003;  // Ascon-XOF128
 parameter logic [63:0] IV_CXOF = 64'h0000080000cc0004;  // Ascon-CXOF128
 
 // Ascon modes
@@ -55,8 +55,8 @@ typedef enum logic [3:0] {
 typedef enum logic [3:0] {
   D_NULL  = 0,
   D_NONCE = 1,
-  D_AD    = 2,
-  D_MSG   = 3,
+  D_AD    = 2, // also for customization string of CXOF
+  D_MSG   = 3, // for AEAD, HASH, XOF, CXOF
   D_TAG   = 4,
   D_HASH  = 5
 } data_e;

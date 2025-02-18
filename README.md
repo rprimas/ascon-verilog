@@ -7,14 +7,16 @@
 
 ## Available Variants
 
-| **Variant** | **Modes**                                      | **Bus Width** | **Unrolled Rounds** |
-|-------------|------------------------------------------------|:-------------:|:-------------------:|
-| **v1**      | `Ascon-AEAD128`,`Ascon-Hash256`,`Ascon-Xof128` |     32-bit    |          1          |
-| **v2**      | `Ascon-AEAD128`,`Ascon-Hash256`,`Ascon-Xof128` |     32-bit    |          2          |
-| **v3**      | `Ascon-AEAD128`,`Ascon-Hash256`,`Ascon-Xof128` |     32-bit    |          4          |
-| **v4**      | `Ascon-AEAD128`,`Ascon-Hash256`,`Ascon-Xof128` |     64-bit    |          1          |
-| **v5**      | `Ascon-AEAD128`,`Ascon-Hash256`,`Ascon-Xof128` |     64-bit    |          2          |
-| **v6**      | `Ascon-AEAD128`,`Ascon-Hash256`,`Ascon-Xof128` |     64-bit    |          4          |
+All variants support `Ascon-AEAD128`, `Ascon-Hash256`, `Ascon-XOF128`, `Ascon-CXOF128` modes:
+
+| **Variant** | **Bus Width** | **Unrolled Rounds** |
+|-------------|:-------------:|:-------------------:|
+| **v1**      |     32-bit    |          1          |
+| **v2**      |     32-bit    |          2          |
+| **v3**      |     32-bit    |          4          |
+| **v4**      |     64-bit    |          1          |
+| **v5**      |     64-bit    |          2          |
+| **v6**      |     64-bit    |          4          |
 
 ## Performance
 
@@ -33,7 +35,7 @@ The following table shows encryption performance using **x** bytes of message an
 
 - `rtl/ascon_core.sv`: Verilog implementation of the Ascon core.
 - `rtl/asconp.sv`: Verilog implementation of the Ascon permutation.
-- `rtl/config_core.sv`: Configuration of the Ascon core.
+- `rtl/config`: Configuration of the Ascon core.
 - `ascon.py`: Reference software implementation of Ascon, used by `test.py`.
 - `LICENSE`: License file.
 - `Makefile`: Commands for running [cocotb](https://www.cocotb.org/) verilator test bench.

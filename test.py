@@ -11,18 +11,20 @@ from enum import Enum
 
 from ascon import *
 
-VERBOSE = 1
-RUNS = range(0, 10)
+VERBOSE = 2
+RUNS = range(0, 5)
 CCW = 32
 CCWD8 = CCW // 8
 
 
+# Needs to match "mode_e" in "config.sv"
 class Mode(Enum):
     Ascon_Nop = 0
     Ascon_AEAD128_Enc = 1
     Ascon_AEAD128_Dec = 2
     Ascon_Hash256 = 3
     Ascon_XOF128 = 4
+    Ascon_CXOF128 = 5
 
 
 async def clear_bdi(dut):
@@ -37,6 +39,7 @@ async def clear_bdi(dut):
 async def send_data(dut, data_in, bdi_type, bdo_ready, bdi_eoi):
     dlen = len(data_in)
     d = 0
+    t = 0
     data_out = []
     while d < dlen:
         bdi = 0
@@ -51,6 +54,9 @@ async def send_data(dut, data_in, bdi_type, bdo_ready, bdi_eoi):
         dut.bdi_eoi.value = d + CCWD8 >= dlen and bdi_eoi
         dut.bdo_ready.value = bdo_ready
         await RisingEdge(dut.clk)
+        if t == 100:
+            assert False, "Timeout send_data"
+        t += 1
         if dut.bdi_ready.value:
             bdoo = int(dut.bdo.value).to_bytes(CCWD8)
             for dd in range(CCWD8):
@@ -171,6 +177,7 @@ async def test_enc(dut):
             log(dut, verbose=2, dashes=0, ad=ad, pt=pt, ct=ct, tag=tag)
 
             await cocotb.start(cycle_cnt(dut))
+            await cocotb.start(timeout(dut, 100))
             await cocotb.start(toggle(dut, "dut.mode", mode.value))
 
             await send_key(dut, key)
@@ -392,3 +399,72 @@ async def test_xof(dut):
 # |  |      .'    \ |  | |  ||  `--,
 # '  '--'\ /  .'.  \'  '-'  '|  |`
 #  `-----''--'   '--'`-----' `--'
+
+
+@cocotb.test()
+async def test_cxof(dut):
+
+    # init test
+    random.seed(31415)
+    mode = Mode.Ascon_CXOF128
+    clock = Clock(dut.clk, 1, units="ns")
+    cocotb.start_soon(clock.start(start_high=False))
+    await cocotb.start(toggle(dut, "dut.rst", 1))
+    await RisingEdge(dut.clk)
+
+    log(dut, verbose=1, dashes=1)
+
+    for msglen in RUNS:
+        for cstmlen in RUNS:
+            cstmlen = min(cstmlen, 256)
+            cxoflen = max(((msglen + 7) // 8) * 8, 8)
+            cstm = bytearray([random.randint(0, 255) for x in range(cstmlen)])
+            msg = bytearray([random.randint(0, 255) for x in range(msglen)])
+
+            dut._log.info(
+                "test      %s cstm:%d msg:%d xof:%d",
+                mode.name,
+                cstmlen,
+                msglen,
+                cxoflen,
+            )
+
+            # compute in software
+            cxof = ascon_hash(
+                msg, variant="Ascon-CXOF128", hashlength=cxoflen, customization=cstm
+            )
+
+            # prepend bit-length identifier block to cstm
+            for i in range(8):
+                cstm.insert(0, 0)
+            cstm[0] = (cstmlen % 256) * 8  # todo
+            cstm[1] = (min(cstmlen, 2048) >> 8) * 8  # todo
+
+            log(dut, verbose=2, dashes=0, cstm=cstm, msg=msg, cxof=cxof)
+
+            await cocotb.start(cycle_cnt(dut))
+            await cocotb.start(timeout(dut, 1000))
+            await cocotb.start(toggle(dut, "dut.mode", mode.value))
+
+            await RisingEdge(dut.clk)
+
+            # send customization string
+            await send_data(dut, cstm, bdi_type=2, bdo_ready=0, bdi_eoi=(msglen == 0))
+            await clear_bdi(dut)
+
+            # send msg
+            if msglen > 0:
+                await send_data(dut, msg, bdi_type=3, bdo_ready=0, bdi_eoi=1)
+            await clear_bdi(dut)
+
+            # receive xof
+            cxof_hw = await receive_data(dut, 5, cxoflen, bdo_eoo=1)
+            log(dut, verbose=2, dashes=0, cxof_hw=cxof_hw)
+
+            await RisingEdge(dut.clk)
+
+            # check cxof
+            for i in range(cxoflen):
+                assert hex(cxof_hw[i]) == hex(cxof[i]), "cxof incorrect"
+
+            log(dut, 1, 1)

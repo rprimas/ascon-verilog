@@ -107,7 +107,8 @@ module ascon_core (
 
   logic abs_ad, abs_ad_done, pro_ad, pro_ad_done;
   assign abs_ad = (fsm == ABS_AD) & (bdi_type == D_AD) & (bdi_valid > 'd0) & bdi_ready;
-  assign abs_ad_done = ((word_cnt == (W128 - 1)) | bdi_eot) & abs_ad;
+  assign abs_ad_done = ((word_cnt == ((mode_r inside {M_ENC, M_DEC}) ? (W128 - 1) : (W64 - 1))) | bdi_eot) & abs_ad;
+  // assign abs_ad_done = ((word_cnt == (W128 - 1)) | bdi_eot) & abs_ad;
   assign pro_ad = (fsm == PRO_AD);
   assign pro_ad_done = (round_cnt == UROL) & pro_ad;
 
@@ -145,7 +146,7 @@ module ascon_core (
   // Dynamic slicing
   assign state_slice = state[int'(lane_idx)][int'(word_idx)];
 
-  // Finate state machine
+  // Finite state machine
   typedef enum logic [63:0] {
     IDLE     = "IDLE",
     LD_KEY   = "LD_KEY",
@@ -280,12 +281,16 @@ module ascon_core (
     fsm_nx = fsm;
     if (idle_done) begin
       if (mode inside {M_ENC, M_DEC}) fsm_nx = key_valid ? LD_KEY : LD_NPUB;
-      if (mode inside {M_HASH, M_XOF}) fsm_nx = INIT;
+      if (mode inside {M_HASH, M_XOF, M_CXOF}) fsm_nx = INIT;
     end
     if (ld_key_done) fsm_nx = LD_NPUB;
     if (ld_npub_done) fsm_nx = INIT;
-    if (init_done)
-      fsm_nx = (mode_r inside {M_HASH, M_XOF}) ? (flag_eoi ? PAD_MSG : ABS_MSG) : KADD_2;
+    if (init_done) begin
+      if (mode_r inside {M_ENC, M_DEC}) fsm_nx = KADD_2;
+      if (mode_r inside {M_HASH, M_XOF}) fsm_nx = flag_eoi ? PAD_MSG : ABS_MSG;
+      if (mode_r inside {M_CXOF}) fsm_nx = ABS_AD;
+      // fsm_nx = (mode_r inside {M_HASH, M_XOF}) ? (flag_eoi ? PAD_MSG : ABS_MSG) : KADD_2;
+    end
     if (kadd_2_done) begin
       if (flag_eoi) fsm_nx = DOM_SEP;
       else if (bdi_type == D_AD) fsm_nx = ABS_AD;
@@ -295,7 +300,9 @@ module ascon_core (
       if (bdi_valid != '1) begin
         fsm_nx = PRO_AD;
       end else begin
-        if (word_cnt < (W128 - 1)) fsm_nx = PAD_AD;
+        // if (word_cnt < (W128 - 1)) fsm_nx = PAD_AD;
+        if ((word_cnt != (W128 - 1)) && (mode_r inside {M_ENC, M_DEC})) fsm_nx = PAD_AD;
+        else if ((word_cnt != (W64 - 1)) && (mode_r inside {M_HASH, M_XOF, M_CXOF})) fsm_nx = PAD_AD;
         else fsm_nx = PRO_AD;
       end
     end
@@ -307,23 +314,26 @@ module ascon_core (
         end else if (flag_ad_pad == 0) begin
           fsm_nx = PAD_AD;
         end else begin
-          fsm_nx = DOM_SEP;
+          if (mode_r inside {M_ENC, M_DEC}) fsm_nx = DOM_SEP;
+          else if (mode_r == M_CXOF) begin
+            fsm_nx = flag_ad_eot ? (flag_eoi ? PAD_MSG : ABS_MSG) : ABS_MSG;
+          end
         end
       end
     end
     if (fsm == DOM_SEP) fsm_nx = flag_eoi ? KADD_3 : ABS_MSG;
     if (abs_msg_done) begin
       if (bdi_valid != '1) begin
-        if (mode_r inside {M_HASH, M_XOF}) fsm_nx = FINAL;
+        if (mode_r inside {M_HASH, M_XOF, M_CXOF}) fsm_nx = FINAL;
         else fsm_nx = KADD_3;
       end else begin
         if ((word_cnt != (W128 - 1)) && (mode_r inside {M_ENC, M_DEC})) fsm_nx = PAD_MSG;
-        else if ((word_cnt != (W64 - 1)) && (mode_r inside {M_HASH, M_XOF})) fsm_nx = PAD_MSG;
+        else if ((word_cnt != (W64 - 1)) && (mode_r inside {M_HASH, M_XOF, M_CXOF})) fsm_nx = PAD_MSG;
         else fsm_nx = PRO_MSG;
       end
     end
     if (fsm == PAD_MSG) begin
-      if (mode_r inside {M_HASH, M_XOF}) fsm_nx = FINAL;
+      if (mode_r inside {M_HASH, M_XOF, M_CXOF}) fsm_nx = FINAL;
       else fsm_nx = KADD_3;
     end
     if (pro_msg_done) begin
@@ -336,9 +346,9 @@ module ascon_core (
     if (fsm == KADD_3) fsm_nx = FINAL;
     if (fin_done) begin
       if (mode_r == M_HASH) fsm_nx = SQZ_HASH;
-      else if (mode_r inside {M_XOF}) begin
+      else if (mode_r inside {M_XOF, M_CXOF}) begin
         if (bdo_ready) fsm_nx = SQZ_HASH;
-        else fsm_nx = IDLE;
+        else fsm_nx = IDLE; // todo
       end else fsm_nx = KADD_4;
     end
     if (fsm == KADD_4) fsm_nx = (mode_r inside {M_DEC}) ? VER_TAG : SQZ_TAG;
@@ -377,7 +387,7 @@ module ascon_core (
         flag_msg_pad <= fsm == PAD_MSG;
       end
       // State initialization, hashing
-      if (idle_done & (mode inside {M_HASH, M_XOF})) begin
+      if (idle_done & (mode inside {M_HASH, M_XOF, M_CXOF})) begin
         for (int i = 1; i < 5; i++) state[i] <= '{default: '0};
         if (mode == M_HASH) begin
           state[0][lanny(0)] <= IV_HASH[0+:CCW];
@@ -385,6 +395,9 @@ module ascon_core (
         end else if (mode == M_XOF) begin
           state[0][lanny(0)] <= IV_XOF[0+:CCW];
           if (CCW == 32) state[0][lanny(1)] <= IV_XOF[lanny(1)*CCW+:CCW];
+        end else if (mode == M_CXOF) begin
+          state[0][lanny(0)] <= IV_CXOF[0+:CCW];
+          if (CCW == 32) state[0][lanny(1)] <= IV_CXOF[lanny(1)*CCW+:CCW];
         end
         if (bdi_eoi) flag_eoi <= 'd1;
       end
@@ -404,7 +417,6 @@ module ascon_core (
       // Key addition 2/4
       if (kadd_2_done | fsm == KADD_4) begin
         state[3][wordy(0)] <= state[3][wordy(0)] ^ ascon_key[lanny(0)];
-        // state[3][lanny(0):lanny(1)] <= log64_t'({state[3][lanny(0):lanny(1)]}) ^ log64_t'({ascon_key[lanny(0):lanny(1)]});
         state[4][wordy(2)] <= state[4][wordy(2)] ^ ascon_key[lanny(2)];
         if (CCW == 32) state[3][wordy(1)] <= state[3][wordy(1)] ^ ascon_key[lanny(1)];
         if (CCW == 32) state[4][wordy(3)] <= state[4][wordy(3)] ^ ascon_key[lanny(3)];
@@ -460,8 +472,8 @@ module ascon_core (
       // Setting round counter
       case (fsm_nx)
         INIT: round_cnt <= ROUNDS_A;
-        PRO_AD: round_cnt <= ROUNDS_B;
-        PRO_MSG: round_cnt <= (mode_r inside {M_HASH, M_XOF}) ? ROUNDS_A : ROUNDS_B;
+        PRO_AD: round_cnt <= (mode_r inside {M_CXOF}) ? ROUNDS_A : ROUNDS_B;
+        PRO_MSG: round_cnt <= (mode_r inside {M_HASH, M_XOF, M_CXOF}) ? ROUNDS_A : ROUNDS_B;
         FINAL: round_cnt <= ROUNDS_A;
       endcase
       if (init | pro_ad | pro_msg | fin) round_cnt <= round_cnt - UROL;
