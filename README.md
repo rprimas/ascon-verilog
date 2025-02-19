@@ -7,11 +7,14 @@
 
 ## Available Variants
 
+The Ascon hardware design can be configured to one out of six variants.
 All variants support the following Ascon modes:
   - `Ascon-AEAD128`
   - `Ascon-Hash256`
   - `Ascon-XOF128`
   - `Ascon-CXOF128`
+
+The specific variants support the following combination of data-bus width and unrolled permutation rounds:
 
 | **Variant** | **Bus Width** | **Unrolled Rounds** |
 |-------------|:-------------:|:-------------------:|
@@ -88,7 +91,7 @@ The following table contains a description of the interface signals:
 - Execute the cocotb test bench:
   - `make`
 
-## View waveforms
+## View Waveforms
 
 - Install the [Surfer](https://surfer-project.org/) waveform viewer.
 - View waveform of cocotb test bench run:
