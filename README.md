@@ -7,7 +7,11 @@
 
 ## Available Variants
 
-All variants support `Ascon-AEAD128`, `Ascon-Hash256`, `Ascon-XOF128`, `Ascon-CXOF128` modes:
+All variants support the following Ascon modes:
+  - `Ascon-AEAD128`
+  - `Ascon-Hash256`
+  - `Ascon-XOF128`
+  - `Ascon-CXOF128`
 
 | **Variant** | **Bus Width** | **Unrolled Rounds** |
 |-------------|:-------------:|:-------------------:|

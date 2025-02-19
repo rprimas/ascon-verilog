@@ -11,8 +11,10 @@ from enum import Enum
 
 from ascon import *
 
-VERBOSE = 2
+VERBOSE = 1
 RUNS = range(0, 5)
+# RUNS = range(0, 20)
+# RUNS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 16, 32, 64, 128, 256, 512, 1024]
 CCW = 32
 CCWD8 = CCW // 8
 
@@ -54,7 +56,7 @@ async def send_data(dut, data_in, bdi_type, bdo_ready, bdi_eoi):
         dut.bdi_eoi.value = d + CCWD8 >= dlen and bdi_eoi
         dut.bdo_ready.value = bdo_ready
         await RisingEdge(dut.clk)
-        if t == 100:
+        if t == 10000:
             assert False, "Timeout send_data"
         t += 1
         if dut.bdi_ready.value:
@@ -177,7 +179,7 @@ async def test_enc(dut):
             log(dut, verbose=2, dashes=0, ad=ad, pt=pt, ct=ct, tag=tag)
 
             await cocotb.start(cycle_cnt(dut))
-            await cocotb.start(timeout(dut, 100))
+            # await cocotb.start(timeout(dut, 100))
             await cocotb.start(toggle(dut, "dut.mode", mode.value))
 
             await send_key(dut, key)
@@ -437,13 +439,13 @@ async def test_cxof(dut):
             # prepend bit-length identifier block to cstm
             for i in range(8):
                 cstm.insert(0, 0)
-            cstm[0] = (cstmlen % 256) * 8  # todo
-            cstm[1] = (min(cstmlen, 2048) >> 8) * 8  # todo
+            cstm[0] = (cstmlen * 8) % 256  # todo
+            cstm[1] = min(((cstmlen * 8) >> 8), 8)  # todo
 
             log(dut, verbose=2, dashes=0, cstm=cstm, msg=msg, cxof=cxof)
 
             await cocotb.start(cycle_cnt(dut))
-            await cocotb.start(timeout(dut, 1000))
+            # await cocotb.start(timeout(dut, 1000))
             await cocotb.start(toggle(dut, "dut.mode", mode.value))
 
             await RisingEdge(dut.clk)

@@ -28,69 +28,12 @@ module ascon_core (
     output logic             auth_valid,
     output logic             done
 );
-
-  // Swap byte order of bit vector:
-  // in:   [0x00, 0x01, 0x02, 0x03]
-  // =>
-  // swap: [0x03, 0x02, 0x01, 0x00]
-  function static logic [CCW-1:0] swap(logic [CCW-1:0] in);
-    begin
-      for (int i = 0; i < CCWD8; i += 1) begin
-        swap[(i*8)+:8] = in[((CCWD8-i-1)*8)+:8];
-      end
-    end
-  endfunction
-
-  // Pad input during ABS_AD, ABS_MSG (encryption):
-  // in:  [0x00, 0x00, 0x11, 0x22]
-  // val: [   0,    0,    1,    1]
-  // =>
-  // pad: [0x00, 0x01, 0x11, 0x22]
-  function static logic [CCW-1:0] pad(logic [CCW-1:0] in, logic [CCWD8-1:0] val);
-    begin
-      pad[7:0] = val[0] ? in[7:0] : 'd0;
-      for (int i = 1; i < CCWD8; i += 1) begin
-        pad[i*8+:8] = val[i] ? in[i*8+:8] : val[i-1] ? 'd1 : 'd0;
-      end
-    end
-  endfunction
-
-  // Pad input during ABS_MSG (decryption):
-  // in1:  [0x00, 0x11, 0x22, 0x33]
-  // in2:  [0x44, 0x55, 0x66, 0x77]
-  // val:  [   0,    0,    1,    1]
-  // =>
-  // pad2: [0x44, 0x54, 0x22, 0x33]
-  function static logic [CCW-1:0] pad2(logic [CCW-1:0] in1, logic [CCW-1:0] in2,
-                                       logic [CCWD8-1:0] val);
-    begin
-      pad2[7:0] = val[0] ? in1[7:0] : in2[7:0];
-      for (int i = 1; i < CCWD8; i += 1) begin
-        pad2[i*8+:8] = val[i] ? in1[i*8+:8] : (val[i-1] ? 'd1 ^ in2[i*8+:8] : in2[i*8+:8]);
-      end
-    end
-  endfunction
-
-  function static int lanny(logic [7:0] word_idx);
-    begin
-      lanny = (CCW == 32) ? int'(word_idx) : int'(word_idx) / 2;
-    end
-  endfunction
-
-  function static int wordy(logic [7:0] word_idx);
-    begin
-      wordy = (CCW == 32) ? int'(word_idx) % 2 : 0;
-    end
-  endfunction
-
-  typedef logic [63:0] log64_t;
-
   // Core registers
-  logic [CCW-1:0] state     [LANES] [W64];
-  logic [CCW-1:0] ascon_key [ W128];
-  logic [    3:0] round_cnt;
-  logic [    7:0] word_cnt;
-  logic [    1:0] hash_cnt;
+  logic [ W64-1:0][CCW-1:0] state     [LANES];
+  logic [W128-1:0][CCW-1:0] ascon_key;
+  logic [     3:0]          round_cnt;
+  logic [     7:0]          word_cnt;
+  logic [     1:0]          hash_cnt;
   logic flag_ad_eot, flag_ad_pad, flag_msg_pad, flag_eoi, flag_eoo, auth_intern;
   logic [3:0] mode_r;
 
@@ -108,7 +51,6 @@ module ascon_core (
   logic abs_ad, abs_ad_done, pro_ad, pro_ad_done;
   assign abs_ad = (fsm == ABS_AD) & (bdi_type == D_AD) & (bdi_valid > 'd0) & bdi_ready;
   assign abs_ad_done = ((word_cnt == ((mode_r inside {M_ENC, M_DEC}) ? (W128 - 1) : (W64 - 1))) | bdi_eot) & abs_ad;
-  // assign abs_ad_done = ((word_cnt == (W128 - 1)) | bdi_eot) & abs_ad;
   assign pro_ad = (fsm == PRO_AD);
   assign pro_ad_done = (round_cnt == UROL) & pro_ad;
 
@@ -131,10 +73,11 @@ module ascon_core (
   assign ver_tag = (fsm == VER_TAG) & (bdi_type == D_TAG) & (bdi_valid > 'd0) & bdi_ready;
   assign ver_tag_done = (word_cnt == (W128 - 1)) & ver_tag;
 
-  logic [    7:0] state_idx;
-  logic [CCW-1:0] asconp_o    [LANES][W64];
-  logic [CCW-1:0] state_i;
-  logic [CCW-1:0] state_slice;
+  logic [    7:0]          state_idx;
+  // logic [CCW-1:0] asconp_o    [LANES][W64];
+  logic [W64-1:0][CCW-1:0] asconp_o    [LANES];
+  logic [CCW-1:0]          state_i;
+  logic [CCW-1:0]          state_slice;
 
   logic [7:0] lane_idx, word_idx;
   assign lane_idx = (CCW == 64) ? state_idx : state_idx / 2;
@@ -171,38 +114,19 @@ module ascon_core (
   fsms_t fsm_nx;  // Next state
 
   // Instantiation of Ascon-p permutation
-  generate
-    if (CCW == 32) begin : g_asconp_32
-      asconp asconp_i (
-          .round_cnt(round_cnt),
-          .x0_i({state[0][1], state[0][0]}),
-          .x1_i({state[1][1], state[1][0]}),
-          .x2_i({state[2][1], state[2][0]}),
-          .x3_i({state[3][1], state[3][0]}),
-          .x4_i({state[4][1], state[4][0]}),
-          .x0_o({asconp_o[0][1], asconp_o[0][0]}),
-          .x1_o({asconp_o[1][1], asconp_o[1][0]}),
-          .x2_o({asconp_o[2][1], asconp_o[2][0]}),
-          .x3_o({asconp_o[3][1], asconp_o[3][0]}),
-          .x4_o({asconp_o[4][1], asconp_o[4][0]})
-      );
-    end
-    if (CCW == 64) begin : g_asconp_64
-      asconp asconp_i (
-          .round_cnt(round_cnt),
-          .x0_i(state[0][0]),
-          .x1_i(state[1][0]),
-          .x2_i(state[2][0]),
-          .x3_i(state[3][0]),
-          .x4_i(state[4][0]),
-          .x0_o(asconp_o[0][0]),
-          .x1_o(asconp_o[1][0]),
-          .x2_o(asconp_o[2][0]),
-          .x3_o(asconp_o[3][0]),
-          .x4_o(asconp_o[4][0])
-      );
-    end
-  endgenerate
+  asconp asconp_i (
+      .round_cnt(round_cnt),
+      .x0_i(state[0]),
+      .x1_i(state[1]),
+      .x2_i(state[2]),
+      .x3_i(state[3]),
+      .x4_i(state[4]),
+      .x0_o(asconp_o[0]),
+      .x1_o(asconp_o[1]),
+      .x2_o(asconp_o[2]),
+      .x3_o(asconp_o[3]),
+      .x4_o(asconp_o[4])
+  );
 
   /////////////////////
   // Control Signals //
@@ -289,7 +213,6 @@ module ascon_core (
       if (mode_r inside {M_ENC, M_DEC}) fsm_nx = KADD_2;
       if (mode_r inside {M_HASH, M_XOF}) fsm_nx = flag_eoi ? PAD_MSG : ABS_MSG;
       if (mode_r inside {M_CXOF}) fsm_nx = ABS_AD;
-      // fsm_nx = (mode_r inside {M_HASH, M_XOF}) ? (flag_eoi ? PAD_MSG : ABS_MSG) : KADD_2;
     end
     if (kadd_2_done) begin
       if (flag_eoi) fsm_nx = DOM_SEP;
@@ -300,9 +223,9 @@ module ascon_core (
       if (bdi_valid != '1) begin
         fsm_nx = PRO_AD;
       end else begin
-        // if (word_cnt < (W128 - 1)) fsm_nx = PAD_AD;
         if ((word_cnt != (W128 - 1)) && (mode_r inside {M_ENC, M_DEC})) fsm_nx = PAD_AD;
-        else if ((word_cnt != (W64 - 1)) && (mode_r inside {M_HASH, M_XOF, M_CXOF})) fsm_nx = PAD_AD;
+        else if ((word_cnt != (W64 - 1)) && (mode_r inside {M_HASH, M_XOF, M_CXOF}))
+          fsm_nx = PAD_AD;
         else fsm_nx = PRO_AD;
       end
     end
@@ -327,8 +250,9 @@ module ascon_core (
         if (mode_r inside {M_HASH, M_XOF, M_CXOF}) fsm_nx = FINAL;
         else fsm_nx = KADD_3;
       end else begin
-        if ((word_cnt != (W128 - 1)) && (mode_r inside {M_ENC, M_DEC})) fsm_nx = PAD_MSG;
-        else if ((word_cnt != (W64 - 1)) && (mode_r inside {M_HASH, M_XOF, M_CXOF})) fsm_nx = PAD_MSG;
+        if ((mode_r inside {M_ENC, M_DEC}) && (word_cnt != (W128 - 1))) fsm_nx = PAD_MSG;
+        else if ((word_cnt != (W64 - 1)) && (mode_r inside {M_HASH, M_XOF, M_CXOF}))
+          fsm_nx = PAD_MSG;
         else fsm_nx = PRO_MSG;
       end
     end
@@ -348,7 +272,7 @@ module ascon_core (
       if (mode_r == M_HASH) fsm_nx = SQZ_HASH;
       else if (mode_r inside {M_XOF, M_CXOF}) begin
         if (bdo_ready) fsm_nx = SQZ_HASH;
-        else fsm_nx = IDLE; // todo
+        else fsm_nx = IDLE;  // todo
       end else fsm_nx = KADD_4;
     end
     if (fsm == KADD_4) fsm_nx = (mode_r inside {M_DEC}) ? VER_TAG : SQZ_TAG;
@@ -380,46 +304,38 @@ module ascon_core (
       if (ld_npub || abs_ad || abs_msg) begin
         state[int'(lane_idx)][int'(word_idx)] <= state_i;
       end
-      // Add 32-bit block of padding
+      // Absorb padding word
       if (fsm inside {PAD_AD, PAD_MSG}) begin
         state[int'(lane_idx)][int'(word_idx)] ^= 'd1;
         flag_ad_pad  <= fsm == PAD_AD;
         flag_msg_pad <= fsm == PAD_MSG;
       end
-      // State initialization, hashing
+      // State initialization: HASH, XOF, CXOF
       if (idle_done & (mode inside {M_HASH, M_XOF, M_CXOF})) begin
-        for (int i = 1; i < 5; i++) state[i] <= '{default: '0};
-        if (mode == M_HASH) begin
-          state[0][lanny(0)] <= IV_HASH[0+:CCW];
-          if (CCW == 32) state[0][lanny(1)] <= IV_HASH[lanny(1)*CCW+:CCW];
-        end else if (mode == M_XOF) begin
-          state[0][lanny(0)] <= IV_XOF[0+:CCW];
-          if (CCW == 32) state[0][lanny(1)] <= IV_XOF[lanny(1)*CCW+:CCW];
-        end else if (mode == M_CXOF) begin
-          state[0][lanny(0)] <= IV_CXOF[0+:CCW];
-          if (CCW == 32) state[0][lanny(1)] <= IV_CXOF[lanny(1)*CCW+:CCW];
-        end
+        state <= '{default: '0};
+        case (mode)
+          M_HASH:  state[0] <= IV_HASH[0+:64];
+          M_XOF:   state[0] <= IV_XOF[0+:64];
+          M_CXOF:  state[0] <= IV_CXOF[0+:64];
+          default: ;
+        endcase
         if (bdi_eoi) flag_eoi <= 'd1;
       end
-      // State initialization, key addition 1
+      // State initialization: AEAD
+      // - "npub" is written to state during LOAD_NPUB
       if (ld_npub_done) begin
-        state[0][lanny(0)] <= IV_AEAD[0+:CCW];
-        if (CCW == 32) state[0][lanny(1)] <= IV_AEAD[lanny(1)*CCW+:CCW];
-        state[1][wordy(0)] <= ascon_key[lanny(0)];
-        state[2][wordy(2)] <= ascon_key[lanny(2)];
-        if (CCW == 32) state[1][wordy(1)] <= ascon_key[lanny(1)];
-        if (CCW == 32) state[2][wordy(3)] <= ascon_key[lanny(3)];
+        state[0] <= IV_AEAD[0+:64];
+        state[1] <= ascon_key[lanny(1):lanny(0)];
+        state[2] <= ascon_key[lanny(3):lanny(2)];
       end
-      // Compute Ascon-p
+      // Perform Ascon-p permutation
       if (init || pro_ad || pro_msg || fin) begin
-        for (int i = 0; i < 10; i++) state[i/2][i%2] <= asconp_o[i/2][i%2];
+        state <= asconp_o;
       end
       // Key addition 2/4
       if (kadd_2_done | fsm == KADD_4) begin
-        state[3][wordy(0)] <= state[3][wordy(0)] ^ ascon_key[lanny(0)];
-        state[4][wordy(2)] <= state[4][wordy(2)] ^ ascon_key[lanny(2)];
-        if (CCW == 32) state[3][wordy(1)] <= state[3][wordy(1)] ^ ascon_key[lanny(1)];
-        if (CCW == 32) state[4][wordy(3)] <= state[4][wordy(3)] ^ ascon_key[lanny(3)];
+        state[3] <= state[3] ^ ascon_key[lanny(1):lanny(0)];
+        state[4] <= state[4] ^ ascon_key[lanny(3):lanny(2)];
       end
       // Domain separation
       if (fsm == DOM_SEP) begin
@@ -428,15 +344,13 @@ module ascon_core (
       end
       // Key addition 3
       if (fsm == KADD_3) begin
-        state[2][wordy(0)] <= state[2][wordy(0)] ^ ascon_key[lanny(0)];
-        state[3][wordy(2)] <= state[3][wordy(2)] ^ ascon_key[lanny(2)];
-        if (CCW == 32) state[2][wordy(1)] <= state[2][wordy(1)] ^ ascon_key[lanny(1)];
-        if (CCW == 32) state[3][wordy(3)] <= state[3][wordy(3)] ^ ascon_key[lanny(3)];
+        state[2] <= state[2] ^ ascon_key[lanny(1):lanny(0)];
+        state[3] <= state[3] ^ ascon_key[lanny(3):lanny(2)];
       end
       // Store key
       if (ld_key) begin
         ascon_key[word_cnt[(64/CCW)-1:0]] <= key;
-        // ascon_key[lanny(word_cnt)] <= key; todo
+        // ascon_key[lanny(word_cnt)] <= key; todo check in verilator > 5.030
       end
     end
   end
@@ -456,7 +370,7 @@ module ascon_core (
       if (ld_key_done || ld_npub_done || sqz_tag_done || sqz_hash_done1 || ver_tag_done) begin
         word_cnt <= 'd0;
       end
-      if (abs_ad_done | abs_msg_done) begin
+      if (abs_ad_done || abs_msg_done) begin
         if (fsm_nx inside {PAD_AD, PAD_MSG}) begin
           word_cnt <= word_cnt + 'd1;
         end else begin
@@ -529,21 +443,10 @@ module ascon_core (
   //////////////////////////////////////////////////
 
   logic [63:0] x0, x1, x2, x3, x4;
-  generate
-    if (CCW == 32) begin : g_ascon_debug_32
-      assign x0 = {state[0][1], state[0][0]};
-      assign x1 = {state[1][1], state[1][0]};
-      assign x2 = {state[2][1], state[2][0]};
-      assign x3 = {state[3][1], state[3][0]};
-      assign x4 = {state[4][1], state[4][0]};
-    end
-    if (CCW == 64) begin : g_ascon_debug_64
-      assign x0 = {state[0][0]};
-      assign x1 = {state[1][0]};
-      assign x2 = {state[2][0]};
-      assign x3 = {state[3][0]};
-      assign x4 = {state[4][0]};
-    end
-  endgenerate
+  assign x0 = state[0];
+  assign x1 = state[1];
+  assign x2 = state[2];
+  assign x3 = state[3];
+  assign x4 = state[4];
 
 endmodule  // ascon_core
