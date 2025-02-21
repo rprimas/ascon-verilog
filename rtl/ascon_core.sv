@@ -395,6 +395,7 @@ module ascon_core (
         PRO_AD:  round_cnt <= (mode_r inside {M_CXOF}) ? ROUNDS_A : ROUNDS_B;
         PRO_MSG: round_cnt <= (mode_r inside {M_HASH, M_XOF, M_CXOF}) ? ROUNDS_A : ROUNDS_B;
         FINAL:   round_cnt <= ROUNDS_A;
+        default:;
       endcase
       if (init | pro_ad | pro_msg | fin) round_cnt <= round_cnt - UROL;
     end
