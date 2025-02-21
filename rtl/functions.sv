@@ -42,9 +42,9 @@ function static logic [CCW-1:0] pad2(logic [CCW-1:0] in1, logic [CCW-1:0] in2,
 endfunction
 
 function static int lanny(logic [7:0] word_idx);
-  lanny = (CCW == 32) ? int'(word_idx) : int'(word_idx) / 2;
+  lanny = (CCW == 64) ? int'(word_idx) / 'd2 : int'(word_idx);
 endfunction
 
-function static int wordy(logic [7:0] word_idx);
-  wordy = (CCW == 32) ? int'(word_idx) % 2 : 0;
+function static int wordy(int word_idx);
+  wordy = (CCW == 64) ? 'd0 : int'(word_idx) % 'd2;
 endfunction

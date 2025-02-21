@@ -5,6 +5,8 @@ import cocotb
 import cocotb.result
 from cocotb.triggers import RisingEdge
 from cocotb.clock import Clock
+from cocotb.handle import Force
+from cocotb.handle import Release
 
 import random
 from enum import Enum
@@ -13,10 +15,10 @@ from ascon import *
 
 VERBOSE = 1
 RUNS = range(0, 5)
-# RUNS = range(0, 20)
 # RUNS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 16, 32, 64, 128, 256, 512, 1024]
-CCW = 32
+CCW = 64
 CCWD8 = CCW // 8
+DELAYS = 0
 
 
 # Needs to match "mode_e" in "config.sv"
@@ -29,6 +31,7 @@ class Mode(Enum):
     Ascon_CXOF128 = 5
 
 
+# Reset BDI signals
 async def clear_bdi(dut):
     dut.bdi.value = 0
     dut.bdi_valid.value = 0
@@ -38,7 +41,9 @@ async def clear_bdi(dut):
     dut.bdo_ready.value = 0
 
 
+# Send data of specific type to dut
 async def send_data(dut, data_in, bdi_type, bdo_ready, bdi_eoi):
+    await rand_delays(dut)
     dlen = len(data_in)
     d = 0
     t = 0
@@ -56,7 +61,7 @@ async def send_data(dut, data_in, bdi_type, bdo_ready, bdi_eoi):
         dut.bdi_eoi.value = d + CCWD8 >= dlen and bdi_eoi
         dut.bdo_ready.value = bdo_ready
         await RisingEdge(dut.clk)
-        if t == 10000:
+        if t == 1000:
             assert False, "Timeout send_data"
         t += 1
         if dut.bdi_ready.value:
@@ -65,9 +70,13 @@ async def send_data(dut, data_in, bdi_type, bdo_ready, bdi_eoi):
                 if bdi_valid & (1 << dd):
                     data_out.append(bdoo[CCWD8 - 1 - dd])
             d += CCWD8
+    await clear_bdi(dut)
+    if DELAYS:
+        await rand_delays(dut)
     return data_out
 
 
+# Send key data to dut
 async def send_key(dut, key_in):
     k = 0
     while k < 16:
@@ -83,7 +92,9 @@ async def send_key(dut, key_in):
     dut.key_valid.value = 0
 
 
+# Receive data of specific type from dut
 async def receive_data(dut, type, len=16, bdo_eoo=0):
+    await rand_delays(dut)
     data = []
     d = 0
     while d < len:
@@ -96,15 +107,18 @@ async def receive_data(dut, type, len=16, bdo_eoo=0):
             d += CCWD8
     dut.bdo_ready.value = 0
     dut.bdo_eoo.value = 0
+    await rand_delays(dut)
     return data
 
 
+# Toggle the value of one signal
 async def toggle(dut, signalStr, value):
     eval(signalStr, locals=dict(dut=cocotb.top)).value = value
     await RisingEdge(dut.clk)
     eval(signalStr, locals=dict(dut=cocotb.top)).value = 0
 
 
+# Log the content of multiple byte arrays
 def log(dut, verbose, dashes, **kwargs):
     if verbose <= VERBOSE:
         for k, val in kwargs.items():
@@ -118,6 +132,7 @@ def log(dut, verbose, dashes, **kwargs):
             dut._log.info("------------------------------------------")
 
 
+# Count cycles until dut reaches IDLE state
 async def cycle_cnt(dut):
     cycles = 1
     await RisingEdge(dut.clk)
@@ -130,16 +145,29 @@ async def cycle_cnt(dut):
         cycles += 1
 
 
-async def timeout(dut, tcycles):
-    cycles = 1
+# Test case fails if dut fsm state stays the same for 100 cycles
+async def timeout(dut):
+    last_fsm = 0
+    last_fsm_cycles = 0
     await RisingEdge(dut.clk)
     while 1:
         await RisingEdge(dut.clk)
-        if int(dut.fsm.value) == int.from_bytes("IDLE".encode("ascii")):
-            return
-        if cycles >= tcycles:
+        dut_fsm = int(dut.fsm.value)
+        if dut_fsm == last_fsm:
+            last_fsm_cycles += 1
+        else:
+            last_fsm_cycles = 0
+            cur_fsm = int(dut.fsm.value)
+        if last_fsm_cycles >= 100:
             assert False, "Timeout"
-        cycles += 1
+        if dut_fsm == int.from_bytes("IDLE".encode("ascii")):
+            return
+
+
+# Add random delays to test bench input output
+async def rand_delays(dut):
+    for i in range(random.randint(10, 20)):
+        await RisingEdge(dut.clk)
 
 
 # ,------.                                      ,--.
@@ -179,24 +207,21 @@ async def test_enc(dut):
             log(dut, verbose=2, dashes=0, ad=ad, pt=pt, ct=ct, tag=tag)
 
             await cocotb.start(cycle_cnt(dut))
-            # await cocotb.start(timeout(dut, 100))
+            await cocotb.start(timeout(dut))
             await cocotb.start(toggle(dut, "dut.mode", mode.value))
 
             await send_key(dut, key)
 
             await send_data(dut, npub, 1, 0, (adlen == 0) and (msglen == 0))
-            await clear_bdi(dut)
 
             # send ad
             if adlen > 0:
                 await send_data(dut, ad, 2, 0, (msglen == 0))
-                await clear_bdi(dut)
 
             # send pt/ct
             if msglen > 0:
                 ct_hw = await send_data(dut, pt, 3, 1, 1)
                 log(dut, verbose=2, dashes=0, ct_hw=ct_hw)
-                await clear_bdi(dut)
 
             # receive tag
             tag_hw = await receive_data(dut, 4)
@@ -250,28 +275,25 @@ async def test_dec(dut):
             log(dut, verbose=2, dashes=0, ad=ad, pt=pt, ct=ct, tag=tag)
 
             await cocotb.start(cycle_cnt(dut))
+            await cocotb.start(timeout(dut))
             await cocotb.start(toggle(dut, "dut.mode", mode.value))
 
             await send_key(dut, key)
 
             # send npub
             await send_data(dut, npub, 1, 0, (adlen == 0) and (msglen == 0))
-            await clear_bdi(dut)
 
             # send ad
             if adlen > 0:
                 await send_data(dut, ad, 2, 0, (msglen == 0))
-                await clear_bdi(dut)
 
             # send pt/ct
             if msglen > 0:
                 pt_hw = await send_data(dut, ct, 3, 1, 1)
                 log(dut, verbose=2, dashes=0, pt_hw=pt_hw)
-                await clear_bdi(dut)
 
             # send tag
             await send_data(dut, tag, 4, 0, 1)
-            await clear_bdi(dut)
 
             # check tag verification
             await RisingEdge(dut.clk)
@@ -311,6 +333,7 @@ async def test_hash(dut):
         log(dut, verbose=2, dashes=0, msg=msg, hash=hash)
 
         await cocotb.start(cycle_cnt(dut))
+        await cocotb.start(timeout(dut))
         await cocotb.start(toggle(dut, "dut.mode", mode.value))
 
         if msglen == 0:
@@ -322,7 +345,6 @@ async def test_hash(dut):
         # send msg
         if msglen > 0:
             await send_data(dut, msg, 3, 0, 1)
-        await clear_bdi(dut)
 
         # receive hash
         hash_hw = await receive_data(dut, 5, 32)
@@ -370,6 +392,7 @@ async def test_xof(dut):
             log(dut, verbose=2, dashes=0, msg=msg, xof=xof)
 
             await cocotb.start(cycle_cnt(dut))
+            await cocotb.start(timeout(dut))
             await cocotb.start(toggle(dut, "dut.mode", mode.value))
 
             if msglen == 0:
@@ -381,7 +404,6 @@ async def test_xof(dut):
             # send msg
             if msglen > 0:
                 await send_data(dut, msg, bdi_type=3, bdo_ready=0, bdi_eoi=1)
-            await clear_bdi(dut)
 
             # receive xof
             xof_hw = await receive_data(dut, 5, xoflen, bdo_eoo=1)
@@ -445,19 +467,17 @@ async def test_cxof(dut):
             log(dut, verbose=2, dashes=0, cstm=cstm, msg=msg, cxof=cxof)
 
             await cocotb.start(cycle_cnt(dut))
-            # await cocotb.start(timeout(dut, 1000))
+            await cocotb.start(timeout(dut))
             await cocotb.start(toggle(dut, "dut.mode", mode.value))
 
             await RisingEdge(dut.clk)
 
             # send customization string
             await send_data(dut, cstm, bdi_type=2, bdo_ready=0, bdi_eoi=(msglen == 0))
-            await clear_bdi(dut)
 
             # send msg
             if msglen > 0:
                 await send_data(dut, msg, bdi_type=3, bdo_ready=0, bdi_eoi=1)
-            await clear_bdi(dut)
 
             # receive xof
             cxof_hw = await receive_data(dut, 5, cxoflen, bdo_eoo=1)

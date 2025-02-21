@@ -6,13 +6,13 @@ TOPLEVEL_LANG ?= verilog
 EXTRA_ARGS += --trace --trace-structs
 
 # The following variants require "CCW = 32" in test.py:
-EXTRA_ARGS += -DV1
+# EXTRA_ARGS += -DV1
 # EXTRA_ARGS += -DV2
 # EXTRA_ARGS += -DV3
 
 # The following variants require "CCW = 64" in test.py:
 # EXTRA_ARGS += -DV4 
-# EXTRA_ARGS += -DV5
+EXTRA_ARGS += -DV5
 # EXTRA_ARGS += -DV6
 
 VERILOG_SOURCES += $(PWD)/rtl/config.sv $(PWD)/rtl/functions.sv  $(PWD)/rtl/ascon_core.sv $(PWD)/rtl/asconp.sv

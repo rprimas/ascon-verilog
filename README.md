@@ -16,33 +16,34 @@ All variants support the following Ascon modes:
 
 The specific variants support the following combination of data-bus width and unrolled permutation rounds:
 
-| **Variant** | **Bus Width** | **Unrolled Rounds** |
-|-------------|:-------------:|:-------------------:|
-| **v1**      |     32-bit    |          1          |
-| **v2**      |     32-bit    |          2          |
-| **v3**      |     32-bit    |          4          |
-| **v4**      |     64-bit    |          1          |
-| **v5**      |     64-bit    |          2          |
-| **v6**      |     64-bit    |          4          |
+| **Variant** | **Bus Width** | **Rounds/Cycle** |
+|-------------|:-------------:|:----------------:|
+| **v1**      |     32-bit    |         1        |
+| **v2**      |     32-bit    |         2        |
+| **v3**      |     32-bit    |         4        |
+| **v4**      |     64-bit    |         1        |
+| **v5**      |     64-bit    |         2        |
+| **v6**      |     64-bit    |         4        |
 
 ## Performance
 
-The following table shows encryption performance using **x** bytes of message and **y** bytes of associated data **(x,y)**:
+The following table shows the cycles required for processing **x** bytes of message and **y** bytes of associated data **(x,y)**:
 
-| **Variant** | **Mode**        | **Cycles (0,0)** | **Cycles (16,16)** | **Cycles (1536,1536)** |
-|-------------|-----------------|:----------------:|:------------------:|:----------------------:|
-| **v1**      | `Ascon-AEAD128` |        41        |         75         |          2355          |
-| **v2**      | `Ascon-AEAD128` |        29        |         51         |          1571          |
-| **v3**      | `Ascon-AEAD128` |        23        |         39         |          1179          |
-| **v4**      | `Ascon-AEAD128` |        35        |         65         |          1965          |
-| **v5**      | `Ascon-AEAD128` |        23        |         41         |          1181          |
-| **v6**      | `Ascon-AEAD128` |        17        |         29         |           789          |
+| **Variant** | **Mode**        | **(0,0)** | **(16,16)** | **(1536,1536)** |
+|-------------|-----------------|:---------:|:------------:----------------:|
+| **v1**      | `Ascon-AEAD128` |     41    |     75      |      2355       |
+| **v2**      | `Ascon-AEAD128` |     29    |     51      |      1571       |
+| **v3**      | `Ascon-AEAD128` |     23    |     39      |      1179       |
+| **v4**      | `Ascon-AEAD128` |     35    |     65      |      1965       |
+| **v5**      | `Ascon-AEAD128` |     23    |     41      |      1181       |
+| **v6**      | `Ascon-AEAD128` |     17    |     29      |       789       |
 
 ## Files
 
-- `rtl/ascon_core.sv`: Verilog implementation of the Ascon core.
-- `rtl/asconp.sv`: Verilog implementation of the Ascon permutation.
-- `rtl/config`: Configuration of the Ascon core.
+- `rtl/ascon_core.sv`: Implementation of the Ascon core.
+- `rtl/asconp.sv`: Implementation of the Ascon permutation.
+- `rtl/config.sv`: Configuration of the Ascon core.
+- `rtl/functions.sv`: Some generic verilog functions.
 - `ascon.py`: Reference software implementation of Ascon, used by `test.py`.
 - `LICENSE`: License file.
 - `Makefile`: Commands for running [cocotb](https://www.cocotb.org/) verilator test bench.
@@ -61,14 +62,14 @@ The following table contains a description of the interface signals:
 | `key`        |   32/64  | Key data input.                                  |
 | `key_valid`  |     1    | Key data is valid.                               |
 | `key_ready`  |     1    | Ascon core is ready to receive a new key.        |
-| `bdi_data`   |   32/64  | Block data input (BDI).                          |
+| `bdi`        |   32/64  | Block data input (BDI).                          |
 | `bdi_valid`  |    4/8   | Valid BDI data bytes.                            |
 | `bdi_ready`  |     1    | Ascon core is ready to receive data.             |
 | `bdi_eot`    |     1    | Last BDI block of this type.                     |
 | `bdi_eoi`    |     1    | Last BDI block.                                  |
 | `bdi_type`   |     4    | Type of BDI data.                                |
 | `mode`       |     4    | Ascon mode.                                      |
-| `bdo_data`   |   32/64  | Block data output (BDO).                         |
+| `bdo`        |   32/64  | Block data output (BDO).                         |
 | `bdo_valid`  |    4/8   | Valid BDO data bytes.                            |
 | `bdo_ready`  |     1    | Test bench is ready to receive data.             |
 | `bdo_type`   |     4    | Type of BDO data.                                |
@@ -78,7 +79,7 @@ The following table contains a description of the interface signals:
 
 ## Quick Start
 
-- Install the Verilator open-source verilog simulator with **version >= 5.0**:
+- Install the Verilator open-source verilog simulator (tested with `v5.030`):
   - Ubuntu:
     - `apt-get install verilator`
   - Fedora:
