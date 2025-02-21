@@ -65,7 +65,7 @@ async def send_data(dut, data_in, bdi_type, bdo_ready, bdi_eoi):
             assert False, "Timeout send_data"
         t += 1
         if dut.bdi_ready.value:
-            bdoo = int(dut.bdo.value).to_bytes(CCWD8)
+            bdoo = int(dut.bdo.value).to_bytes(CCWD8,byteorder='big')
             for dd in range(CCWD8):
                 if bdi_valid & (1 << dd):
                     data_out.append(bdoo[CCWD8 - 1 - dd])
@@ -102,7 +102,7 @@ async def receive_data(dut, type, len=16, bdo_eoo=0):
         dut.bdo_eoo.value = (d + CCWD8 >= len) & bdo_eoo
         await RisingEdge(dut.clk)
         if dut.bdo_valid and dut.bdo_type.value == type:
-            for x in int(dut.bdo.value).to_bytes(CCWD8):
+            for x in int(dut.bdo.value).to_bytes(CCWD8,byteorder='big'):
                 data.append(x)
             d += CCWD8
     dut.bdo_ready.value = 0
@@ -113,9 +113,9 @@ async def receive_data(dut, type, len=16, bdo_eoo=0):
 
 # Toggle the value of one signal
 async def toggle(dut, signalStr, value):
-    eval(signalStr, locals=dict(dut=cocotb.top)).value = value
+    eval(signalStr, dict(dut=cocotb.top)).value = value
     await RisingEdge(dut.clk)
-    eval(signalStr, locals=dict(dut=cocotb.top)).value = 0
+    eval(signalStr, dict(dut=cocotb.top)).value = 0
 
 
 # Log the content of multiple byte arrays
@@ -138,7 +138,7 @@ async def cycle_cnt(dut):
     await RisingEdge(dut.clk)
     while 1:
         await RisingEdge(dut.clk)
-        if int(dut.fsm.value) == int.from_bytes("IDLE".encode("ascii")):
+        if int(dut.fsm.value) == int.from_bytes("IDLE".encode("ascii"), byteorder='big'):
             if VERBOSE >= 1:
                 dut._log.info("cycles    %d", cycles)
             return
@@ -160,7 +160,7 @@ async def timeout(dut):
             cur_fsm = int(dut.fsm.value)
         if last_fsm_cycles >= 100:
             assert False, "Timeout"
-        if dut_fsm == int.from_bytes("IDLE".encode("ascii")):
+        if dut_fsm == int.from_bytes("IDLE".encode("ascii"),byteorder='big'):
             return
 
 
