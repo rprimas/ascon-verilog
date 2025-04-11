@@ -54,9 +54,9 @@ module ascon_core (
   assign pro_ad      = (fsm == PRO_AD);
   assign pro_ad_done = pro_ad & (round_cnt == UROL);
 
-  logic abs_msg1, abs_msg, abs_msg_done, pro_msg, pro_msg_done;
-  assign abs_msg1     = (fsm == ABS_MSG) & (bdi_type == D_MSG) & (bdi_valid > 'd0) & bdi_ready;
-  assign abs_msg      = abs_msg1 & ((bdo_valid & bdo_ready) | !(mode_r inside {M_ENC, M_DEC}));
+  logic abs_msg_part, abs_msg, abs_msg_done, pro_msg, pro_msg_done;
+  assign abs_msg_part = (fsm == ABS_MSG) & (bdi_type == D_MSG) & (bdi_valid > 'd0) & bdi_ready;
+  assign abs_msg      = abs_msg_part & ((bdo_valid & bdo_ready) | !(mode_r inside {M_ENC, M_DEC}));
   assign abs_msg_done = abs_msg & (last_abs_blk_wrd | bdi_eot);
   assign pro_msg      = (fsm == PRO_MSG);
   assign pro_msg_done = (round_cnt == UROL) & pro_msg;

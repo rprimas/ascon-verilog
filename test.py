@@ -20,7 +20,6 @@ CCW = 64
 CCWD8 = CCW // 8
 DELAYS = 0
 
-
 # Needs to match "mode_e" in "config.sv"
 class Mode(Enum):
     Ascon_Nop = 0
@@ -166,7 +165,7 @@ async def timeout(dut):
 
 # Add random delays to test bench input output
 async def rand_delays(dut):
-    for i in range(random.randint(10, 20)):
+    for i in range(random.randint(0, DELAYS)):
         await RisingEdge(dut.clk)
 
 

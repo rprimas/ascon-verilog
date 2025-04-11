@@ -30,7 +30,7 @@ The specific variants support the following combination of data-bus width and un
 The following table shows the cycles required for processing **x** bytes of message and **y** bytes of associated data **(x,y)**:
 
 | **Variant** | **Mode**        | **(0,0)** | **(16,16)** | **(1536,1536)** |
-|-------------|-----------------|:---------:|:------------:----------------:|
+|-------------|-----------------|:---------:|:-----------:|:---------------:|
 | **v1**      | `Ascon-AEAD128` |     41    |     75      |      2355       |
 | **v2**      | `Ascon-AEAD128` |     29    |     51      |      1571       |
 | **v3**      | `Ascon-AEAD128` |     23    |     39      |      1179       |
@@ -95,6 +95,7 @@ The following table contains a description of the interface signals:
 ## View Waveforms
 
 - Install the [Surfer](https://surfer-project.org/) waveform viewer.
+  - `cargo install --git https://gitlab.com/surfer-project/surfer surfer`
 - View waveform of cocotb test bench run:
   - `make surf`
 - Example waveform output of test bench:
