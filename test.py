@@ -2,11 +2,8 @@
 # SPDX-License-Identifier: CC0-1.0
 
 import cocotb
-import cocotb.result
 from cocotb.triggers import RisingEdge
 from cocotb.clock import Clock
-from cocotb.handle import Force
-from cocotb.handle import Release
 
 import random
 from enum import Enum
@@ -45,7 +42,6 @@ async def send_data(dut, data_in, bdi_type, bdo_ready, bdi_eoi):
     await rand_delays(dut)
     dlen = len(data_in)
     d = 0
-    t = 0
     data_out = []
     while d < dlen:
         bdi = 0
@@ -60,9 +56,6 @@ async def send_data(dut, data_in, bdi_type, bdo_ready, bdi_eoi):
         dut.bdi_eoi.value = d + CCWD8 >= dlen and bdi_eoi
         dut.bdo_ready.value = bdo_ready
         await RisingEdge(dut.clk)
-        if t == 1000:
-            assert False, "Timeout send_data"
-        t += 1
         if dut.bdi_ready.value:
             bdoo = int(dut.bdo.value).to_bytes(CCWD8,byteorder='big')
             for dd in range(CCWD8):
@@ -209,8 +202,10 @@ async def test_enc(dut):
             await cocotb.start(timeout(dut))
             await cocotb.start(toggle(dut, "dut.mode", mode.value))
 
+            # send key
             await send_key(dut, key)
 
+            # send nonce
             await send_data(dut, npub, 1, 0, (adlen == 0) and (msglen == 0))
 
             # send ad
@@ -277,9 +272,10 @@ async def test_dec(dut):
             await cocotb.start(timeout(dut))
             await cocotb.start(toggle(dut, "dut.mode", mode.value))
 
+            # send key
             await send_key(dut, key)
 
-            # send npub
+            # send nonce
             await send_data(dut, npub, 1, 0, (adlen == 0) and (msglen == 0))
 
             # send ad
@@ -460,8 +456,8 @@ async def test_cxof(dut):
             # prepend bit-length identifier block to cstm
             for i in range(8):
                 cstm.insert(0, 0)
-            cstm[0] = (cstmlen * 8) % 256  # todo
-            cstm[1] = min(((cstmlen * 8) >> 8), 8)  # todo
+            cstm[0] = (cstmlen * 8) % 256
+            cstm[1] = min(((cstmlen * 8) >> 8), 8)
 
             log(dut, verbose=2, dashes=0, cstm=cstm, msg=msg, cxof=cxof)
 
