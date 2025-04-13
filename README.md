@@ -5,25 +5,24 @@
 > [!NOTE]
 > This is a work-in-progress hardware implementation of the Ascon family of lightweight cryptographic algorithms that is compatible with the current draft standard [NIST SP 800-232](https://doi.org/10.6028/NIST.SP.800-232.ipd).
 
+The following Ascon modes are available:
+- `Ascon-AEAD128`
+- `Ascon-Hash256`
+- `Ascon-XOF128`
+- `Ascon-CXOF128`
+
 ## Available Variants
 
-The Ascon hardware design can be configured to one out of six variants.
-All variants support the following Ascon modes:
-  - `Ascon-AEAD128`
-  - `Ascon-Hash256`
-  - `Ascon-XOF128`
-  - `Ascon-CXOF128`
+The Ascon hardware design can be configured to support the following combinations of data-bus width and unrolled rounds of Ascon-p:
 
-The specific variants support the following combination of data-bus width and unrolled permutation rounds:
-
-| **Variant** | **Bus Width** | **Rounds/Cycle** |
-|-------------|:-------------:|:----------------:|
-| **v1**      |     32-bit    |         1        |
-| **v2**      |     32-bit    |         2        |
-| **v3**      |     32-bit    |         4        |
-| **v4**      |     64-bit    |         1        |
-| **v5**      |     64-bit    |         2        |
-| **v6**      |     64-bit    |         4        |
+| **Variant** | **Bus Width** | **Unrolling** |
+|-------------|:-------------:|:-------------:|
+| **v1**      |     32-bit    |       1       |
+| **v2**      |     32-bit    |       2       |
+| **v3**      |     32-bit    |       4       |
+| **v4**      |     64-bit    |       1       |
+| **v5**      |     64-bit    |       2       |
+| **v6**      |     64-bit    |       4       |
 
 ## Performance
 
