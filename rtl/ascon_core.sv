@@ -1,9 +1,16 @@
+`ifndef INCL_ASCON_CORE
+`define INCL_ASCON_CORE
+
 // Licensed under the Creative Commons 1.0 Universal License (CC0), see LICENSE
 // for details.
 //
 // Author: Robert Primas (rprimas 'at' proton.me, https://rprimas.github.io)
 //
 // Implementation of the Ascon core.
+
+`include "rtl/asconp.sv"
+`include "rtl/config.sv"
+`include "rtl/functions.sv"
 
 module ascon_core (
     input  logic             clk,
@@ -458,4 +465,6 @@ module ascon_core (
 
   logic forcee;
 
-endmodule  // ascon_core
+endmodule
+
+`endif  // INCL_ASCON_CORE

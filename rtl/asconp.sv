@@ -1,3 +1,6 @@
+`ifndef INCL_ASCONP
+`define INCL_ASCONP
+
 // Licensed under the Creative Commons 1.0 Universal License (CC0), see LICENSE
 // for details.
 //
@@ -5,6 +8,8 @@
 //
 // Implementation of the Ascon permutation (Ascon-p).
 // Performs UROL rounds per clock cycle.
+
+`include "rtl/config.sv"
 
 module asconp (
     input  logic [ 3:0] round_cnt,
@@ -20,7 +25,6 @@ module asconp (
     output logic [63:0] x4_o
 );
 
-  /* verilator lint_off UNOPTFLAT */
   logic [UROL-1:0][63:0] x0_aff1, x0_chi, x0_aff2;
   logic [UROL-1:0][63:0] x1_aff1, x1_chi, x1_aff2;
   logic [UROL-1:0][63:0] x2_aff1, x2_chi, x2_aff2;
@@ -28,7 +32,6 @@ module asconp (
   logic [UROL-1:0][63:0] x4_aff1, x4_chi, x4_aff2;
   logic [UROL : 0][63:0] x0, x1, x2, x3, x4;
   logic [UROL-1:0][3:0] t;
-  /* verilator lint_on UNOPTFLAT */
 
   assign x0[0] = x0_i;
   assign x1[0] = x1_i;
@@ -38,7 +41,7 @@ module asconp (
 
   genvar i;
   generate
-    for (i = 0; i < UROL; i++) begin : g_asdf
+    for (i = 0; i < UROL; i++) begin : g_asconp
       // 1st affine layer
       assign t[i] = (4'hC) - (round_cnt - i);
       assign x0_aff1[i] = x0[i] ^ x4[i];
@@ -74,3 +77,5 @@ module asconp (
   assign x4_o = x4[UROL];
 
 endmodule
+
+`endif  // INCL_ASCONP

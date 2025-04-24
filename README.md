@@ -78,7 +78,7 @@ The following table contains a description of the interface signals:
 
 ## Quick Start
 
-- Install the Verilator open-source verilog simulator (tested with `v5.030`):
+- Install the Verilator open-source verilog simulator (tested with `v5.034`):
   - Ubuntu:
     - `apt-get install verilator`
   - Fedora:
