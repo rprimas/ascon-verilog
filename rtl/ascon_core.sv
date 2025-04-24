@@ -463,8 +463,6 @@ module ascon_core (
   assign x3 = state[3];
   assign x4 = state[4];
 
-  logic forcee;
-
 endmodule
 
 `endif  // INCL_ASCON_CORE

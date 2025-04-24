@@ -25,6 +25,7 @@ module asconp (
     output logic [63:0] x4_o
 );
 
+  /* verilator lint_off UNOPTFLAT */
   logic [UROL-1:0][63:0] x0_aff1, x0_chi, x0_aff2;
   logic [UROL-1:0][63:0] x1_aff1, x1_chi, x1_aff2;
   logic [UROL-1:0][63:0] x2_aff1, x2_chi, x2_aff2;
@@ -32,6 +33,7 @@ module asconp (
   logic [UROL-1:0][63:0] x4_aff1, x4_chi, x4_aff2;
   logic [UROL : 0][63:0] x0, x1, x2, x3, x4;
   logic [UROL-1:0][3:0] t;
+  /* verilator lint_on UNOPTFLAT */
 
   assign x0[0] = x0_i;
   assign x1[0] = x1_i;
