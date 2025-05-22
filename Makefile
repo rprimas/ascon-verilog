@@ -3,15 +3,15 @@
 
 SIM ?= verilator
 TOPLEVEL_LANG ?= verilog
-EXTRA_ARGS += --trace
+# EXTRA_ARGS += --trace
 
 # The following variants require "CCW = 32" in test.py:
-# EXTRA_ARGS += -DV1
+EXTRA_ARGS += -DV1
 # EXTRA_ARGS += -DV2
 # EXTRA_ARGS += -DV3
 
 # The following variants require "CCW = 64" in test.py:
-EXTRA_ARGS += -DV4
+# EXTRA_ARGS += -DV4
 # EXTRA_ARGS += -DV5
 # EXTRA_ARGS += -DV6
 
@@ -25,6 +25,9 @@ MODULE = test
 
 # Include cocotb's make rules to take care of the simulator setup
 include $(shell cocotb-config --makefiles)/Makefile.sim
+
+synth:
+	yosys synth.ys
 
 surf:
 	surfer -s surfer.ron dump.vcd

@@ -44,10 +44,14 @@ The following table shows the cycles required for processing **x** bytes of mess
 - `rtl/config.sv`: Configuration of the Ascon core.
 - `rtl/functions.sv`: Some generic verilog functions.
 - `ascon.py`: Reference software implementation of Ascon, used by `test.py`.
+- `cmos_cells.lib`: A simple cmos cell library for synthesis. 
+- `cmos_cells.v`: A simple behavioral model of cmos cells for synthesis.
 - `LICENSE`: License file.
-- `Makefile`: Commands for running [cocotb](https://www.cocotb.org/) verilator test bench.
+- `Makefile`: Makefile for rtl simulation, synthesis, and wave view.
 - `README.md`: This README.
-- `surfer.ron`: Configuration file for the [Surfer](https://surfer-project.org/) waveform viewer.
+- `surfer.png`: Screenshot of the [Surfer](https://surfer-project.org/) waveform viewer.
+- `surfer.ron`: Configuration file of the [Surfer](https://surfer-project.org/) waveform viewer.
+- `synth.ys`: Synthesis script of [Yosys](https://github.com/YosysHQ/yosys).
 - `test.py`: Python script for running test bench, used by cocotb.
 
 ## Interface
@@ -76,9 +80,9 @@ The following table contains a description of the interface signals:
 | `auth`       |     1    | Authentication success.                          |
 | `auth_valid` |     1    | Authentication output is valid.                  |
 
-## Quick Start
+## Simulation
 
-- Install the Verilator open-source verilog simulator (tested with `v5.034`):
+- Install the Verilator open-source verilog simulator (tested with version `5.034`):
   - Ubuntu:
     - `apt-get install verilator`
   - Fedora:
@@ -90,6 +94,16 @@ The following table contains a description of the interface signals:
   - `pip install cocotb`
 - Execute the cocotb test bench:
   - `make`
+
+## Synthesis
+
+- Install the Yosys open-source synthesis suite (tested with version `0.53`):
+  - Ubuntu:
+    - `apt-get install yosys`
+  - Fedora:
+    - `dnf install yosys`
+- Execute the yosys synthesis script:
+  - `make synth`
 
 ## View Waveforms
 

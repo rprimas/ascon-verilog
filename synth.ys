@@ -1,0 +1,15 @@
+# read design 
+read_verilog -sv rtl/ascon_core.sv
+
+# generic synthesis
+synth -top ascon_core
+
+# mapping to cmos_cells.lib
+dfflibmap -liberty cmos_cells.lib
+abc -liberty cmos_cells.lib
+clean
+
+# write synthesized design
+write_verilog synth.v
+
+stat -liberty cmos_cells.lib

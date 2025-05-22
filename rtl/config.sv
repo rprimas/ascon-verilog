@@ -29,6 +29,20 @@ parameter unsigned CCW = 64;
 parameter logic [3:0] UROL = 4;
 parameter unsigned CCW = 64;
 `endif
+`ifndef V1
+`ifndef V2
+`ifndef V3
+`ifndef V4
+`ifndef V5
+`ifndef V6
+parameter logic [3:0] UROL = 1;
+parameter unsigned CCW = 32;
+`endif
+`endif
+`endif
+`endif
+`endif
+`endif
 
 parameter unsigned CCWD8 = CCW / 8;  // Number of bytes in one word
 parameter unsigned W64 = 64 / CCW;  // Number of words in 64 bits
