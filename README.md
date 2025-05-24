@@ -119,7 +119,8 @@ The following table contains a description of the interface signals:
 
 ## Integration
 
-- The Ascon hardware design uses an interface that allows easy integration into projects using, e.g., an AXI4 bus.
+- The Ascon core uses an interface that allows easy integration into projects using, e.g., an AXI4 bus.
+- The Ascon core can handle stalls of the input/output data bus. This can be tested by setting `STALLS = 1` in `test.py`.
 - Many ciphers, including Ascon, require that decrypted plaintext is not released to an potential attacker until the tag of the ciphertext was successfully verified. The current design of the Ascon core outputs decrypted plaintext immediately which could lead to security degradation. For real applications an additional buffer should be used to temporarily store decrypted plaintext until the Ascon core has successfully verified the ciphertext tag.
 
 ## Contact
