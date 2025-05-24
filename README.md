@@ -13,7 +13,7 @@ The following Ascon modes are available:
 
 ## Available Variants
 
-The Ascon hardware design can be configured to support the following combinations of data-bus width and unrolled rounds of Ascon-p:
+The Ascon core can be configured to support the following combinations of data-bus width and unrolled rounds of Ascon-p:
 
 | **Variant** | **Bus Width** | **Unrolling** |
 |-------------|:-------------:|:-------------:|
@@ -116,6 +116,11 @@ The following table contains a description of the interface signals:
 <p align="center">
 <img src="surfer.png" alt="Surfer waveform viewer" width="600"/>
 </p>
+
+## Integration
+
+- The Ascon hardware design uses an interface that allows easy integration into projects using, e.g., an AXI4 bus.
+- Many ciphers, including Ascon, require that decrypted plaintext is not released to an potential attacker until the tag of the ciphertext was successfully verified. The current design of the Ascon core outputs decrypted plaintext immediately which could lead to security degradation. For real applications an additional buffer should be used to temporarily store decrypted plaintext until the Ascon core has successfully verified the ciphertext tag.
 
 ## Contact
 

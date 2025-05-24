@@ -51,14 +51,4 @@ function automatic logic [CCW-1:0] pad2;
   end
 endfunction
 
-function automatic int lanny;
-  input logic [7:0] word_idx;
-  lanny = (CCW == 64) ? int'(word_idx) / 'd2 : int'(word_idx);
-endfunction
-
-function automatic int wordy;
-  input int word_idx;
-  wordy = (CCW == 64) ? 'd0 : int'(word_idx) % 'd2;
-endfunction
-
 `endif  // INCL_FUNCTIONS

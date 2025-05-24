@@ -11,11 +11,12 @@ from enum import Enum
 from ascon import *
 
 VERBOSE = 1
-RUNS = range(0, 8)
+RUNS = range(0, 10)
 # RUNS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 16, 32, 64, 128, 256, 512, 1024]
 CCW = 32
 CCWD8 = CCW // 8
-DELAYS = 0
+STALLS = 0
+
 
 # Needs to match "mode_e" in "config.sv"
 class Mode(Enum):
@@ -39,7 +40,6 @@ async def clear_bdi(dut):
 
 # Send data of specific type to dut
 async def send_data(dut, data_in, bdi_type, bdo_ready, bdi_eoi):
-    await rand_delays(dut)
     dlen = len(data_in)
     d = 0
     data_out = []
@@ -55,16 +55,16 @@ async def send_data(dut, data_in, bdi_type, bdo_ready, bdi_eoi):
         dut.bdi_eot.value = d + CCWD8 >= dlen
         dut.bdi_eoi.value = d + CCWD8 >= dlen and bdi_eoi
         dut.bdo_ready.value = bdo_ready
+        if STALLS and (random.randint(0, 10) != 0):
+            await clear_bdi(dut)
         await RisingEdge(dut.clk)
-        if dut.bdi_ready.value:
-            bdoo = int(dut.bdo.value).to_bytes(CCWD8,byteorder='big')
+        if dut.bdi_valid.value and dut.bdi_ready.value:
+            bdoo = int(dut.bdo.value).to_bytes(CCWD8, byteorder="big")
             for dd in range(CCWD8):
                 if bdi_valid & (1 << dd):
                     data_out.append(bdoo[CCWD8 - 1 - dd])
             d += CCWD8
     await clear_bdi(dut)
-    if DELAYS:
-        await rand_delays(dut)
     return data_out
 
 
@@ -86,20 +86,21 @@ async def send_key(dut, key_in):
 
 # Receive data of specific type from dut
 async def receive_data(dut, type, len=16, bdo_eoo=0):
-    await rand_delays(dut)
     data = []
     d = 0
     while d < len:
         dut.bdo_ready.value = 1
         dut.bdo_eoo.value = (d + CCWD8 >= len) & bdo_eoo
+        if STALLS and (random.randint(0, 10) != 0):
+            dut.bdo_ready.value = 0
+            dut.bdo_eoo.value = 0
         await RisingEdge(dut.clk)
-        if dut.bdo_valid and dut.bdo_type.value == type:
-            for x in int(dut.bdo.value).to_bytes(CCWD8,byteorder='big'):
+        if dut.bdo_ready.value and dut.bdo_valid and dut.bdo_type.value == type:
+            for x in int(dut.bdo.value).to_bytes(CCWD8, byteorder="big"):
                 data.append(x)
             d += CCWD8
     dut.bdo_ready.value = 0
     dut.bdo_eoo.value = 0
-    await rand_delays(dut)
     return data
 
 
@@ -130,7 +131,9 @@ async def cycle_cnt(dut):
     await RisingEdge(dut.clk)
     while 1:
         await RisingEdge(dut.clk)
-        if int(dut.fsm.value) == int.from_bytes("IDLE".encode("ascii"), byteorder='big'):
+        if int(dut.fsm.value) == int.from_bytes(
+            "IDLE".encode("ascii"), byteorder="big"
+        ):
             if VERBOSE >= 1:
                 dut._log.info("cycles    %d", cycles)
             return
@@ -152,14 +155,8 @@ async def timeout(dut):
             cur_fsm = int(dut.fsm.value)
         if last_fsm_cycles >= 100:
             assert False, "Timeout"
-        if dut_fsm == int.from_bytes("IDLE".encode("ascii"),byteorder='big'):
+        if dut_fsm == int.from_bytes("IDLE".encode("ascii"), byteorder="big"):
             return
-
-
-# Add random delays to test bench input output
-async def rand_delays(dut):
-    for i in range(random.randint(0, DELAYS)):
-        await RisingEdge(dut.clk)
 
 
 # ,------.                                      ,--.

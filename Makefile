@@ -3,7 +3,7 @@
 
 SIM ?= verilator
 TOPLEVEL_LANG ?= verilog
-# EXTRA_ARGS += --trace
+EXTRA_ARGS += --trace
 
 # The following variants require "CCW = 32" in test.py:
 EXTRA_ARGS += -DV1
