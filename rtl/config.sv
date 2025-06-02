@@ -44,10 +44,9 @@ parameter unsigned CCW = 32;
 `endif
 `endif
 
-parameter unsigned CCWD8 = CCW / 8;  // Number of bytes in one word
-parameter unsigned W64 = 64 / CCW;  // Number of words in 64 bits
-parameter unsigned W128 = 128 / CCW;  // Number of words in 128 bits
-parameter unsigned W192 = 192 / CCW;  // Number of words in 192 bits
+parameter logic [3:0] W64 = CCW == 32 ? 4'd2 : 4'd1;  // Number of words in 64 bits
+parameter logic [3:0] W128 = CCW == 32 ? 4'd4 : 4'd2;  // Number of words in 128 bits
+parameter logic [3:0] W192 = CCW == 32 ? 4'd6 : 4'd3;  // Number of words in 192 bits
 
 // Ascon parameter
 parameter unsigned LANES = 5;

@@ -16,8 +16,8 @@
 // swap: [0x03, 0x02, 0x01, 0x00]
 function automatic logic [CCW-1:0] swap;
   input logic [CCW-1:0] in;
-  for (int i = 0; i < CCWD8; i += 1) begin
-    swap[(i*8)+:8] = in[((CCWD8-i-1)*8)+:8];
+  for (int i = 0; i < CCW / 8; i += 1) begin
+    swap[(i*8)+:8] = in[((CCW/8-i-1)*8)+:8];
   end
 endfunction
 
@@ -28,9 +28,9 @@ endfunction
 // pad: [0x00, 0x01, 0x11, 0x22]
 function automatic logic [CCW-1:0] pad;
   input logic [CCW-1:0] in;
-  input logic [CCWD8-1:0] val;
+  input logic [CCW/8-1:0] val;
   pad[7:0] = val[0] ? in[7:0] : 'd0;
-  for (int i = 1; i < CCWD8; i += 1) begin
+  for (int i = 1; i < CCW / 8; i += 1) begin
     pad[i*8+:8] = val[i] ? in[i*8+:8] : val[i-1] ? 'd1 : 'd0;
   end
 endfunction
@@ -44,9 +44,9 @@ endfunction
 function automatic logic [CCW-1:0] pad2;
   input logic [CCW-1:0] in1;
   input logic [CCW-1:0] in2;
-  input logic [CCWD8-1:0] val;
+  input logic [CCW/8-1:0] val;
   pad2[7:0] = val[0] ? in1[7:0] : in2[7:0];
-  for (int i = 1; i < CCWD8; i += 1) begin
+  for (int i = 1; i < CCW / 8; i += 1) begin
     pad2[i*8+:8] = val[i] ? in1[i*8+:8] : (val[i-1] ? 'd1 ^ in2[i*8+:8] : in2[i*8+:8]);
   end
 endfunction

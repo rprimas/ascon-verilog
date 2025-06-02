@@ -19,7 +19,7 @@ module ascon_core (
     input  logic             key_valid,
     output logic             key_ready,
     input  logic [  CCW-1:0] bdi,
-    input  logic [CCWD8-1:0] bdi_valid,
+    input  logic [CCW/8-1:0] bdi_valid,
     output logic             bdi_ready,
     input  logic [      3:0] bdi_type,
     input  logic             bdi_eot,
@@ -39,7 +39,7 @@ module ascon_core (
   logic [LANES-1:0][W64-1:0][CCW-1:0] state;
   logic [ W128-1:0][CCW-1:0]          ascon_key;
   logic [      3:0]                   round_cnt;
-  logic [      7:0]                   word_cnt;
+  logic [      3:0]                   word_cnt;
   logic [      1:0]                   hash_cnt;
   logic flag_ad_eot, flag_ad_pad, flag_msg_pad, flag_eoi, flag_eoo, auth_intern;
   logic [3:0] mode_r;
@@ -93,12 +93,12 @@ module ascon_core (
     (abs_msg && mode_enc_dec     && (word_cnt == (W128 - 1))) ||
     (abs_msg && mode_hash_xof    && (word_cnt == ( W64 - 1)));
 
-  logic [      7:0]                   state_idx;
+  logic [      3:0]                   state_idx;
   logic [LANES-1:0][W64-1:0][CCW-1:0] asconp_o;
   logic [  CCW-1:0]                   state_nx;
   logic [  CCW-1:0]                   state_slice;
 
-  logic [7:0] lane_idx, word_idx;
+  logic [3:0] lane_idx, word_idx;
   assign lane_idx = (CCW == 64) ? state_idx : state_idx / 2;
   assign word_idx = (CCW == 64) ? 'd0 : state_idx % 2;
 
@@ -222,6 +222,7 @@ module ascon_core (
 
   always_comb begin
     fsm_nx = fsm;
+    // Initialize:
     if (idle_done) begin
       if (mode == M_ENC || mode == M_DEC) fsm_nx = key_valid ? LD_KEY : LD_NPUB;
       if (mode == M_HASH || mode == M_XOF || mode == M_CXOF) fsm_nx = INIT;
@@ -238,6 +239,9 @@ module ascon_core (
       else if (bdi_type == D_AD) fsm_nx = ABS_AD;
       else if (bdi_type == D_MSG) fsm_nx = DOM_SEP;
     end
+    // Process:
+    // - AEAD: associated data
+    // - CXOF: customization string
     if (abs_ad_done) begin
       if (bdi_valid != '1) begin
         fsm_nx = PRO_AD;
@@ -263,6 +267,9 @@ module ascon_core (
       end
     end
     if (fsm == DOM_SEP) fsm_nx = flag_eoi ? KADD_3 : ABS_MSG;
+    // Process:
+    // - AEAD           : plaintext or ciphertext
+    // - HASH, XOF, CXOF: message
     if (abs_msg_done) begin
       if (bdi_valid != '1) begin
         if (mode_hash_xof) fsm_nx = FINAL;
@@ -291,6 +298,9 @@ module ascon_core (
         fsm_nx = SQZ_HASH;
       end else fsm_nx = KADD_4;
     end
+    // Finalize:
+    // - AEAD           : Squeeze or verify tag
+    // - HASH, XOF, CXOF: Squeeze hash
     if (fsm == KADD_4) fsm_nx = (mode_r == M_DEC) ? VER_TAG : SQZ_TAG;
     if (sqz_hash_done1) fsm_nx = FINAL;
     if (sqz_hash_done2) fsm_nx = IDLE;
@@ -322,7 +332,7 @@ module ascon_core (
       end
       // Absorb padding word
       if (fsm == PAD_AD || fsm == PAD_MSG) begin
-        state[int'(lane_idx)][int'(word_idx)] <= state[int'(lane_idx)][int'(word_idx)] ^ 'd1;
+        state[int'(lane_idx)][int'(word_idx)] <= state_slice ^ 'd1;
         flag_ad_pad <= fsm == PAD_AD;
         flag_msg_pad <= fsm == PAD_MSG;
       end
@@ -356,7 +366,7 @@ module ascon_core (
       // Domain separation
       if (fsm == DOM_SEP) begin
         state[4][1] <= state[4][1] ^ ('d1 << (CCW - 1));
-        if (flag_eoi) state[0][0] <= state[0][0] ^ 'd1;  // Padding of empty message
+        if (flag_eoi) state[0][0] <= state_slice ^ 'd1;  // Padding of empty message
       end
       // Key addition 3
       if (fsm == KADD_3) begin
