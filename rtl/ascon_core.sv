@@ -333,8 +333,6 @@ module ascon_core (
       // Absorb padding word
       if (fsm == PAD_AD || fsm == PAD_MSG) begin
         state[int'(lane_idx)][int'(word_idx)] <= state_slice ^ 'd1;
-        flag_ad_pad <= fsm == PAD_AD;
-        flag_msg_pad <= fsm == PAD_MSG;
       end
       // State initialization: HASH, XOF, CXOF
       if (idle_done && (mode == M_HASH || mode == M_XOF || mode == M_CXOF)) begin
@@ -345,7 +343,6 @@ module ascon_core (
           M_CXOF:  state[0] <= IV_CXOF[0+:64];
           default: ;
         endcase
-        if (bdi_eoi) flag_eoi <= 'd1;
       end
       // State initialization: AEAD
       // - "npub" is written to state during LOAD_NPUB
@@ -429,17 +426,14 @@ module ascon_core (
     if (rst == 0) begin
       if (idle_done) begin
         flag_ad_eot  <= 'd0;
-        flag_eoi     <= 'd0;
+        flag_eoi     <= bdi_eoi;
         flag_ad_pad  <= 'd0;
         flag_msg_pad <= 'd0;
         auth         <= 'd0;
         auth_intern  <= 'd0;
         auth_valid   <= 'd0;
         done         <= 'd0;
-      end
-      if (idle_done) begin
-        mode_r   <= mode;
-        flag_eoi <= bdi_eoi;
+        mode_r       <= mode;
       end
       if (ld_npub_done) begin
         if (bdi_eoi) flag_eoi <= 'd1;

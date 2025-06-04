@@ -59,6 +59,8 @@ async def send_data(dut, data_in, bdi_type, bdo_ready, bdi_eoi):
             await clear_bdi(dut)
         await RisingEdge(dut.clk)
         if dut.bdi_valid.value and dut.bdi_ready.value:
+            if VERBOSE >= 3:
+                dut._log.info("bdi:      {:08X}".format(bdi))
             bdoo = int(dut.bdo.value).to_bytes(CCWD8, byteorder="big")
             for dd in range(CCWD8):
                 if bdi_valid & (1 << dd):
@@ -79,6 +81,8 @@ async def send_key(dut, key_in):
         dut.key_valid.value = 1
         await RisingEdge(dut.clk)
         if dut.key_ready.value:
+            if VERBOSE >= 3:
+                dut._log.info("key:      {:08X}".format(int(dut.key.value)))
             k += CCWD8
     dut.key.value = 0
     dut.key_valid.value = 0
@@ -96,6 +100,8 @@ async def receive_data(dut, type, len=16, bdo_eoo=0):
             dut.bdo_eoo.value = 0
         await RisingEdge(dut.clk)
         if dut.bdo_ready.value and dut.bdo_valid and dut.bdo_type.value == type:
+            if VERBOSE >= 3:
+                dut._log.info("bdo:      {:08X}".format(int(dut.bdo.value)))
             for x in int(dut.bdo.value).to_bytes(CCWD8, byteorder="big"):
                 data.append(x)
             d += CCWD8
@@ -152,8 +158,8 @@ async def timeout(dut):
             last_fsm_cycles += 1
         else:
             last_fsm_cycles = 0
-            cur_fsm = int(dut.fsm.value)
-        if last_fsm_cycles >= 100:
+            last_fsm = int(dut.fsm.value)
+        if last_fsm_cycles >= 1000:
             assert False, "Timeout"
         if dut_fsm == int.from_bytes("IDLE".encode("ascii"), byteorder="big"):
             return
@@ -175,6 +181,8 @@ async def test_enc(dut):
     mode = Mode.Ascon_AEAD128_Enc
     clock = Clock(dut.clk, 1, units="ns")
     cocotb.start_soon(clock.start(start_high=False))
+    await cocotb.start(toggle(dut, "dut.rst", 1))
+    await RisingEdge(dut.clk)
     await cocotb.start(toggle(dut, "dut.rst", 1))
     await RisingEdge(dut.clk)
 

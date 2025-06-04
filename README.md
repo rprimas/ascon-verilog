@@ -49,8 +49,9 @@ The following table shows the cycles required for processing **x** bytes of mess
 - `LICENSE`: License file.
 - `Makefile`: Makefile for rtl simulation, synthesis, and wave view.
 - `README.md`: This README.
+- `surf_synth.ron`: Configuration file of the [Surfer](https://surfer-project.org/) waveform viewer.
+- `surf.ron`: Configuration file of the [Surfer](https://surfer-project.org/) waveform viewer.
 - `surfer.png`: Screenshot of the [Surfer](https://surfer-project.org/) waveform viewer.
-- `surfer.ron`: Configuration file of the [Surfer](https://surfer-project.org/) waveform viewer.
 - `synth.ys`: Synthesis script of [Yosys](https://github.com/YosysHQ/yosys).
 - `test.py`: Python script for running test bench, used by cocotb.
 
@@ -80,7 +81,7 @@ The following table contains a description of the interface signals:
 | `auth`       |     1    | Authentication success.                          |
 | `auth_valid` |     1    | Authentication output is valid.                  |
 
-## Simulation
+## RTL Simulation
 
 - Install the Verilator open-source verilog simulator (tested with version `5.034`):
   - Ubuntu:
@@ -95,7 +96,7 @@ The following table contains a description of the interface signals:
 - Execute the cocotb test bench:
   - `make`
 
-## Synthesis
+## RTL Synthesis
 
 - Install the Yosys open-source synthesis suite (tested with version `0.53`):
   - Ubuntu:
@@ -105,12 +106,24 @@ The following table contains a description of the interface signals:
 - Execute the yosys synthesis script:
   - `make synth`
 
+## RTL Post-Synthesis Simulation
+
+- Execute the yosys synthesis script:
+  - `make synth`
+- Execute the cocotb test bench for synthesized RTL:
+  - `make sim synth=1`
+
 ## View Waveforms
 
 - Install the [Surfer](https://surfer-project.org/) waveform viewer.
   - `cargo install --git https://gitlab.com/surfer-project/surfer surfer`
 - View waveform of cocotb test bench run:
-  - `make surf`
+  1. `make`
+  2. `make surf`
+- View waveform of post-synthesis cocotb test bench run:
+  1. `make synth`
+  2. `make sim synth=1`
+  3. `make surf synth=1`
 - Example waveform output of test bench:
 
 <p align="center">
