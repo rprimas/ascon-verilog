@@ -118,13 +118,13 @@ The following table contains a description of the interface signals:
 - Install the [Surfer](https://surfer-project.org/) waveform viewer.
   - `cargo install --git https://gitlab.com/surfer-project/surfer surfer`
 - View waveform of cocotb test bench run:
-  1. `make`
-  2. `make surf`
+  - `make`
+  - `make surf`
 - View waveform of post-synthesis cocotb test bench run:
-  1. `make synth`
-  2. `make sim synth=1`
-  3. `make surf synth=1`
-- Example waveform output of test bench:
+  - `make synth`
+  - `make sim synth=1`
+  - `make surf synth=1`
+- Example waveform of test bench output:
 
 <p align="center">
 <img src="surfer.png" alt="Surfer waveform viewer" width="600"/>
