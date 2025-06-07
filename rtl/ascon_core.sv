@@ -41,8 +41,32 @@ module ascon_core (
   logic [      3:0]                   round_cnt;
   logic [      3:0]                   word_cnt;
   logic [      1:0]                   hash_cnt;
-  logic flag_ad_eot, flag_ad_pad, flag_msg_pad, flag_eoi, flag_eoo, auth_intern;
+  logic flag_ad_eot, flag_ad_pad, flag_msg_pad, flag_eoi, auth_intern;
   logic [3:0] mode_r;
+
+  // FSM states
+  typedef enum logic [63:0] {
+    IDLE     = "IDLE",
+    LD_KEY   = "LD_KEY",
+    LD_NPUB  = "LD_NPUB",
+    INIT     = "INIT",
+    KADD_2   = "KADD_2",
+    ABS_AD   = "ABS_AD",
+    PAD_AD   = "PAD_AD",
+    PRO_AD   = "PRO_AD",
+    DOM_SEP  = "DOM_SEP",
+    ABS_MSG  = "ABS_MSG",
+    PAD_MSG  = "PAD_MSG",
+    PRO_MSG  = "PRO_MSG",
+    KADD_3   = "KADD_3",
+    FINAL    = "FINAL",
+    KADD_4   = "KADD_4",
+    SQZ_TAG  = "SQZ_TAG",
+    SQZ_HASH = "SQZ_HASH",
+    VER_TAG  = "VER_TAG"
+  } fsms_t;
+  fsms_t fsm;  // Current state
+  fsms_t fsm_nx;  // Next state
 
   // Event signals
   logic mode_enc_dec, mode_hash_xof;
@@ -93,44 +117,14 @@ module ascon_core (
     (abs_msg && mode_enc_dec     && (word_cnt == (W128 - 1))) ||
     (abs_msg && mode_hash_xof    && (word_cnt == ( W64 - 1)));
 
-  logic [      3:0]                   state_idx;
-  logic [LANES-1:0][W64-1:0][CCW-1:0] asconp_o;
-  logic [  CCW-1:0]                   state_nx;
-  logic [  CCW-1:0]                   state_slice;
+  logic [3:0] state_idx, lane_idx, word_idx;
+  logic [CCW-1:0] state_nx, state_slice, bdi_pad;
 
-  logic [3:0] lane_idx, word_idx;
-  assign lane_idx = (CCW == 64) ? state_idx : state_idx / 2;
   assign word_idx = (CCW == 64) ? 'd0 : state_idx % 2;
-
-  // Padded bdi data
-  logic [CCW-1:0] paddy;
-
-  // Dynamic slicing
+  assign lane_idx = (CCW == 64) ? state_idx : state_idx / 2;
   assign state_slice = state[int'(lane_idx)][int'(word_idx)];
 
-  // Finite state machine
-  typedef enum logic [63:0] {
-    IDLE     = "IDLE",
-    LD_KEY   = "LD_KEY",
-    LD_NPUB  = "LD_NPUB",
-    INIT     = "INIT",
-    KADD_2   = "KADD_2",
-    ABS_AD   = "ABS_AD",
-    PAD_AD   = "PAD_AD",
-    PRO_AD   = "PRO_AD",
-    DOM_SEP  = "DOM_SEP",
-    ABS_MSG  = "ABS_MSG",
-    PAD_MSG  = "PAD_MSG",
-    PRO_MSG  = "PRO_MSG",
-    KADD_3   = "KADD_3",
-    FINAL    = "FINAL",
-    KADD_4   = "KADD_4",
-    SQZ_TAG  = "SQZ_TAG",
-    SQZ_HASH = "SQZ_HASH",
-    VER_TAG  = "VER_TAG"
-  } fsms_t;
-  fsms_t fsm;  // Current state
-  fsms_t fsm_nx;  // Next state
+  logic [LANES-1:0][W64-1:0][CCW-1:0] asconp_o;
 
   // Instantiation of Ascon-p permutation
   asconp asconp_i (
@@ -160,7 +154,7 @@ module ascon_core (
     bdo_valid = 'd0;
     bdo_type  = D_NULL;
     bdo_eot   = 'd0;
-    paddy     = 'd0;
+    bdi_pad   = 'd0;
     unique case (fsm)
       LD_KEY:  key_ready = 'd1;
       LD_NPUB: begin
@@ -171,8 +165,8 @@ module ascon_core (
       ABS_AD: begin
         state_idx = word_cnt;
         bdi_ready = 'd1;
-        paddy = pad(bdi, bdi_valid);
-        state_nx = state_slice ^ paddy;
+        bdi_pad   = pad(bdi, bdi_valid);
+        state_nx  = state_slice ^ bdi_pad;
       end
       PAD_AD, PAD_MSG: begin
         state_idx = word_cnt;
@@ -180,12 +174,12 @@ module ascon_core (
       ABS_MSG: begin
         state_idx = word_cnt;
         if (mode_r == M_ENC || mode_hash_xof) begin
-          paddy = pad(bdi, bdi_valid);
-          state_nx = state_slice ^ paddy;
+          bdi_pad = pad(bdi, bdi_valid);
+          state_nx = state_slice ^ bdi_pad;
           bdo = state_nx;
         end else if (mode_r == M_DEC) begin
-          paddy = pad2(bdi, state_slice, bdi_valid);
-          state_nx = paddy;
+          bdi_pad = pad2(bdi, state_slice, bdi_valid);
+          state_nx = bdi_pad;
           bdo = state_slice ^ state_nx;
         end
         bdi_ready = 'd1;
@@ -362,8 +356,8 @@ module ascon_core (
       end
       // Domain separation
       if (fsm == DOM_SEP) begin
-        state[4][1] <= state[4][1] ^ ('d1 << (CCW - 1));
-        if (flag_eoi) state[0][0] <= state_slice ^ 'd1;  // Padding of empty message
+        state[4] <= state[4] ^ 64'h8000000000000000;
+        if (flag_eoi) state[0] <= state[0] ^ 'd1;  // Pad empty message
       end
       // Key addition 3
       if (fsm == KADD_3) begin
@@ -423,15 +417,17 @@ module ascon_core (
   //////////////////
 
   always_ff @(posedge clk) begin
-    if (rst == 0) begin
+    if (rst) begin
+      done <= 'd0;
+    end else begin
       if (idle_done) begin
-        flag_ad_eot  <= 'd0;
-        flag_eoi     <= bdi_eoi;
-        flag_ad_pad  <= 'd0;
-        flag_msg_pad <= 'd0;
         auth         <= 'd0;
         auth_intern  <= 'd0;
         auth_valid   <= 'd0;
+        flag_ad_eot  <= 'd0;
+        flag_ad_pad  <= 'd0;
+        flag_eoi     <= bdi_eoi;
+        flag_msg_pad <= 'd0;
         done         <= 'd0;
         mode_r       <= mode;
       end

@@ -183,8 +183,6 @@ async def test_enc(dut):
     cocotb.start_soon(clock.start(start_high=False))
     await cocotb.start(toggle(dut, "dut.rst", 1))
     await RisingEdge(dut.clk)
-    await cocotb.start(toggle(dut, "dut.rst", 1))
-    await RisingEdge(dut.clk)
 
     key = bytearray([random.randint(0, 255) for x in range(16)])
     npub = bytearray([random.randint(0, 255) for x in range(16)])

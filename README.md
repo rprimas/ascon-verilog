@@ -94,7 +94,7 @@ The following table contains a description of the interface signals:
 - Install the [cocotb](https://www.cocotb.org/) open-source verilog test bench environment:
   - `pip install cocotb`
 - Execute the cocotb test bench:
-  - `make`
+  - `make sim`
 
 ## RTL Synthesis
 
@@ -118,7 +118,7 @@ The following table contains a description of the interface signals:
 - Install the [Surfer](https://surfer-project.org/) waveform viewer.
   - `cargo install --git https://gitlab.com/surfer-project/surfer surfer`
 - View waveform of cocotb test bench run:
-  - `make`
+  - `make sim`
   - `make surf`
 - View waveform of post-synthesis cocotb test bench run:
   - `make synth`
