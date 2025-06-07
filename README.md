@@ -26,27 +26,27 @@ The Ascon core can be configured to support the following combinations of data-b
 
 ## Performance
 
-The following table shows the cycles required for processing **x** bytes of message and **y** bytes of associated data **(x,y)**:
+Cycles required for processing **x** bytes of message and **y** bytes of associated data:
 
-| **Variant** | **Mode**        | **(0,0)** | **(32,32)** | **(1024,1024)** |
-|-------------|-----------------|:---------:|:-----------:|:---------------:|
-| **v1**      | `Ascon-AEAD128` |     41    |      99     |       1587      |
-| **v2**      | `Ascon-AEAD128` |     29    |      67     |       1059      |
-| **v3**      | `Ascon-AEAD128` |     23    |      51     |        795      |
-| **v4**      | `Ascon-AEAD128` |     35    |      85     |       1325      |
-| **v5**      | `Ascon-AEAD128` |     23    |      53     |        797      |
-| **v6**      | `Ascon-AEAD128` |     17    |      37     |        533      |
+| **Variant** | **Mode**        | **(x=0,y=0)** | **(x=32,y=32)** | **(x=1024,y=1024)** |
+|-------------|-----------------|:-------------:|:---------------:|:-------------------:|
+| **v1**      | `Ascon-AEAD128` |       41      |        99       |         1587        |
+| **v2**      | `Ascon-AEAD128` |       29      |        67       |         1059        |
+| **v3**      | `Ascon-AEAD128` |       23      |        51       |          795        |
+| **v4**      | `Ascon-AEAD128` |       35      |        85       |         1325        |
+| **v5**      | `Ascon-AEAD128` |       23      |        53       |          797        |
+| **v6**      | `Ascon-AEAD128` |       17      |        37       |          533        |
 
-The following table shows the cycles required for processing **x** bytes of message:
+Cycles required for processing **x** bytes of message:
 
-| **Variant** | **Mode**        | **(0)** | **(32)** | **(1024)** |
-|-------------|-----------------|:-------:|:--------:|:----------:|
-| **v1**      | `Ascon_Hash256` |    70   |    126   |    1862    |
-| **v2**      | `Ascon_Hash256` |    40   |     72   |    1064    |
-| **v3**      | `Ascon_Hash256` |    25   |     45   |     665    |
-| **v4**      | `Ascon_Hash256` |    66   |    118   |    1730    |
-| **v5**      | `Ascon_Hash256` |    36   |     64   |     932    |
-| **v6**      | `Ascon_Hash256` |    21   |     37   |     533    |
+| **Variant** | **Mode**        | **(x=0)** | **(x=32)** | **(x=1024)** |
+|-------------|-----------------|:---------:|:----------:|:------------:|
+| **v1**      | `Ascon_Hash256` |     70    |     126    |     1862     |
+| **v2**      | `Ascon_Hash256` |     40    |      72    |     1064     |
+| **v3**      | `Ascon_Hash256` |     25    |      45    |      665     |
+| **v4**      | `Ascon_Hash256` |     66    |     118    |     1730     |
+| **v5**      | `Ascon_Hash256` |     36    |      64    |      932     |
+| **v6**      | `Ascon_Hash256` |     21    |      37    |      533     |
 
 ## Files
 
