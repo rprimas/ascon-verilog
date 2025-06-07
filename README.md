@@ -41,12 +41,12 @@ Cycles required for processing **x** bytes of message:
 
 | **Variant** | **Mode**        | **( x=0 )** | **( x=32 )** | **( x=1024 )** |
 |-------------|-----------------|:-----------:|:------------:|:--------------:|
-| **v1**      | `Ascon_Hash256` |      70     |      126     |      1862      |
-| **v2**      | `Ascon_Hash256` |      40     |       72     |      1064      |
-| **v3**      | `Ascon_Hash256` |      25     |       45     |       665      |
-| **v4**      | `Ascon_Hash256` |      66     |      118     |      1730      |
-| **v5**      | `Ascon_Hash256` |      36     |       64     |       932      |
-| **v6**      | `Ascon_Hash256` |      21     |       37     |       533      |
+| **v1**      | `Ascon-Hash256` |      70     |      126     |      1862      |
+| **v2**      | `Ascon-Hash256` |      40     |       72     |      1064      |
+| **v3**      | `Ascon-Hash256` |      25     |       45     |       665      |
+| **v4**      | `Ascon-Hash256` |      66     |      118     |      1730      |
+| **v5**      | `Ascon-Hash256` |      36     |       64     |       932      |
+| **v6**      | `Ascon-Hash256` |      21     |       37     |       533      |
 
 ## Files
 
@@ -58,13 +58,13 @@ Cycles required for processing **x** bytes of message:
 - `cmos_cells.lib`: A simple cmos cell library for synthesis. 
 - `cmos_cells.v`: A simple behavioral model of cmos cells for synthesis.
 - `LICENSE`: License file.
-- `Makefile`: Makefile for rtl simulation, synthesis, and wave view.
+- `Makefile`: Makefile for rtl simulation, rtl synthesis, and waveform viewing.
 - `README.md`: This README.
-- `surf_synth.ron`: Configuration file of the [Surfer](https://surfer-project.org/) waveform viewer.
-- `surf.ron`: Configuration file of the [Surfer](https://surfer-project.org/) waveform viewer.
+- `surf_synth.ron`: Configuration file for [Surfer](https://surfer-project.org/).
+- `surf.ron`: Configuration file for [Surfer](https://surfer-project.org/).
 - `surfer.png`: Screenshot of the [Surfer](https://surfer-project.org/) waveform viewer.
-- `synth.ys`: Synthesis script of [Yosys](https://github.com/YosysHQ/yosys).
-- `test.py`: Python script for running test bench, used by cocotb.
+- `synth.ys`: Synthesis script for [Yosys](https://github.com/YosysHQ/yosys).
+- `test.py`: Python script for running test bench with [cocotb](https://www.cocotb.org/).
 
 ## Interface
 
