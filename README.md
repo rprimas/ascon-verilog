@@ -28,14 +28,25 @@ The Ascon core can be configured to support the following combinations of data-b
 
 The following table shows the cycles required for processing **x** bytes of message and **y** bytes of associated data **(x,y)**:
 
-| **Variant** | **Mode**        | **(0,0)** | **(16,16)** | **(1536,1536)** |
+| **Variant** | **Mode**        | **(0,0)** | **(32,32)** | **(1024,1024)** |
 |-------------|-----------------|:---------:|:-----------:|:---------------:|
-| **v1**      | `Ascon-AEAD128` |     41    |     75      |      2355       |
-| **v2**      | `Ascon-AEAD128` |     29    |     51      |      1571       |
-| **v3**      | `Ascon-AEAD128` |     23    |     39      |      1179       |
-| **v4**      | `Ascon-AEAD128` |     35    |     65      |      1965       |
-| **v5**      | `Ascon-AEAD128` |     23    |     41      |      1181       |
-| **v6**      | `Ascon-AEAD128` |     17    |     29      |       789       |
+| **v1**      | `Ascon-AEAD128` |     41    |      99     |       1587      |
+| **v2**      | `Ascon-AEAD128` |     29    |      67     |       1059      |
+| **v3**      | `Ascon-AEAD128` |     23    |      51     |        795      |
+| **v4**      | `Ascon-AEAD128` |     35    |      85     |       1325      |
+| **v5**      | `Ascon-AEAD128` |     23    |      53     |        797      |
+| **v6**      | `Ascon-AEAD128` |     17    |      37     |        533      |
+
+The following table shows the cycles required for processing **x** bytes of message:
+
+| **Variant** | **Mode**        | **(0)** | **(32)** | **(1024)** |
+|-------------|-----------------|:-------:|:--------:|:----------:|
+| **v1**      | `Ascon_Hash256` |    70   |    126   |    1862    |
+| **v2**      | `Ascon_Hash256` |    40   |     72   |    1064    |
+| **v3**      | `Ascon_Hash256` |    25   |     45   |     665    |
+| **v4**      | `Ascon_Hash256` |    66   |    118   |    1730    |
+| **v5**      | `Ascon_Hash256` |    36   |     64   |     932    |
+| **v6**      | `Ascon_Hash256` |    21   |     37   |     533    |
 
 ## Files
 
