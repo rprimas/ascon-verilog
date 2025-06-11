@@ -5,11 +5,11 @@ read_verilog -sv rtl/ascon_core.sv
 synth -top ascon_core
 
 # mapping to cmos_cells.lib
-dfflibmap -liberty cmos_cells.lib
-abc -liberty cmos_cells.lib
+dfflibmap -liberty synth/cmos_cells.lib
+abc -liberty synth/cmos_cells.lib
 clean
 
 # write synthesized design
 write_verilog synth.v
 
-stat -liberty cmos_cells.lib
+stat -liberty synth/cmos_cells.lib

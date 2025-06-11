@@ -3,7 +3,7 @@
 [Ascon](https://ascon.iaik.tugraz.at) is a family of authenticated encryption and hashing algorithms designed to be lightweight and easy to implement, even with added countermeasures against side-channel attacks. Ascon has been selected as new standard for lightweight cryptography in the [NIST Lightweight Cryptography competition](https://csrc.nist.gov/Projects/Lightweight-Cryptography) (2019–2023). The current draft standard of Ascon is available [here](https://doi.org/10.6028/NIST.SP.800-232.ipd).
 
 > [!NOTE]
-> This is a work-in-progress hardware implementation of the Ascon family of lightweight cryptographic algorithms that is compatible with the current draft standard [NIST SP 800-232](https://doi.org/10.6028/NIST.SP.800-232.ipd).
+> This is a work-in-progress SystemVerilog implementation of the Ascon family of lightweight cryptographic algorithms that is compatible with the current draft standard [NIST SP 800-232](https://doi.org/10.6028/NIST.SP.800-232.ipd).
 
 The following Ascon modes are available:
 - `Ascon-AEAD128`
@@ -50,21 +50,14 @@ Cycles required for processing **x** bytes of message:
 
 ## Files
 
-- `rtl/ascon_core.sv`: Implementation of the Ascon core.
-- `rtl/asconp.sv`: Implementation of the Ascon permutation.
-- `rtl/config.sv`: Configuration of the Ascon core.
-- `rtl/functions.sv`: Some generic verilog functions.
-- `ascon.py`: Reference software implementation of Ascon, used by `test.py`.
-- `cmos_cells.lib`: A simple cmos cell library for synthesis. 
-- `cmos_cells.v`: A simple behavioral model of cmos cells for synthesis.
+- `rtl/`: SystemVerilog implementation of the Ascon core.
+- `surfer/`: Files for the [Surfer](https://surfer-project.org/) waveform viewer.
+- `synth/`: Files for [Yosys](https://github.com/YosysHQ/yosys) synthesis.
+- `ascon.py`: Python reference implementation of Ascon, used by `test.py`.
 - `LICENSE`: License file.
 - `Makefile`: Makefile for rtl simulation, rtl synthesis, and waveform viewing.
 - `README.md`: This README.
-- `surf_synth.ron`: Configuration file for [Surfer](https://surfer-project.org/).
-- `surf.ron`: Configuration file for [Surfer](https://surfer-project.org/).
-- `surfer.png`: Screenshot of the [Surfer](https://surfer-project.org/) waveform viewer.
-- `synth.ys`: Synthesis script for [Yosys](https://github.com/YosysHQ/yosys).
-- `test.py`: Python script for running test bench with [cocotb](https://www.cocotb.org/).
+- `test.py`: Python script for running the [cocotb](https://www.cocotb.org/) test bench.
 
 ## Interface
 
@@ -105,7 +98,7 @@ The following table contains a description of the interface signals:
 - Install the [cocotb](https://www.cocotb.org/) open-source verilog test bench environment:
   - `pip install cocotb`
 - Execute the cocotb test bench:
-  - `make sim`
+  - `make` or `make sim`
 
 ## RTL Synthesis
 
@@ -138,7 +131,7 @@ The following table contains a description of the interface signals:
 - Example waveform of test bench output:
 
 <p align="center">
-<img src="surfer.png" alt="Surfer waveform viewer" width="600"/>
+<img src="surfer/surfer.png" alt="Surfer waveform viewer" width="600"/>
 </p>
 
 ## Integration

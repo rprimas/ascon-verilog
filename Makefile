@@ -29,10 +29,10 @@ MODULE = test
 
 # Set source and config files
 ifeq (1,$(synth))
-SURF_CONF = surf_synth.ron
-VERILOG_SOURCES = $(PWD)/cmos_cells.v $(PWD)/synth.v
+SURFER_RON = surfer/synth.ron
+VERILOG_SOURCES = $(PWD)/synth/cmos_cells.v $(PWD)/synth.v
 else
-SURF_CONF = surf.ron
+SURFER_RON = surfer/sim.ron
 VERILOG_SOURCES = $(PWD)/rtl/ascon_core.sv
 endif
 
@@ -40,10 +40,12 @@ endif
 include $(shell cocotb-config --makefiles)/Makefile.sim
 
 synth:
-	yosys -D${VARIANT} synth.ys
+	yosys -D${VARIANT} synth/synth.ys
 
 surf:
-	surfer -s $(SURF_CONF) dump.vcd
+	surfer -s $(SURFER_RON) dump.vcd
 
 clean::
 	rm -rf synth.v results.xml
+
+.PHONY: synth
