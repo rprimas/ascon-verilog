@@ -54,6 +54,7 @@ Cycles required for processing **x** bytes of message:
 - `surfer/`: Files for the [Surfer](https://surfer-project.org/) waveform viewer.
 - `synth/`: Files for [Yosys](https://github.com/YosysHQ/yosys) synthesis.
 - `ascon.py`: Python reference implementation of Ascon, used by `test.py`.
+- `CITATION.cff`: Github citation information file.
 - `LICENSE`: License file.
 - `Makefile`: Makefile for rtl simulation, rtl synthesis, and waveform viewing.
 - `README.md`: This README.

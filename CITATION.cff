@@ -1,0 +1,11 @@
+# See https://citation-file-format.github.io/
+cff-version: 1.2.0
+title: ascon-verilog
+message: 'If you use this software, please cite it as below.'
+type: software
+authors:
+  - given-names: Robert
+    family-names: Primas
+    orcid: 'https://orcid.org/0000-0002-9569-8477'
+repository-code: 'https://github.com/rprimas/ascon-verilog'
+license: CC0-1.0
