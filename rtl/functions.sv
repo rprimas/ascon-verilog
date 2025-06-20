@@ -8,7 +8,7 @@
 //
 // Generic functions for the Ascon core.
 
-`include "rtl/config.sv"
+`include "config.sv"
 
 // Swap byte order of bit vector:
 // in:   [0x00, 0x01, 0x02, 0x03]

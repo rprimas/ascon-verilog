@@ -18,6 +18,7 @@ SIM ?= verilator
 TOPLEVEL_LANG ?= verilog
 EXTRA_ARGS += --threads 8
 EXTRA_ARGS += --trace
+EXTRA_ARGS += --relative-includes
 EXTRA_ARGS += -Wno-UNOPTFLAT
 EXTRA_ARGS += -D$(VARIANT)
 

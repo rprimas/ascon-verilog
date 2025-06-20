@@ -9,7 +9,7 @@
 // Implementation of the Ascon permutation (Ascon-p).
 // Performs UROL rounds per clock cycle.
 
-`include "rtl/config.sv"
+`include "config.sv"
 
 module asconp (
     input  logic [ 3:0] round_cnt,

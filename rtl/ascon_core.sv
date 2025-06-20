@@ -8,9 +8,9 @@
 //
 // Implementation of the Ascon core.
 
-`include "rtl/asconp.sv"
-`include "rtl/config.sv"
-`include "rtl/functions.sv"
+`include "asconp.sv"
+`include "config.sv"
+`include "functions.sv"
 
 module ascon_core (
     input  logic             clk,
@@ -69,6 +69,7 @@ module ascon_core (
   fsms_t fsm_nx;  // Next state
 
   // Event signals
+  logic last_abs_blk;
   logic mode_enc_dec, mode_hash_xof;
   assign mode_enc_dec  = (mode_r == M_ENC) || (mode_r == M_DEC);
   assign mode_hash_xof = (mode_r == M_HASH) || (mode_r == M_XOF) || (mode_r == M_CXOF);
@@ -109,14 +110,13 @@ module ascon_core (
   assign ver_tag        = (fsm == VER_TAG) && (bdi_type == D_TAG) && bdi_ready;
   assign ver_tag_done   = (word_cnt == (W128 - 1)) && ver_tag;
 
-  // Utility signals
-  logic last_abs_blk;
   assign last_abs_blk =
     (abs_ad  && mode_enc_dec     && (word_cnt == (W128 - 1))) ||
     (abs_ad  && (mode_r==M_CXOF) && (word_cnt == ( W64 - 1))) ||
     (abs_msg && mode_enc_dec     && (word_cnt == (W128 - 1))) ||
     (abs_msg && mode_hash_xof    && (word_cnt == ( W64 - 1)));
 
+  // Utility signals
   logic [3:0] state_idx, lane_idx, word_idx;
   logic [CCW-1:0] state_nx, state_slice, bdi_pad;
 
