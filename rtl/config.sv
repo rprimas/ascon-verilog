@@ -66,7 +66,7 @@ typedef enum logic [3:0] {
   M_HASH = 3,
   M_XOF  = 4,
   M_CXOF = 5
-} mode_e;
+} e_mode;
 
 // Interface data types
 typedef enum logic [3:0] {
@@ -76,6 +76,6 @@ typedef enum logic [3:0] {
   D_MSG   = 3, // for AEAD, HASH, XOF, CXOF
   D_TAG   = 4,
   D_HASH  = 5
-} data_e;
+} e_data_type;
 
 `endif  // INCL_CONFIG

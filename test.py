@@ -14,6 +14,7 @@ VERBOSE = 1
 RUNS = range(0, 10)
 # RUNS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 16, 32, 64, 128, 256, 512, 1024]
 CCW = 32
+# CCW = 64
 CCWD8 = CCW // 8
 STALLS = 0
 
@@ -137,9 +138,7 @@ async def cycle_cnt(dut):
     await RisingEdge(dut.clk)
     while 1:
         await RisingEdge(dut.clk)
-        if int(dut.fsm.value) == int.from_bytes(
-            "IDLE".encode("ascii"), byteorder="big"
-        ):
+        if int(dut.fsm.value) == 1:
             if VERBOSE >= 1:
                 dut._log.info("cycles    %d", cycles)
             return

@@ -18,6 +18,8 @@ SIM ?= verilator
 TOPLEVEL_LANG ?= verilog
 EXTRA_ARGS += --threads 8
 EXTRA_ARGS += --trace
+EXTRA_ARGS += --trace-fst
+EXTRA_ARGS += --trace-threads 2
 EXTRA_ARGS += --relative-includes
 EXTRA_ARGS += -Wno-UNOPTFLAT
 EXTRA_ARGS += -D$(VARIANT)
@@ -29,9 +31,9 @@ TOPLEVEL = ascon_core
 MODULE = test
 
 # Set source and config files
-ifeq (1,$(synth))
-SURFER_RON = surfer/synth.ron
-VERILOG_SOURCES = $(PWD)/synth/cmos_cells.v $(PWD)/synth.v
+ifeq (1,$(syn))
+SURFER_RON = surfer/syn.ron
+VERILOG_SOURCES = $(PWD)/syn/cmos_cells.v $(PWD)/syn.v
 else
 SURFER_RON = surfer/sim.ron
 VERILOG_SOURCES = $(PWD)/rtl/ascon_core.sv
@@ -40,13 +42,13 @@ endif
 # Include cocotb makefile
 include $(shell cocotb-config --makefiles)/Makefile.sim
 
-synth:
-	yosys -D${VARIANT} synth/synth.ys
+syn:
+	yosys -D${VARIANT} syn/syn.ys
 
 surf:
-	surfer -s $(SURFER_RON) dump.vcd
+	surfer -s $(SURFER_RON) dump.fst
 
 clean::
-	rm -rf synth.v results.xml
+	rm -rf syn.v results.xml
 
-.PHONY: synth
+.PHONY: syn

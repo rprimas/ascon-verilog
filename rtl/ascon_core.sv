@@ -13,27 +13,27 @@
 `include "functions.sv"
 
 module ascon_core (
-    input  logic             clk,
-    input  logic             rst,
-    input  logic [  CCW-1:0] key,
-    input  logic             key_valid,
-    output logic             key_ready,
-    input  logic [  CCW-1:0] bdi,
-    input  logic [CCW/8-1:0] bdi_valid,
-    output logic             bdi_ready,
-    input  logic [      3:0] bdi_type,
-    input  logic             bdi_eot,
-    input  logic             bdi_eoi,
-    input  logic [      3:0] mode,
-    output logic [  CCW-1:0] bdo,
-    output logic             bdo_valid,
-    input  logic             bdo_ready,
-    output logic [      3:0] bdo_type,
-    output logic             bdo_eot,
-    input  logic             bdo_eoo,
-    output logic             auth,
-    output logic             auth_valid,
-    output logic             done
+    input  logic                   clk,
+    input  logic                   rst,
+    input  logic       [  CCW-1:0] key,
+    input  logic                   key_valid,
+    output logic                   key_ready,
+    input  logic       [  CCW-1:0] bdi,
+    input  logic       [CCW/8-1:0] bdi_valid,
+    output logic                   bdi_ready,
+    input  e_data_type             bdi_type,
+    input  logic                   bdi_eot,
+    input  logic                   bdi_eoi,
+    input  e_mode                  mode,
+    output logic       [  CCW-1:0] bdo,
+    output logic                   bdo_valid,
+    input  logic                   bdo_ready,
+    output e_data_type             bdo_type,
+    output logic                   bdo_eot,
+    input  logic                   bdo_eoo,
+    output logic                   auth,
+    output logic                   auth_valid,
+    output logic                   done
 );
   // Core registers
   logic [LANES-1:0][W64-1:0][CCW-1:0] state;
@@ -42,34 +42,34 @@ module ascon_core (
   logic [      3:0]                   word_cnt;
   logic [      1:0]                   hash_cnt;
   logic flag_ad_eot, flag_ad_pad, flag_msg_pad, flag_eoi, auth_intern;
-  logic [3:0] mode_r;
+  e_mode mode_r;
 
   // FSM states
-  typedef enum logic [63:0] {
-    IDLE     = "IDLE",
-    LD_KEY   = "LD_KEY",
-    LD_NPUB  = "LD_NPUB",
-    INIT     = "INIT",
-    KADD_2   = "KADD_2",
-    ABS_AD   = "ABS_AD",
-    PAD_AD   = "PAD_AD",
-    PRO_AD   = "PRO_AD",
-    DOM_SEP  = "DOM_SEP",
-    ABS_MSG  = "ABS_MSG",
-    PAD_MSG  = "PAD_MSG",
-    PRO_MSG  = "PRO_MSG",
-    KADD_3   = "KADD_3",
-    FINAL    = "FINAL",
-    KADD_4   = "KADD_4",
-    SQZ_TAG  = "SQZ_TAG",
-    SQZ_HASH = "SQZ_HASH",
-    VER_TAG  = "VER_TAG"
+  typedef enum logic [4:0] {
+    IDLE     = 'd1,
+    LD_KEY   = 'd2,
+    LD_NPUB  = 'd3,
+    INIT     = 'd4,
+    KADD_2   = 'd5,
+    ABS_AD   = 'd6,
+    PAD_AD   = 'd7,
+    PRO_AD   = 'd8,
+    DOM_SEP  = 'd9,
+    ABS_MSG  = 'd10,
+    PAD_MSG  = 'd11,
+    PRO_MSG  = 'd12,
+    KADD_3   = 'd13,
+    FINAL    = 'd14,
+    KADD_4   = 'd15,
+    SQZ_TAG  = 'd16,
+    SQZ_HASH = 'd17,
+    VER_TAG  = 'd18
   } fsms_t;
   fsms_t fsm;  // Current state
   fsms_t fsm_nx;  // Next state
 
   // Event signals
-  logic last_abs_blk;
+  logic  last_abs_blk;
   logic mode_enc_dec, mode_hash_xof;
   assign mode_enc_dec  = (mode_r == M_ENC) || (mode_r == M_DEC);
   assign mode_hash_xof = (mode_r == M_HASH) || (mode_r == M_XOF) || (mode_r == M_CXOF);
@@ -90,6 +90,9 @@ module ascon_core (
   assign pro_ad      = (fsm == PRO_AD);
   assign pro_ad_done = pro_ad && (round_cnt == UROL);
 
+  logic dom_sep_done;
+  assign dom_sep_done = (fsm == DOM_SEP);
+
   logic abs_msg_part, abs_msg, abs_msg_done, pro_msg, pro_msg_done;
   assign abs_msg_part = (fsm == ABS_MSG) && (bdi_type == D_MSG) && (bdi_valid != 'd0) && bdi_ready;
   assign abs_msg      = abs_msg_part && ((bdo_valid && bdo_ready) || !mode_enc_dec);
@@ -97,9 +100,10 @@ module ascon_core (
   assign pro_msg      = (fsm == PRO_MSG);
   assign pro_msg_done = (round_cnt == UROL) && pro_msg;
 
-  logic fin, fin_done;
-  assign fin      = (fsm == FINAL);
-  assign fin_done = (round_cnt == UROL) && fin;
+  logic kadd_3_done, fin, fin_done;
+  assign kadd_3_done = (fsm == KADD_3);
+  assign fin         = (fsm == FINAL);
+  assign fin_done    = (round_cnt == UROL) && fin;
 
   logic sqz_hash, sqz_hash_done1, sqz_hash_done2, sqz_tag, sqz_tag_done, ver_tag, ver_tag_done;
   assign sqz_hash       = (fsm == SQZ_HASH) && bdo_valid && bdo_ready;
@@ -285,7 +289,7 @@ module ascon_core (
         fsm_nx = PAD_MSG;
       end
     end
-    if (fsm == KADD_3) fsm_nx = FINAL;
+    if (kadd_3_done) fsm_nx = FINAL;
     if (fin_done) begin
       if (mode_r == M_HASH) fsm_nx = SQZ_HASH;
       else if (mode_r == M_XOF || mode_r == M_CXOF) begin

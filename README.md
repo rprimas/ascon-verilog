@@ -88,7 +88,7 @@ The following table contains a description of the interface signals:
 
 ## RTL Simulation
 
-- Install the Verilator open-source verilog simulator (tested with version `5.034`):
+- Install the Verilator open-source verilog simulator (tested with version `5.036`):
   - Ubuntu:
     - `apt-get install verilator`
   - Fedora:
@@ -109,14 +109,14 @@ The following table contains a description of the interface signals:
   - Fedora:
     - `dnf install yosys`
 - Execute the yosys synthesis script:
-  - `make synth`
+  - `make syn`
 
 ## RTL Post-Synthesis Simulation
 
 - Execute the yosys synthesis script:
-  - `make synth`
+  - `make syn`
 - Execute the cocotb test bench for synthesized RTL:
-  - `make sim synth=1`
+  - `make sim syn=1`
 
 ## View Waveforms
 
@@ -126,9 +126,9 @@ The following table contains a description of the interface signals:
   - `make sim`
   - `make surf`
 - View waveform of post-synthesis cocotb test bench run:
-  - `make synth`
-  - `make sim synth=1`
-  - `make surf synth=1`
+  - `make syn`
+  - `make sim syn=1`
+  - `make surf syn=1`
 - Example waveform of test bench output:
 
 <p align="center">

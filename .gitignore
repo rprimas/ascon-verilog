@@ -3,4 +3,5 @@ __pycache__/
 .vscode/
 results.xml
 *.vcd
+*.fst
 *.code-workspace

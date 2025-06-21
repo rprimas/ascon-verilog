@@ -1,5 +1,5 @@
 (
-    show_hierarchy: None,
+    show_hierarchy: Some(true),
     show_menu: None,
     show_ticks: None,
     show_toolbar: None,
@@ -16,8 +16,8 @@
     highlight_focused: None,
     fill_high_values: None,
     waves: Some((
-        source: File("dump.vcd"),
-        format: Vcd,
+        source: File("dump.fst"),
+        format: Fst,
         active_scope: Some(WaveScope((
             strs: [
                 "ascon_core",
@@ -25,12 +25,6 @@
         ))),
         items_tree: (
             items: [
-                (
-                    item_ref: (1),
-                    level: 0,
-                    unfolded: true,
-                    selected: false,
-                ),
                 (
                     item_ref: (2),
                     level: 0,
@@ -44,122 +38,146 @@
                     selected: false,
                 ),
                 (
-                    item_ref: (4),
+                    item_ref: (1),
                     level: 0,
+                    unfolded: true,
+                    selected: false,
+                ),
+                (
+                    item_ref: (36),
+                    level: 0,
+                    unfolded: true,
+                    selected: false,
+                ),
+                (
+                    item_ref: (37),
+                    level: 0,
+                    unfolded: true,
+                    selected: false,
+                ),
+                (
+                    item_ref: (38),
+                    level: 1,
+                    unfolded: true,
+                    selected: false,
+                ),
+                (
+                    item_ref: (39),
+                    level: 1,
+                    unfolded: true,
+                    selected: false,
+                ),
+                (
+                    item_ref: (40),
+                    level: 1,
                     unfolded: true,
                     selected: false,
                 ),
                 (
                     item_ref: (5),
-                    level: 0,
+                    level: 1,
                     unfolded: true,
                     selected: false,
                 ),
                 (
-                    item_ref: (6),
-                    level: 0,
-                    unfolded: true,
-                    selected: false,
-                ),
-                (
-                    item_ref: (7),
-                    level: 0,
-                    unfolded: true,
-                    selected: false,
-                ),
-                (
-                    item_ref: (8),
-                    level: 0,
-                    unfolded: true,
-                    selected: false,
-                ),
-                (
-                    item_ref: (9),
-                    level: 0,
-                    unfolded: true,
-                    selected: false,
-                ),
-                (
-                    item_ref: (10),
-                    level: 0,
-                    unfolded: true,
-                    selected: false,
-                ),
-                (
-                    item_ref: (11),
-                    level: 0,
-                    unfolded: true,
-                    selected: false,
-                ),
-                (
-                    item_ref: (12),
-                    level: 0,
-                    unfolded: true,
-                    selected: false,
-                ),
-                (
-                    item_ref: (13),
-                    level: 0,
-                    unfolded: true,
-                    selected: false,
-                ),
-                (
-                    item_ref: (14),
-                    level: 0,
-                    unfolded: true,
-                    selected: false,
-                ),
-                (
-                    item_ref: (15),
-                    level: 0,
-                    unfolded: true,
-                    selected: false,
-                ),
-                (
-                    item_ref: (16),
-                    level: 0,
-                    unfolded: true,
-                    selected: false,
-                ),
-                (
-                    item_ref: (17),
-                    level: 0,
-                    unfolded: true,
-                    selected: false,
-                ),
-                (
-                    item_ref: (18),
-                    level: 0,
-                    unfolded: true,
-                    selected: false,
-                ),
-                (
-                    item_ref: (19),
-                    level: 0,
-                    unfolded: true,
-                    selected: false,
-                ),
-                (
-                    item_ref: (20),
-                    level: 0,
-                    unfolded: true,
-                    selected: false,
-                ),
-                (
-                    item_ref: (21),
+                    item_ref: (24),
                     level: 0,
                     unfolded: true,
                     selected: false,
                 ),
                 (
                     item_ref: (22),
-                    level: 0,
+                    level: 1,
+                    unfolded: true,
+                    selected: false,
+                ),
+                (
+                    item_ref: (17),
+                    level: 1,
+                    unfolded: true,
+                    selected: false,
+                ),
+                (
+                    item_ref: (20),
+                    level: 1,
                     unfolded: true,
                     selected: false,
                 ),
                 (
                     item_ref: (23),
-                    level: 0,
+                    level: 1,
+                    unfolded: true,
+                    selected: false,
+                ),
+                (
+                    item_ref: (21),
+                    level: 1,
+                    unfolded: true,
+                    selected: false,
+                ),
+                (
+                    item_ref: (18),
+                    level: 1,
+                    unfolded: true,
+                    selected: false,
+                ),
+                (
+                    item_ref: (19),
+                    level: 1,
+                    unfolded: true,
+                    selected: false,
+                ),
+                (
+                    item_ref: (8),
+                    level: 1,
+                    unfolded: true,
+                    selected: false,
+                ),
+                (
+                    item_ref: (26),
+                    level: 1,
+                    unfolded: true,
+                    selected: false,
+                ),
+                (
+                    item_ref: (31),
+                    level: 2,
+                    unfolded: true,
+                    selected: false,
+                ),
+                (
+                    item_ref: (27),
+                    level: 2,
+                    unfolded: true,
+                    selected: false,
+                ),
+                (
+                    item_ref: (28),
+                    level: 2,
+                    unfolded: true,
+                    selected: false,
+                ),
+                (
+                    item_ref: (29),
+                    level: 2,
+                    unfolded: true,
+                    selected: false,
+                ),
+                (
+                    item_ref: (30),
+                    level: 2,
+                    unfolded: true,
+                    selected: false,
+                ),
+                (
+                    item_ref: (32),
+                    level: 2,
+                    unfolded: true,
+                    selected: false,
+                ),
+                (
+                    item_ref: (6),
+                    level: 2,
                     unfolded: true,
                     selected: false,
                 ),
@@ -170,176 +188,75 @@
                     selected: false,
                 ),
                 (
-                    item_ref: (26),
-                    level: 0,
-                    unfolded: true,
-                    selected: false,
-                ),
-                (
                     item_ref: (35),
-                    level: 0,
+                    level: 1,
                     unfolded: true,
                     selected: false,
                 ),
                 (
-                    item_ref: (27),
-                    level: 0,
+                    item_ref: (15),
+                    level: 1,
                     unfolded: true,
                     selected: false,
                 ),
                 (
-                    item_ref: (28),
-                    level: 0,
+                    item_ref: (16),
+                    level: 1,
                     unfolded: true,
                     selected: false,
                 ),
                 (
-                    item_ref: (29),
-                    level: 0,
+                    item_ref: (10),
+                    level: 1,
                     unfolded: true,
                     selected: false,
                 ),
                 (
-                    item_ref: (30),
-                    level: 0,
+                    item_ref: (11),
+                    level: 1,
                     unfolded: true,
                     selected: false,
                 ),
                 (
-                    item_ref: (31),
-                    level: 0,
+                    item_ref: (12),
+                    level: 1,
                     unfolded: true,
                     selected: false,
                 ),
                 (
-                    item_ref: (32),
-                    level: 0,
+                    item_ref: (13),
+                    level: 1,
                     unfolded: true,
                     selected: false,
                 ),
                 (
-                    item_ref: (33),
-                    level: 0,
+                    item_ref: (14),
+                    level: 1,
+                    unfolded: true,
+                    selected: false,
+                ),
+                (
+                    item_ref: (7),
+                    level: 1,
+                    unfolded: true,
+                    selected: false,
+                ),
+                (
+                    item_ref: (56),
+                    level: 1,
+                    unfolded: true,
+                    selected: false,
+                ),
+                (
+                    item_ref: (55),
+                    level: 1,
                     unfolded: true,
                     selected: false,
                 ),
             ],
         ),
         displayed_items: {
-            (25): Divider((
-                color: Some("Red"),
-                background_color: None,
-                name: Some("Ascon Core"),
-            )),
-            (29): Variable((
-                variable_ref: (
-                    path: (
-                        strs: [
-                            "ascon_core",
-                        ],
-                    ),
-                    name: "x0",
-                ),
-                color: None,
-                background_color: None,
-                display_name: "x0 [63:0]",
-                display_name_type: Unique,
-                manual_name: None,
-                format: None,
-                field_formats: [],
-                height_scaling_factor: None,
-            )),
-            (9): Variable((
-                variable_ref: (
-                    path: (
-                        strs: [
-                            "ascon_core",
-                        ],
-                    ),
-                    name: "bdi_eoi",
-                ),
-                color: None,
-                background_color: None,
-                display_name: "bdi_eoi",
-                display_name_type: Unique,
-                manual_name: None,
-                format: None,
-                field_formats: [],
-                height_scaling_factor: None,
-            )),
-            (26): Variable((
-                variable_ref: (
-                    path: (
-                        strs: [
-                            "ascon_core",
-                        ],
-                    ),
-                    name: "fsm",
-                ),
-                color: Some("Red"),
-                background_color: None,
-                display_name: "fsm [17:0]",
-                display_name_type: Unique,
-                manual_name: None,
-                format: Some("Unsigned"),
-                field_formats: [],
-                height_scaling_factor: None,
-            )),
-            (35): Variable((
-                variable_ref: (
-                    path: (
-                        strs: [
-                            "ascon_core",
-                        ],
-                    ),
-                    name: "flag_eoi",
-                ),
-                color: None,
-                background_color: None,
-                display_name: "flag_eoi",
-                display_name_type: Unique,
-                manual_name: None,
-                format: None,
-                field_formats: [],
-                height_scaling_factor: None,
-            )),
-            (13): Variable((
-                variable_ref: (
-                    path: (
-                        strs: [
-                            "ascon_core",
-                        ],
-                    ),
-                    name: "bdi_valid",
-                ),
-                color: None,
-                background_color: None,
-                display_name: "bdi_valid [3:0]",
-                display_name_type: Unique,
-                manual_name: None,
-                format: Some("Binary"),
-                field_formats: [],
-                height_scaling_factor: None,
-            )),
-            (31): Variable((
-                variable_ref: (
-                    path: (
-                        strs: [
-                            "ascon_core",
-                        ],
-                    ),
-                    name: "x2",
-                ),
-                color: None,
-                background_color: None,
-                display_name: "x2 [63:0]",
-                display_name_type: Unique,
-                manual_name: None,
-                format: None,
-                field_formats: [],
-                height_scaling_factor: None,
-            )),
-            (19): Variable((
+            (30): Variable((
                 variable_ref: (
                     path: (
                         strs: [
@@ -357,7 +274,39 @@
                 field_formats: [],
                 height_scaling_factor: None,
             )),
-            (6): Variable((
+            (26): Group((
+                name: "BDO",
+                color: None,
+                background_color: None,
+                content: [],
+                is_open: false,
+            )),
+            (25): Group((
+                name: "Ascon Core",
+                color: None,
+                background_color: None,
+                content: [],
+                is_open: false,
+            )),
+            (11): Variable((
+                variable_ref: (
+                    path: (
+                        strs: [
+                            "ascon_core",
+                        ],
+                    ),
+                    name: "x1",
+                ),
+                color: None,
+                background_color: None,
+                display_name: "x1 [63:0]",
+                display_name_type: Unique,
+                manual_name: None,
+                format: None,
+                field_formats: [],
+                height_scaling_factor: None,
+            )),
+            (40): Variable((
                 variable_ref: (
                     path: (
                         strs: [
@@ -376,142 +325,11 @@
                 height_scaling_factor: None,
             )),
             (7): Divider((
-                color: Some("Green"),
-                background_color: None,
-                name: Some("BDI"),
-            )),
-            (28): Variable((
-                variable_ref: (
-                    path: (
-                        strs: [
-                            "ascon_core",
-                        ],
-                    ),
-                    name: "round_cnt",
-                ),
-                color: Some("Yellow"),
-                background_color: None,
-                display_name: "round_cnt [3:0]",
-                display_name_type: Unique,
-                manual_name: None,
-                format: Some("Unsigned"),
-                field_formats: [],
-                height_scaling_factor: None,
-            )),
-            (5): Variable((
-                variable_ref: (
-                    path: (
-                        strs: [
-                            "ascon_core",
-                        ],
-                    ),
-                    name: "key_ready",
-                ),
-                color: Some("Pink"),
-                background_color: None,
-                display_name: "key_ready",
-                display_name_type: Unique,
-                manual_name: None,
-                format: None,
-                field_formats: [],
-                height_scaling_factor: None,
-            )),
-            (10): Variable((
-                variable_ref: (
-                    path: (
-                        strs: [
-                            "ascon_core",
-                        ],
-                    ),
-                    name: "bdi_eot",
-                ),
                 color: None,
                 background_color: None,
-                display_name: "bdi_eot",
-                display_name_type: Unique,
-                manual_name: None,
-                format: None,
-                field_formats: [],
-                height_scaling_factor: None,
+                name: None,
             )),
-            (20): Variable((
-                variable_ref: (
-                    path: (
-                        strs: [
-                            "ascon_core",
-                        ],
-                    ),
-                    name: "bdo_type",
-                ),
-                color: Some("Blue"),
-                background_color: None,
-                display_name: "bdo_type [3:0]",
-                display_name_type: Unique,
-                manual_name: None,
-                format: None,
-                field_formats: [],
-                height_scaling_factor: None,
-            )),
-            (11): Variable((
-                variable_ref: (
-                    path: (
-                        strs: [
-                            "ascon_core",
-                        ],
-                    ),
-                    name: "bdi_ready",
-                ),
-                color: None,
-                background_color: None,
-                display_name: "bdi_ready",
-                display_name_type: Unique,
-                manual_name: None,
-                format: None,
-                field_formats: [],
-                height_scaling_factor: None,
-            )),
-            (33): Variable((
-                variable_ref: (
-                    path: (
-                        strs: [
-                            "ascon_core",
-                        ],
-                    ),
-                    name: "x4",
-                ),
-                color: None,
-                background_color: None,
-                display_name: "x4 [63:0]",
-                display_name_type: Unique,
-                manual_name: None,
-                format: None,
-                field_formats: [],
-                height_scaling_factor: None,
-            )),
-            (14): Variable((
-                variable_ref: (
-                    path: (
-                        strs: [
-                            "ascon_core",
-                        ],
-                    ),
-                    name: "mode",
-                ),
-                color: None,
-                background_color: None,
-                display_name: "mode [3:0]",
-                display_name_type: Unique,
-                manual_name: None,
-                format: None,
-                field_formats: [],
-                height_scaling_factor: None,
-            )),
-            (15): Divider((
-                color: Some("Blue"),
-                background_color: None,
-                name: Some("BDO"),
-            )),
-            (32): Variable((
+            (13): Variable((
                 variable_ref: (
                     path: (
                         strs: [
@@ -529,156 +347,7 @@
                 field_formats: [],
                 height_scaling_factor: None,
             )),
-            (3): Divider((
-                color: Some("Pink"),
-                background_color: None,
-                name: Some("KEY"),
-            )),
-            (18): Variable((
-                variable_ref: (
-                    path: (
-                        strs: [
-                            "ascon_core",
-                        ],
-                    ),
-                    name: "bdo_eot",
-                ),
-                color: Some("Blue"),
-                background_color: None,
-                display_name: "bdo_eot",
-                display_name_type: Unique,
-                manual_name: None,
-                format: None,
-                field_formats: [],
-                height_scaling_factor: None,
-            )),
-            (1): Variable((
-                variable_ref: (
-                    path: (
-                        strs: [
-                            "ascon_core",
-                        ],
-                    ),
-                    name: "clk",
-                ),
-                color: None,
-                background_color: None,
-                display_name: "clk",
-                display_name_type: Unique,
-                manual_name: None,
-                format: None,
-                field_formats: [],
-                height_scaling_factor: None,
-            )),
-            (2): Variable((
-                variable_ref: (
-                    path: (
-                        strs: [
-                            "ascon_core",
-                        ],
-                    ),
-                    name: "rst",
-                ),
-                color: None,
-                background_color: None,
-                display_name: "rst",
-                display_name_type: Unique,
-                manual_name: None,
-                format: None,
-                field_formats: [],
-                height_scaling_factor: None,
-            )),
             (17): Variable((
-                variable_ref: (
-                    path: (
-                        strs: [
-                            "ascon_core",
-                        ],
-                    ),
-                    name: "bdo_eoo",
-                ),
-                color: Some("Blue"),
-                background_color: None,
-                display_name: "bdo_eoo",
-                display_name_type: Unique,
-                manual_name: None,
-                format: None,
-                field_formats: [],
-                height_scaling_factor: None,
-            )),
-            (12): Variable((
-                variable_ref: (
-                    path: (
-                        strs: [
-                            "ascon_core",
-                        ],
-                    ),
-                    name: "bdi_type",
-                ),
-                color: None,
-                background_color: None,
-                display_name: "bdi_type [3:0]",
-                display_name_type: Unique,
-                manual_name: None,
-                format: None,
-                field_formats: [],
-                height_scaling_factor: None,
-            )),
-            (21): Variable((
-                variable_ref: (
-                    path: (
-                        strs: [
-                            "ascon_core",
-                        ],
-                    ),
-                    name: "bdo_valid",
-                ),
-                color: Some("Blue"),
-                background_color: None,
-                display_name: "bdo_valid",
-                display_name_type: Unique,
-                manual_name: None,
-                format: None,
-                field_formats: [],
-                height_scaling_factor: None,
-            )),
-            (16): Variable((
-                variable_ref: (
-                    path: (
-                        strs: [
-                            "ascon_core",
-                        ],
-                    ),
-                    name: "bdo",
-                ),
-                color: Some("Blue"),
-                background_color: None,
-                display_name: "bdo [31:0]",
-                display_name_type: Unique,
-                manual_name: None,
-                format: None,
-                field_formats: [],
-                height_scaling_factor: None,
-            )),
-            (27): Variable((
-                variable_ref: (
-                    path: (
-                        strs: [
-                            "ascon_core",
-                        ],
-                    ),
-                    name: "word_cnt",
-                ),
-                color: Some("Orange"),
-                background_color: None,
-                display_name: "word_cnt [3:0]",
-                display_name_type: Unique,
-                manual_name: None,
-                format: Some("Unsigned"),
-                field_formats: [],
-                height_scaling_factor: None,
-            )),
-            (8): Variable((
                 variable_ref: (
                     path: (
                         strs: [
@@ -696,61 +365,66 @@
                 field_formats: [],
                 height_scaling_factor: None,
             )),
-            (22): Variable((
+            (12): Variable((
                 variable_ref: (
                     path: (
                         strs: [
                             "ascon_core",
                         ],
                     ),
-                    name: "auth",
-                ),
-                color: Some("Violet"),
-                background_color: None,
-                display_name: "auth",
-                display_name_type: Unique,
-                manual_name: None,
-                format: None,
-                field_formats: [],
-                height_scaling_factor: None,
-            )),
-            (30): Variable((
-                variable_ref: (
-                    path: (
-                        strs: [
-                            "ascon_core",
-                        ],
-                    ),
-                    name: "x1",
+                    name: "x2",
                 ),
                 color: None,
                 background_color: None,
-                display_name: "x1 [63:0]",
+                display_name: "x2 [63:0]",
                 display_name_type: Unique,
                 manual_name: None,
                 format: None,
                 field_formats: [],
                 height_scaling_factor: None,
             )),
-            (23): Variable((
+            (21): Variable((
                 variable_ref: (
                     path: (
                         strs: [
                             "ascon_core",
                         ],
                     ),
-                    name: "auth_valid",
+                    name: "bdi_ready",
                 ),
-                color: Some("Violet"),
+                color: None,
                 background_color: None,
-                display_name: "auth_valid",
+                display_name: "bdi_ready",
                 display_name_type: Unique,
                 manual_name: None,
                 format: None,
                 field_formats: [],
                 height_scaling_factor: None,
             )),
-            (4): Variable((
+            (29): Variable((
+                variable_ref: (
+                    path: (
+                        strs: [
+                            "ascon_core",
+                        ],
+                    ),
+                    name: "bdo_eot",
+                ),
+                color: Some("Blue"),
+                background_color: None,
+                display_name: "bdo_eot",
+                display_name_type: Unique,
+                manual_name: None,
+                format: None,
+                field_formats: [],
+                height_scaling_factor: None,
+            )),
+            (36): Divider((
+                color: None,
+                background_color: None,
+                name: None,
+            )),
+            (38): Variable((
                 variable_ref: (
                     path: (
                         strs: [
@@ -768,12 +442,357 @@
                 field_formats: [],
                 height_scaling_factor: None,
             )),
+            (14): Variable((
+                variable_ref: (
+                    path: (
+                        strs: [
+                            "ascon_core",
+                        ],
+                    ),
+                    name: "x4",
+                ),
+                color: None,
+                background_color: None,
+                display_name: "x4 [63:0]",
+                display_name_type: Unique,
+                manual_name: None,
+                format: None,
+                field_formats: [],
+                height_scaling_factor: None,
+            )),
+            (1): Variable((
+                variable_ref: (
+                    path: (
+                        strs: [
+                            "ascon_core",
+                        ],
+                    ),
+                    name: "mode",
+                ),
+                color: None,
+                background_color: None,
+                display_name: "mode [3:0]",
+                display_name_type: Unique,
+                manual_name: None,
+                format: None,
+                field_formats: [],
+                height_scaling_factor: None,
+            )),
+            (37): Group((
+                name: "Key",
+                color: None,
+                background_color: None,
+                content: [],
+                is_open: false,
+            )),
+            (3): Variable((
+                variable_ref: (
+                    path: (
+                        strs: [
+                            "ascon_core",
+                        ],
+                    ),
+                    name: "rst",
+                ),
+                color: None,
+                background_color: None,
+                display_name: "rst",
+                display_name_type: Unique,
+                manual_name: None,
+                format: None,
+                field_formats: [],
+                height_scaling_factor: None,
+            )),
+            (35): Variable((
+                variable_ref: (
+                    path: (
+                        strs: [
+                            "ascon_core",
+                        ],
+                    ),
+                    name: "fsm",
+                ),
+                color: Some("Orange"),
+                background_color: None,
+                display_name: "fsm [4:0]",
+                display_name_type: Unique,
+                manual_name: None,
+                format: None,
+                field_formats: [],
+                height_scaling_factor: None,
+            )),
+            (32): Variable((
+                variable_ref: (
+                    path: (
+                        strs: [
+                            "ascon_core",
+                        ],
+                    ),
+                    name: "bdo_valid",
+                ),
+                color: Some("Blue"),
+                background_color: None,
+                display_name: "bdo_valid",
+                display_name_type: Unique,
+                manual_name: None,
+                format: None,
+                field_formats: [],
+                height_scaling_factor: None,
+            )),
+            (15): Variable((
+                variable_ref: (
+                    path: (
+                        strs: [
+                            "ascon_core",
+                        ],
+                    ),
+                    name: "word_cnt",
+                ),
+                color: Some("Yellow"),
+                background_color: None,
+                display_name: "word_cnt [3:0]",
+                display_name_type: Unique,
+                manual_name: None,
+                format: None,
+                field_formats: [],
+                height_scaling_factor: None,
+            )),
+            (27): Variable((
+                variable_ref: (
+                    path: (
+                        strs: [
+                            "ascon_core",
+                        ],
+                    ),
+                    name: "bdo",
+                ),
+                color: Some("Blue"),
+                background_color: None,
+                display_name: "bdo [31:0]",
+                display_name_type: Unique,
+                manual_name: None,
+                format: None,
+                field_formats: [],
+                height_scaling_factor: None,
+            )),
+            (8): Divider((
+                color: None,
+                background_color: None,
+                name: None,
+            )),
+            (19): Variable((
+                variable_ref: (
+                    path: (
+                        strs: [
+                            "ascon_core",
+                        ],
+                    ),
+                    name: "bdi_eot",
+                ),
+                color: None,
+                background_color: None,
+                display_name: "bdi_eot",
+                display_name_type: Unique,
+                manual_name: None,
+                format: None,
+                field_formats: [],
+                height_scaling_factor: None,
+            )),
+            (10): Variable((
+                variable_ref: (
+                    path: (
+                        strs: [
+                            "ascon_core",
+                        ],
+                    ),
+                    name: "x0",
+                ),
+                color: None,
+                background_color: None,
+                display_name: "x0 [63:0]",
+                display_name_type: Unique,
+                manual_name: None,
+                format: None,
+                field_formats: [],
+                height_scaling_factor: None,
+            )),
+            (39): Variable((
+                variable_ref: (
+                    path: (
+                        strs: [
+                            "ascon_core",
+                        ],
+                    ),
+                    name: "key_ready",
+                ),
+                color: Some("Pink"),
+                background_color: None,
+                display_name: "key_ready",
+                display_name_type: Unique,
+                manual_name: None,
+                format: None,
+                field_formats: [],
+                height_scaling_factor: None,
+            )),
+            (6): Divider((
+                color: None,
+                background_color: None,
+                name: None,
+            )),
+            (56): Divider((
+                color: None,
+                background_color: None,
+                name: None,
+            )),
+            (28): Variable((
+                variable_ref: (
+                    path: (
+                        strs: [
+                            "ascon_core",
+                        ],
+                    ),
+                    name: "bdo_eoo",
+                ),
+                color: Some("Blue"),
+                background_color: None,
+                display_name: "bdo_eoo",
+                display_name_type: Unique,
+                manual_name: None,
+                format: None,
+                field_formats: [],
+                height_scaling_factor: None,
+            )),
+            (2): Variable((
+                variable_ref: (
+                    path: (
+                        strs: [
+                            "ascon_core",
+                        ],
+                    ),
+                    name: "clk",
+                ),
+                color: None,
+                background_color: None,
+                display_name: "clk",
+                display_name_type: Unique,
+                manual_name: None,
+                format: None,
+                field_formats: [],
+                height_scaling_factor: None,
+            )),
+            (22): Variable((
+                variable_ref: (
+                    path: (
+                        strs: [
+                            "ascon_core",
+                        ],
+                    ),
+                    name: "bdi_type",
+                ),
+                color: None,
+                background_color: None,
+                display_name: "bdi_type [3:0]",
+                display_name_type: Unique,
+                manual_name: None,
+                format: None,
+                field_formats: [],
+                height_scaling_factor: None,
+            )),
+            (55): Divider((
+                color: None,
+                background_color: None,
+                name: None,
+            )),
+            (23): Variable((
+                variable_ref: (
+                    path: (
+                        strs: [
+                            "ascon_core",
+                        ],
+                    ),
+                    name: "bdi_valid",
+                ),
+                color: None,
+                background_color: None,
+                display_name: "bdi_valid [3:0]",
+                display_name_type: Unique,
+                manual_name: None,
+                format: None,
+                field_formats: [],
+                height_scaling_factor: None,
+            )),
+            (18): Variable((
+                variable_ref: (
+                    path: (
+                        strs: [
+                            "ascon_core",
+                        ],
+                    ),
+                    name: "bdi_eoi",
+                ),
+                color: None,
+                background_color: None,
+                display_name: "bdi_eoi",
+                display_name_type: Unique,
+                manual_name: None,
+                format: None,
+                field_formats: [],
+                height_scaling_factor: None,
+            )),
+            (31): Variable((
+                variable_ref: (
+                    path: (
+                        strs: [
+                            "ascon_core",
+                        ],
+                    ),
+                    name: "bdo_type",
+                ),
+                color: Some("Blue"),
+                background_color: None,
+                display_name: "bdo_type [3:0]",
+                display_name_type: Unique,
+                manual_name: None,
+                format: None,
+                field_formats: [],
+                height_scaling_factor: None,
+            )),
+            (24): Group((
+                name: "BDI",
+                color: None,
+                background_color: None,
+                content: [],
+                is_open: false,
+            )),
+            (5): Divider((
+                color: None,
+                background_color: None,
+                name: None,
+            )),
+            (16): Variable((
+                variable_ref: (
+                    path: (
+                        strs: [
+                            "ascon_core",
+                        ],
+                    ),
+                    name: "round_cnt",
+                ),
+                color: Some("Yellow"),
+                background_color: None,
+                display_name: "round_cnt [3:0]",
+                display_name_type: Unique,
+                manual_name: None,
+                format: None,
+                field_formats: [],
+                height_scaling_factor: None,
+            )),
         },
-        display_item_ref_counter: 35,
+        display_item_ref_counter: 70,
         viewports: [
             (
-                curr_left: (-0.000056010817839454146),
-                curr_right: (0.0018353133151966265),
+                curr_left: (0.0),
+                curr_right: (0.002757223195744169),
                 target_left: (0.0),
                 target_right: (1.0),
                 move_start_left: (0.0),
@@ -782,20 +801,23 @@
                 move_strategy: Instant,
             ),
         ],
-        cursor: Some((1, [
-            9500,
+        cursor: Some((-1, [
+            1133,
         ])),
         markers: {},
-        focused_item: Some((25)),
+        focused_item: Some((27)),
         focused_transaction: (None, None),
         default_variable_name_type: Unique,
-        scroll_offset: 0.0,
+        scroll_offset: 1.28125,
         display_variable_indices: true,
         graphics: {},
     )),
     drag_started: false,
     drag_source_idx: None,
-    drag_target_idx: None,
+    drag_target_idx: Some((
+        before: (35),
+        level: 1,
+    )),
     previous_waves: None,
     count: None,
     blacklisted_translators: [],
@@ -822,6 +844,6 @@
         group_by_direction: false,
     ),
     rename_target: None,
-    sidepanel_width: Some(300.0),
-    ui_zoom_factor: Some(1.1),
+    sidepanel_width: Some(205.15625),
+    ui_zoom_factor: None,
 )
