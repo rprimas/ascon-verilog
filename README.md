@@ -88,7 +88,7 @@ The following table contains a description of the interface signals:
 
 ## RTL Simulation
 
-- Install the Verilator open-source verilog simulator (tested with version `5.036`):
+- Install the Verilator open-source verilog simulator (tested with version `5.037`):
   - Ubuntu:
     - `apt-get install verilator`
   - Fedora:
