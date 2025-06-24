@@ -50,5 +50,3 @@ surf:
 
 clean::
 	rm -rf syn.v results.xml
-
-.PHONY: syn
