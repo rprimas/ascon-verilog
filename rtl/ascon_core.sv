@@ -413,7 +413,7 @@ module ascon_core (
       // Setting round counter
       unique case (fsm_nx)
         INIT:    round_cnt <= ROUNDS_A;
-        PRO_AD:  round_cnt <= (mode_r==M_CXOF) ? ROUNDS_A : ROUNDS_B;
+        PRO_AD:  round_cnt <= (mode_r == M_CXOF) ? ROUNDS_A : ROUNDS_B;
         PRO_MSG: round_cnt <= mode_hash_xof ? ROUNDS_A : ROUNDS_B;
         FINAL:   round_cnt <= ROUNDS_A;
         default:;

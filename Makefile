@@ -17,9 +17,9 @@ VARIANT = V1
 SIM ?= verilator
 TOPLEVEL_LANG ?= verilog
 EXTRA_ARGS += --threads 8
-EXTRA_ARGS += --trace
-EXTRA_ARGS += --trace-fst
-EXTRA_ARGS += --trace-threads 2
+# EXTRA_ARGS += --trace
+# EXTRA_ARGS += --trace-fst
+# EXTRA_ARGS += --trace-threads 2
 EXTRA_ARGS += --relative-includes
 EXTRA_ARGS += -Wno-UNOPTFLAT
 EXTRA_ARGS += -D$(VARIANT)
@@ -50,3 +50,5 @@ surf:
 
 clean::
 	rm -rf syn.v results.xml
+
+.PHONY: syn

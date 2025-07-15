@@ -5,3 +5,4 @@ results.xml
 *.vcd
 *.fst
 *.code-workspace
+syn.v
