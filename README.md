@@ -125,12 +125,12 @@ The following table contains a description of the interface signals:
 - Install the [Surfer](https://surfer-project.org/) waveform viewer.
   - `cargo install --git https://gitlab.com/surfer-project/surfer surfer`
 - View waveform of cocotb test bench run:
-  + `make` or `make sim`
-  + `make surf`
+  - `make` or `make sim`
+  - `make surf`
 - View waveform of post-synthesis cocotb test bench run:
-  + `make syn`
-  + `make sim syn=1`
-  + `make surf syn=1`
+  - `make syn`
+  - `make sim syn=1`
+  - `make surf syn=1`
 - Example waveform of test bench output:
 
 <p align="center">
