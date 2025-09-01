@@ -1,6 +1,8 @@
 # Hardware Design of Ascon (SP 800-232)
 
-[Ascon](https://ascon.iaik.tugraz.at) is a family of authenticated encryption and hashing algorithms designed to be lightweight and easy to implement, even with added countermeasures against side-channel attacks. Ascon has been selected as new standard for lightweight cryptography in the [NIST Lightweight Cryptography competition](https://csrc.nist.gov/Projects/Lightweight-Cryptography) (2019–2023). The final specification of Ascon is available [here](https://csrc.nist.gov/pubs/sp/800/232/final).
+This is a SystemVerilog implementation of Ascon as specified by NIST in [SP 800-232](https://csrc.nist.gov/pubs/sp/800/232/final).
+
+Ascon is a family of authenticated encryption and hashing algorithms designed to be lightweight and easy to implement, even with added countermeasures against side-channel attacks. Ascon has been selected as new standard for lightweight cryptography in the [NIST Lightweight Cryptography competition](https://csrc.nist.gov/Projects/Lightweight-Cryptography) (2019–2023).
 
 The following Ascon modes are available:
 - `Ascon-AEAD128`

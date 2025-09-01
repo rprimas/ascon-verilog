@@ -100,7 +100,7 @@ async def receive_data(dut, type, len=16, bdo_eoo=0):
             dut.bdo_ready.value = 0
             dut.bdo_eoo.value = 0
         await RisingEdge(dut.clk)
-        if dut.bdo_ready.value and dut.bdo_valid and dut.bdo_type.value == type:
+        if dut.bdo_ready.value and dut.bdo_valid.value and (dut.bdo_type.value == type):
             if VERBOSE >= 3:
                 dut._log.info("bdo:      {:08X}".format(int(dut.bdo.value)))
             for x in int(dut.bdo.value).to_bytes(CCWD8, byteorder="big"):
