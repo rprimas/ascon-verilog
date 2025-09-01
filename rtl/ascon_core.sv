@@ -8,9 +8,9 @@
 //
 // Implementation of the Ascon core.
 
-`include "asconp.sv"
 `include "config.sv"
 `include "functions.sv"
+`include "asconp.sv"
 
 module ascon_core (
     input  logic                   clk,
@@ -21,20 +21,21 @@ module ascon_core (
     input  logic       [  CCW-1:0] bdi,
     input  logic       [CCW/8-1:0] bdi_valid,
     output logic                   bdi_ready,
-    input  e_data_type             bdi_type,
+    input  data_type_e             bdi_type,
     input  logic                   bdi_eot,
     input  logic                   bdi_eoi,
-    input  e_mode                  mode,
+    input  mode_e                  mode,
     output logic       [  CCW-1:0] bdo,
     output logic                   bdo_valid,
     input  logic                   bdo_ready,
-    output e_data_type             bdo_type,
+    output data_type_e             bdo_type,
     output logic                   bdo_eot,
     input  logic                   bdo_eoo,
     output logic                   auth,
     output logic                   auth_valid,
     output logic                   done
 );
+
   // Core registers
   logic [LANES-1:0][W64-1:0][CCW-1:0] state;
   logic [ W128-1:0][CCW-1:0]          ascon_key;
@@ -42,7 +43,7 @@ module ascon_core (
   logic [      3:0]                   word_cnt;
   logic [      1:0]                   hash_cnt;
   logic flag_ad_eot, flag_ad_pad, flag_msg_pad, flag_eoi, auth_intern;
-  e_mode mode_r;
+  mode_e mode_r;
 
   // FSM states
   typedef enum logic [4:0] {
@@ -138,17 +139,17 @@ module ascon_core (
 
   // Instantiation of Ascon-p permutation
   asconp asconp_i (
-      .round_cnt(round_cnt),
-      .x0_i(state[0]),
-      .x1_i(state[1]),
-      .x2_i(state[2]),
-      .x3_i(state[3]),
-      .x4_i(state[4]),
-      .x0_o(asconp_o[0]),
-      .x1_o(asconp_o[1]),
-      .x2_o(asconp_o[2]),
-      .x3_o(asconp_o[3]),
-      .x4_o(asconp_o[4])
+    .round_cnt(round_cnt),
+    .x0_i(state[0]),
+    .x1_i(state[1]),
+    .x2_i(state[2]),
+    .x3_i(state[3]),
+    .x4_i(state[4]),
+    .x0_o(asconp_o[0]),
+    .x1_o(asconp_o[1]),
+    .x2_o(asconp_o[2]),
+    .x3_o(asconp_o[3]),
+    .x4_o(asconp_o[4])
   );
 
   /////////////////////

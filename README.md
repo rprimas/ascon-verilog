@@ -1,9 +1,6 @@
 # Hardware Design of Ascon (SP 800-232)
 
-[Ascon](https://ascon.iaik.tugraz.at) is a family of authenticated encryption and hashing algorithms designed to be lightweight and easy to implement, even with added countermeasures against side-channel attacks. Ascon has been selected as new standard for lightweight cryptography in the [NIST Lightweight Cryptography competition](https://csrc.nist.gov/Projects/Lightweight-Cryptography) (2019–2023). The current draft standard of Ascon is available [here](https://doi.org/10.6028/NIST.SP.800-232.ipd).
-
-> [!NOTE]
-> This is a work-in-progress SystemVerilog implementation of the Ascon family of lightweight cryptographic algorithms that is compatible with the current draft standard [NIST SP 800-232](https://doi.org/10.6028/NIST.SP.800-232.ipd).
+[Ascon](https://ascon.iaik.tugraz.at) is a family of authenticated encryption and hashing algorithms designed to be lightweight and easy to implement, even with added countermeasures against side-channel attacks. Ascon has been selected as new standard for lightweight cryptography in the [NIST Lightweight Cryptography competition](https://csrc.nist.gov/Projects/Lightweight-Cryptography) (2019–2023). The final specification of Ascon is available [here](https://csrc.nist.gov/pubs/sp/800/232/final).
 
 The following Ascon modes are available:
 - `Ascon-AEAD128`
@@ -50,10 +47,10 @@ Cycles required for processing **x** bytes of message:
 
 ## Files
 
-- `rtl/`: SystemVerilog implementation of the Ascon core.
+- `rtl/`: SystemVerilog implementation of Ascon.
 - `surfer/`: Files for the [Surfer](https://surfer-project.org/) waveform viewer.
-- `synth/`: Files for [Yosys](https://github.com/YosysHQ/yosys) synthesis.
-- `ascon.py`: Python reference implementation of Ascon, used by `test.py`.
+- `syn/`: Files for [Yosys](https://github.com/YosysHQ/yosys) synthesis.
+- `ascon.py`: Ascon's python reference implementation [pyascon](https://github.com/meichlseder/pyascon).
 - `CITATION.cff`: Github citation information file.
 - `LICENSE`: License file.
 - `Makefile`: Makefile for rtl simulation, rtl synthesis, and waveform viewing.
@@ -141,7 +138,7 @@ The following table contains a description of the interface signals:
 
 - The Ascon core uses an interface that allows easy integration into projects using, e.g., an AXI4 bus.
 - The Ascon core can handle stalls of the input/output data bus. This can be tested by setting `STALLS = 1` in `test.py`.
-- Many ciphers, including Ascon, require that decrypted plaintext is not released to an potential attacker until the tag of the ciphertext was successfully verified. The current design of the Ascon core outputs decrypted plaintext immediately which could lead to security degradation. For real applications an additional buffer should be used to temporarily store decrypted plaintext until the Ascon core has successfully verified the ciphertext tag.
+- Many ciphers, including Ascon, require that decrypted plaintext is not released to a potential attacker until the tag of the ciphertext was successfully verified. The current design of the Ascon core outputs decrypted plaintext immediately which could lead to security degradation. For real applications an additional buffer should be used to temporarily store decrypted plaintext until the Ascon core has successfully verified the ciphertext tag.
 
 ## Contact
 

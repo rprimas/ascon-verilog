@@ -19,7 +19,7 @@ CCWD8 = CCW // 8
 STALLS = 0
 
 
-# Needs to match "mode_e" in "config.sv"
+# Needs to match "mode_e" in "rtl/config.sv"
 class Mode(Enum):
     Ascon_Nop = 0
     Ascon_AEAD128_Enc = 1
