@@ -11,8 +11,8 @@ from enum import Enum
 from ascon import *
 
 VERBOSE = 1
-RUNS = range(0, 10)
-# RUNS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 16, 32, 64, 128, 256, 512, 1024]
+# RUNS = range(0, 10)
+RUNS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 16, 32, 64, 128, 256, 512, 1024]
 CCW = 32
 # CCW = 64
 CCWD8 = CCW // 8
@@ -59,7 +59,7 @@ async def send_data(dut, data_in, bdi_type, bdo_ready, bdi_eoi):
         if STALLS and (random.randint(0, 10) != 0):
             await clear_bdi(dut)
         await RisingEdge(dut.clk)
-        if dut.bdi_valid.value and dut.bdi_ready.value:
+        if int(dut.bdi_valid.value) and int(dut.bdi_ready.value):
             if VERBOSE >= 3:
                 dut._log.info("bdi:      {:08X}".format(bdi))
             bdoo = int(dut.bdo.value).to_bytes(CCWD8, byteorder="big")
@@ -81,7 +81,7 @@ async def send_key(dut, key_in):
         dut.key.value = key2
         dut.key_valid.value = 1
         await RisingEdge(dut.clk)
-        if dut.key_ready.value:
+        if int(dut.key_ready.value):
             if VERBOSE >= 3:
                 dut._log.info("key:      {:08X}".format(int(dut.key.value)))
             k += CCWD8
@@ -100,7 +100,7 @@ async def receive_data(dut, type, len=16, bdo_eoo=0):
             dut.bdo_ready.value = 0
             dut.bdo_eoo.value = 0
         await RisingEdge(dut.clk)
-        if dut.bdo_ready.value and dut.bdo_valid.value and (dut.bdo_type.value == type):
+        if int(dut.bdo_ready.value) and int(dut.bdo_valid.value) and (int(dut.bdo_type.value) == type):
             if VERBOSE >= 3:
                 dut._log.info("bdo:      {:08X}".format(int(dut.bdo.value)))
             for x in int(dut.bdo.value).to_bytes(CCWD8, byteorder="big"):
@@ -178,9 +178,12 @@ async def test_enc(dut):
     # init test
     random.seed(31415)
     mode = Mode.Ascon_AEAD128_Enc
-    clock = Clock(dut.clk, 1, units="ns")
+    if cocotb.__version__[0] == "2":
+        clock = Clock(dut.clk, 1, unit="ns")
+    else:
+        clock = Clock(dut.clk, 1, units="ns")
     cocotb.start_soon(clock.start(start_high=False))
-    await cocotb.start(toggle(dut, "dut.rst", 1))
+    cocotb.start_soon(toggle(dut, "dut.rst", 1))
     await RisingEdge(dut.clk)
 
     key = bytearray([random.randint(0, 255) for x in range(16)])
@@ -200,9 +203,9 @@ async def test_enc(dut):
 
             log(dut, verbose=2, dashes=0, ad=ad, pt=pt, ct=ct, tag=tag)
 
-            await cocotb.start(cycle_cnt(dut))
-            await cocotb.start(timeout(dut))
-            await cocotb.start(toggle(dut, "dut.mode", mode.value))
+            cocotb.start_soon(cycle_cnt(dut))
+            cocotb.start_soon(timeout(dut))
+            cocotb.start_soon(toggle(dut, "dut.mode", mode.value))
 
             # send key
             await send_key(dut, key)
@@ -246,9 +249,12 @@ async def test_dec(dut):
     # init test
     random.seed(31415)
     mode = Mode.Ascon_AEAD128_Dec
-    clock = Clock(dut.clk, 1, units="ns")
+    if cocotb.__version__[0] == "2":
+        clock = Clock(dut.clk, 1, unit="ns")
+    else:
+        clock = Clock(dut.clk, 1, units="ns")
     cocotb.start_soon(clock.start(start_high=False))
-    await cocotb.start(toggle(dut, "dut.rst", 1))
+    cocotb.start_soon(toggle(dut, "dut.rst", 1))
     await RisingEdge(dut.clk)
 
     key = bytearray([random.randint(0, 255) for x in range(16)])
@@ -270,9 +276,9 @@ async def test_dec(dut):
 
             log(dut, verbose=2, dashes=0, ad=ad, pt=pt, ct=ct, tag=tag)
 
-            await cocotb.start(cycle_cnt(dut))
-            await cocotb.start(timeout(dut))
-            await cocotb.start(toggle(dut, "dut.mode", mode.value))
+            cocotb.start_soon(cycle_cnt(dut))
+            cocotb.start_soon(timeout(dut))
+            cocotb.start_soon(toggle(dut, "dut.mode", mode.value))
 
             # send key
             await send_key(dut, key)
@@ -294,7 +300,7 @@ async def test_dec(dut):
 
             # check tag verification
             await RisingEdge(dut.clk)
-            assert dut.auth.value == 1
+            assert int(dut.auth.value) == 1
 
             log(dut, verbose=1, dashes=1)
 
@@ -312,9 +318,12 @@ async def test_hash(dut):
     # init test
     random.seed(31415)
     mode = Mode.Ascon_Hash256
-    clock = Clock(dut.clk, 1, units="ns")
+    if cocotb.__version__[0] == "2":
+        clock = Clock(dut.clk, 1, unit="ns")
+    else:
+        clock = Clock(dut.clk, 1, units="ns")
     cocotb.start_soon(clock.start(start_high=False))
-    await cocotb.start(toggle(dut, "dut.rst", 1))
+    cocotb.start_soon(toggle(dut, "dut.rst", 1))
     await RisingEdge(dut.clk)
 
     log(dut, verbose=1, dashes=1)
@@ -329,13 +338,13 @@ async def test_hash(dut):
 
         log(dut, verbose=2, dashes=0, msg=msg, hash=hash)
 
-        await cocotb.start(cycle_cnt(dut))
-        await cocotb.start(timeout(dut))
-        await cocotb.start(toggle(dut, "dut.mode", mode.value))
+        cocotb.start_soon(cycle_cnt(dut))
+        cocotb.start_soon(timeout(dut))
+        cocotb.start_soon(toggle(dut, "dut.mode", mode.value))
 
         if msglen == 0:
-            await cocotb.start(toggle(dut, "dut.bdi_eot", 1))
-            await cocotb.start(toggle(dut, "dut.bdi_eoi", 1))
+            cocotb.start_soon(toggle(dut, "dut.bdi_eot", 1))
+            cocotb.start_soon(toggle(dut, "dut.bdi_eoi", 1))
 
         await RisingEdge(dut.clk)
 
@@ -369,9 +378,12 @@ async def test_xof(dut):
     # init test
     random.seed(31415)
     mode = Mode.Ascon_XOF128
-    clock = Clock(dut.clk, 1, units="ns")
+    if cocotb.__version__[0] == "2":
+        clock = Clock(dut.clk, 1, unit="ns")
+    else:
+        clock = Clock(dut.clk, 1, units="ns")
     cocotb.start_soon(clock.start(start_high=False))
-    await cocotb.start(toggle(dut, "dut.rst", 1))
+    cocotb.start_soon(toggle(dut, "dut.rst", 1))
     await RisingEdge(dut.clk)
 
     log(dut, verbose=1, dashes=1)
@@ -388,13 +400,13 @@ async def test_xof(dut):
 
             log(dut, verbose=2, dashes=0, msg=msg, xof=xof)
 
-            await cocotb.start(cycle_cnt(dut))
-            await cocotb.start(timeout(dut))
-            await cocotb.start(toggle(dut, "dut.mode", mode.value))
+            cocotb.start_soon(cycle_cnt(dut))
+            cocotb.start_soon(timeout(dut))
+            cocotb.start_soon(toggle(dut, "dut.mode", mode.value))
 
             if msglen == 0:
-                await cocotb.start(toggle(dut, "dut.bdi_eot", 1))
-                await cocotb.start(toggle(dut, "dut.bdi_eoi", 1))
+                cocotb.start_soon(toggle(dut, "dut.bdi_eot", 1))
+                cocotb.start_soon(toggle(dut, "dut.bdi_eoi", 1))
 
             await RisingEdge(dut.clk)
 
@@ -428,9 +440,12 @@ async def test_cxof(dut):
     # init test
     random.seed(31415)
     mode = Mode.Ascon_CXOF128
-    clock = Clock(dut.clk, 1, units="ns")
+    if cocotb.__version__[0] == "2":
+        clock = Clock(dut.clk, 1, unit="ns")
+    else:
+        clock = Clock(dut.clk, 1, units="ns")
     cocotb.start_soon(clock.start(start_high=False))
-    await cocotb.start(toggle(dut, "dut.rst", 1))
+    cocotb.start_soon(toggle(dut, "dut.rst", 1))
     await RisingEdge(dut.clk)
 
     log(dut, verbose=1, dashes=1)
@@ -463,9 +478,9 @@ async def test_cxof(dut):
 
             log(dut, verbose=2, dashes=0, cstm=cstm, msg=msg, cxof=cxof)
 
-            await cocotb.start(cycle_cnt(dut))
-            await cocotb.start(timeout(dut))
-            await cocotb.start(toggle(dut, "dut.mode", mode.value))
+            cocotb.start_soon(cycle_cnt(dut))
+            cocotb.start_soon(timeout(dut))
+            cocotb.start_soon(toggle(dut, "dut.mode", mode.value))
 
             await RisingEdge(dut.clk)
 
