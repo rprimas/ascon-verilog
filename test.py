@@ -11,8 +11,8 @@ from enum import Enum
 from ascon import *
 
 VERBOSE = 1
-RUNS = range(0, 10)
-# RUNS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 16, 32, 64, 128, 256, 512, 1024]
+# RUNS = range(0, 10)
+RUNS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 16, 32, 64, 128, 256, 512, 1024]
 CCW = 32
 # CCW = 64
 CCWD8 = CCW // 8
@@ -149,7 +149,7 @@ async def cycle_cnt(dut):
     await RisingEdge(dut.clk)
     while 1:
         await RisingEdge(dut.clk)
-        if int(dut.fsm.value) == 1:
+        if int(dut.fsm_q.value) == 0:
             if VERBOSE >= 1:
                 dut._log.info("cycles    %d", cycles)
             return
@@ -163,12 +163,12 @@ async def timeout(dut):
     await RisingEdge(dut.clk)
     while 1:
         await RisingEdge(dut.clk)
-        dut_fsm = int(dut.fsm.value)
+        dut_fsm = int(dut.fsm_q.value)
         if dut_fsm == last_fsm:
             last_fsm_cycles += 1
         else:
             last_fsm_cycles = 0
-            last_fsm = int(dut.fsm.value)
+            last_fsm = int(dut.fsm_q.value)
         if last_fsm_cycles >= 1000:
             assert False, "Timeout"
         if dut_fsm == int.from_bytes("IDLE".encode("ascii"), byteorder="big"):
