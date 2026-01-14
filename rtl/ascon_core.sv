@@ -33,33 +33,33 @@ module ascon_core (
     output logic              bdo_eot,
     input  logic              bdo_eoo,
     output logic              auth,
-    output logic              auth_valid,
-    output logic              done
+    output logic              auth_valid
 );
 
   // FSM states
   typedef enum logic [4:0] {
-    IDLE     = 'd0,
-    LD_KEY   = 'd1,
-    LD_NPUB  = 'd2,
-    INIT     = 'd3,
-    KADD_2   = 'd4,
-    ABS_AD   = 'd5,
-    PAD_AD   = 'd6,
-    PRO_AD   = 'd7,
-    DOM_SEP  = 'd8,
-    ABS_MSG  = 'd9,
-    PAD_MSG  = 'd10,
-    PRO_MSG  = 'd11,
-    KADD_3   = 'd12,
-    FINAL    = 'd13,
-    KADD_4   = 'd14,
-    SQZ_TAG  = 'd15,
-    SQZ_HASH = 'd16,
-    VER_TAG  = 'd17
+    INVALID  = 'd0,
+    IDLE     = 'd1,
+    LD_KEY   = 'd2,
+    LD_NPUB  = 'd3,
+    INIT     = 'd4,
+    KADD_2   = 'd5,
+    ABS_AD   = 'd6,
+    PAD_AD   = 'd7,
+    PRO_AD   = 'd8,
+    DOM_SEP  = 'd9,
+    ABS_MSG  = 'd10,
+    PAD_MSG  = 'd11,
+    PRO_MSG  = 'd12,
+    KADD_3   = 'd13,
+    FINAL    = 'd14,
+    KADD_4   = 'd15,
+    SQZ_TAG  = 'd16,
+    SQZ_HASH = 'd17,
+    VER_TAG  = 'd18
   } fsm_t;
 
-  // Register Signals
+  // Register signals
   logic [W128-1:0][CCW-1:0] key_d, key_q;
   logic [LANES-1:0][W64-1:0][CCW-1:0] state_d, state_q;
   logic [3:0] round_cnt_d, word_cnt_d;
@@ -67,8 +67,8 @@ module ascon_core (
   logic [1:0] hash_cnt_d, hash_cnt_q;
   fsm_t fsm_d, fsm_q;
   mode_t mode_d, mode_q;
-  logic auth_d, auth_intern_d, auth_valid_d, done_d;
-  logic auth_q, auth_intern_q, auth_valid_q, done_q;
+  logic auth_d, auth_intern_d, auth_valid_d;
+  logic auth_q, auth_intern_q, auth_valid_q;
   logic ad_eot_d, ad_pad_d, msg_pad_d, eoi_d;
   logic ad_eot_q, ad_pad_q, msg_pad_q, eoi_q;
 
@@ -84,13 +84,13 @@ module ascon_core (
     .data_d({round_cnt_d, word_cnt_d, hash_cnt_d}),
     .data_q({round_cnt_q, word_cnt_q, hash_cnt_q})
   );
-  register #('d5)   reg_fsm_i (
+  register #('d5, IDLE) reg_fsm_i (
     .clk(clk), .rst(rst), .data_d(fsm_d), .data_q(fsm_q)
   );
-  register #('d12)   reg_flags_i (
+  register #('d11) reg_flags_i (
     .clk(clk), .rst(rst),
-    .data_d({auth_d, auth_intern_d, auth_valid_d, done_d, ad_eot_d, ad_pad_d, msg_pad_d, eoi_d, mode_d}),
-    .data_q({auth_q, auth_intern_q, auth_valid_q, done_q, ad_eot_q, ad_pad_q, msg_pad_q, eoi_q, mode_q})
+    .data_d({auth_d, auth_intern_d, auth_valid_d, ad_eot_d, ad_pad_d, msg_pad_d, eoi_d, mode_d}),
+    .data_q({auth_q, auth_intern_q, auth_valid_q, ad_eot_q, ad_pad_q, msg_pad_q, eoi_q, mode_q})
   );
 
   // Event signals
@@ -192,7 +192,6 @@ module ascon_core (
     bdi_pad        = 'd0;
     auth           = auth_q;
     auth_valid     = auth_valid_q;
-    done           = done_q;
     unique case (fsm_q)
       LD_KEY:  key_ready = 'd1;
       LD_NPUB: begin
@@ -454,7 +453,6 @@ module ascon_core (
     auth_d        = auth_q;
     auth_intern_d = auth_intern_q;
     auth_valid_d  = auth_valid_q;
-    done_d        = done_q;
     ad_eot_d      = ad_eot_q;
     ad_pad_d      = ad_pad_q;
     eoi_d         = eoi_q;
@@ -464,7 +462,6 @@ module ascon_core (
       auth_d        = 'd0;
       auth_intern_d = 'd0;
       auth_valid_d  = 'd0;
-      done_d        = 'd0;
       ad_eot_d      = 'd0;
       ad_pad_d      = 'd0;
       eoi_d         = bdi_eoi;
@@ -479,15 +476,14 @@ module ascon_core (
       if (bdi_eoi) eoi_d    = 'd1;
     end
     if (add_ad_pad) ad_pad_d = 'd1;
-    if (abs_msg_done && bdi_eoi) eoi_d = 'd1;
     if (add_msg_pad) ad_pad_d = 'd1;
+    if (abs_msg_done && bdi_eoi) eoi_d = 'd1;
     if (kadd_4_done && (mode_q == M_AEAD128_DEC)) auth_intern_d = 'd1;
     if (ver_tag) auth_intern_d = auth_intern_d && (bdi == state_slice);
     if (ver_tag_done) begin
-      auth_d       = auth_intern_q;
+      auth_d = auth_intern_q && auth_intern_d;
       auth_valid_d = 'd1;
     end
-    if ((fsm_q != IDLE) && (fsm_d == IDLE)) done_d = 'd1;
   end
 
   //////////////////////////////////////////////////

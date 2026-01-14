@@ -11,15 +11,15 @@ from enum import Enum
 from ascon import *
 
 VERBOSE = 1
-# RUNS = range(0, 10)
-RUNS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 16, 32, 64, 128, 256, 512, 1024]
+RUNS = range(0, 10)
+# RUNS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 16, 32, 64, 128, 256, 512, 1024]
 CCW = 32
 # CCW = 64
 CCWD8 = CCW // 8
 STALLS = 0
 
 
-# Needs to match "mode_e" in "rtl/config.sv"
+# Needs to match "mode_t" in "rtl/config.sv"
 class Mode(Enum):
     M_INVALID = 0
     M_AEAD128_ENC = 1
@@ -29,7 +29,7 @@ class Mode(Enum):
     M_CXOF128 = 5
 
 
-# Needs to match "data_type_e" in "rtl/config.sv"
+# Needs to match "data_t" in "rtl/config.sv"
 class Data(Enum):
     D_INVALID = 0
     D_NONCE = 1
@@ -37,6 +37,29 @@ class Data(Enum):
     D_MSG = 3
     D_TAG = 4
     D_HASH = 5
+
+
+# Needs to match "fsm_t" in "rtl/ascon_core.sv"
+class Fsm(Enum):
+    INVALID  = 0
+    IDLE     = 1
+    LD_KEY   = 2
+    LD_NPUB  = 3
+    INIT     = 4
+    KADD_2   = 5
+    ABS_AD   = 6
+    PAD_AD   = 7
+    PRO_AD   = 8
+    DOM_SEP  = 9
+    ABS_MSG  = 10
+    PAD_MSG  = 11
+    PRO_MSG  = 12
+    KADD_3   = 13
+    FINAL    = 14
+    KADD_4   = 15
+    SQZ_TAG  = 16
+    SQZ_HASH = 17
+    VER_TAG  = 18
 
 
 # Reset BDI signals
@@ -149,7 +172,7 @@ async def cycle_cnt(dut):
     await RisingEdge(dut.clk)
     while 1:
         await RisingEdge(dut.clk)
-        if int(dut.fsm_q.value) == 0:
+        if int(dut.fsm_q.value) == Fsm.IDLE.value:
             if VERBOSE >= 1:
                 dut._log.info("cycles    %d", cycles)
             return
@@ -171,8 +194,15 @@ async def timeout(dut):
             last_fsm = int(dut.fsm_q.value)
         if last_fsm_cycles >= 1000:
             assert False, "Timeout"
-        if dut_fsm == int.from_bytes("IDLE".encode("ascii"), byteorder="big"):
+        if dut_fsm == Fsm.IDLE.value:
             return
+
+
+# Corrupt data for decryption failure tests
+def corrupt(data):
+    data_corrupt = bytearray(data).copy()
+    data_corrupt[random.randint(0,len(data_corrupt)-1)] ^= random.randint(1, 255)
+    return data_corrupt
 
 
 # ,------.                                      ,--.
@@ -244,7 +274,7 @@ async def test_enc(dut):
             # check tag
             for i in range(len(tag)):
                 assert tag_hw[i] == tag[i], "tag mismatch"
-
+            
             await RisingEdge(dut.clk)
 
             log(dut, verbose=1, dashes=1)
@@ -321,6 +351,114 @@ async def test_dec(dut):
             await RisingEdge(dut.clk)
             assert int(dut.auth.value) == 1
 
+            await RisingEdge(dut.clk)
+
+            log(dut, verbose=1, dashes=1)
+
+
+# ,------.                                       ,--.      ,------.       ,--.,--.
+# |  .-.  \  ,---.  ,---.,--.--.,--. ,--.,---. ,-'  '-.    |  .---',--,--.`--'|  |
+# |  |  \  :| .-. :| .--'|  .--' \  '  /| .-. |'-.  .-'    |  `--,' ,-.  |,--.|  |
+# |  '--'  /\   --.\ `--.|  |     \   ' | '-' '  |  |      |  |`  \ '-'  ||  ||  |
+# `-------'  `----' `---'`--'   .-'  /  |  |-'   `--'      `--'    `--`--'`--'`--'
+#                               `---'   `--'                                              
+
+
+@cocotb.test()
+async def test_dec_fail(dut):
+
+    # init test
+    random.seed(31416)
+    mode = Mode.M_AEAD128_DEC
+    if cocotb.__version__[0] == "2":
+        clock = Clock(dut.clk, 1, unit="ns")
+    else:
+        clock = Clock(dut.clk, 1, units="ns")
+    cocotb.start_soon(clock.start(start_high=False))
+    cocotb.start_soon(toggle(dut, "dut.rst", 1))
+    await RisingEdge(dut.clk)
+
+    key = bytearray([random.randint(0, 255) for x in range(16)])
+    npub = bytearray([random.randint(0, 255) for x in range(16)])
+
+    log(dut, verbose=2, dashes=1, key=key, npub=npub)
+
+    for msglen in RUNS:
+        for adlen in RUNS:
+            dut._log.info("test      %s ad:%d msg:%d", mode.name, adlen, msglen)
+
+            # flip coin if data is corrupted
+            corrupt_key   = random.randint(0,4)%5 == 0
+            corrupt_nonce = random.randint(0,4)%5 == 0
+            corrupt_ad    = random.randint(0,4)%5 == 0 and adlen > 0
+            corrupt_ct    = random.randint(0,4)%5 == 0 and msglen > 0
+            corrupt_tag   = random.randint(0,4)%5 == 0
+            dec_fail  = corrupt_key or corrupt_nonce or corrupt_ad or corrupt_ct
+            auth_fail = dec_fail or corrupt_tag
+
+            ad = bytearray([random.randint(0, 255) for x in range(adlen)])
+            pt = bytearray([random.randint(0, 255) for x in range(msglen)])
+
+            # compute in software
+            (ct, tag) = ascon_encrypt(key, npub, ad, pt)
+
+            await RisingEdge(dut.clk)
+
+            log(dut, verbose=2, dashes=0, ad=ad, pt=pt, ct=ct, tag=tag)
+
+            cocotb.start_soon(cycle_cnt(dut))
+            cocotb.start_soon(timeout(dut))
+            cocotb.start_soon(toggle(dut, "dut.mode", mode.value))
+
+            # send key
+            if corrupt_key:
+                await send_key(dut, corrupt(key))
+            else:
+                await send_key(dut, key)
+
+            # send nonce
+            if corrupt_nonce:
+                await send_data(dut, corrupt(npub), Data.D_NONCE.value, 0, (adlen == 0) and (msglen == 0))
+            else:
+                await send_data(dut, npub, Data.D_NONCE.value, 0, (adlen == 0) and (msglen == 0))
+
+            # send ad
+            if adlen > 0:
+                if corrupt_ad:
+                    await send_data(dut, corrupt(ad), Data.D_AD.value, 0, (msglen == 0))
+                else:
+                    await send_data(dut, ad, Data.D_AD.value, 0, (msglen == 0))
+
+            # send pt/ct
+            if msglen > 0:
+                if corrupt_ct:
+                    pt_hw = await send_data(dut, corrupt(ct), Data.D_MSG.value, 1, 1)
+                else:
+                    pt_hw = await send_data(dut, ct, Data.D_MSG.value, 1, 1)
+                log(dut, verbose=2, dashes=0, pt_hw=pt_hw)
+
+            # send corrupt tag
+            if corrupt_tag:
+                await send_data(dut, corrupt(tag), Data.D_TAG.value, 0, 1)
+            else:
+                await send_data(dut, tag, Data.D_TAG.value, 0, 1)
+
+            # check plaintext
+            equal = all([x == y for x,y in zip(pt,pt_hw)]) if len(pt) > 0 else True
+            if (dec_fail and len(pt) > 0):
+                assert equal == False, "error: pt expected to mismatch"
+            else:
+                assert equal == True, "error: pt expected to match"
+
+            # check tag verification
+            await RisingEdge(dut.clk)
+            if (auth_fail):
+                assert int(dut.auth.value) == 0, "error: tag expected to mismatch"
+            else:
+                assert int(dut.auth.value) == 1, "error: tag expected to match"
+
+            await RisingEdge(dut.clk)
+
             log(dut, verbose=1, dashes=1)
 
 
@@ -381,7 +519,7 @@ async def test_hash(dut):
 
         await RisingEdge(dut.clk)
 
-        log(dut, 1, 1)
+        log(dut, verbose=1, dashes=1)
 
 
 # ,--.   ,--.,-----. ,------.
@@ -443,7 +581,9 @@ async def test_xof(dut):
             for i in range(xoflen):
                 assert hex(xof_hw[i]) == hex(xof[i]), "xof incorrect"
 
-            log(dut, 1, 1)
+            await RisingEdge(dut.clk)
+
+            log(dut, verbose=1, dashes=1)
 
 
 #  ,-----.,--.   ,--.,-----. ,------.
@@ -520,4 +660,6 @@ async def test_cxof(dut):
             for i in range(cxoflen):
                 assert hex(cxof_hw[i]) == hex(cxof[i]), "cxof incorrect"
 
-            log(dut, 1, 1)
+            await RisingEdge(dut.clk)
+
+            log(dut, verbose=1, dashes=1)
