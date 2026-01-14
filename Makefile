@@ -33,7 +33,8 @@ MODULE = test
 # Set source and config files
 ifeq (1,$(syn))
 SURFER_RON = surfer/syn.ron
-VERILOG_SOURCES = $(PWD)/syn/cmos_cells.v $(PWD)/syn.v
+VERILOG_SOURCES = $(PWD)/syn/simple_cells.v $(PWD)/syn.v
+# VERILOG_SOURCES = $(PWD)/syn/ng45_cells.v $(PWD)/syn.v
 else
 SURFER_RON = surfer/sim.ron
 VERILOG_SOURCES = $(PWD)/rtl/ascon_core.sv
@@ -44,6 +45,9 @@ include $(shell cocotb-config --makefiles)/Makefile.sim
 
 syn:
 	yosys -D${VARIANT} syn/syn.ys
+
+syn_ng45:
+	yosys -D${VARIANT} syn/syn_ng45.ys
 
 surf:
 	surfer -s $(SURFER_RON) dump.fst
