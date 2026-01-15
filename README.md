@@ -81,7 +81,7 @@ The following table contains a description of the interface signals:
 | `bdo_valid`  |    4/8   | Valid BDO data bytes.                            |
 | `bdo_ready`  |     1    | Test bench is ready to receive data.             |
 | `bdo_type`   |     4    | Type of BDO data.                                |
-| `bdo_eoo`    |     1    | Last BDO block.                                  |
+| `bdo_eoo`    |     1    | Last BDO block (only for XOF modes).             |
 | `auth`       |     1    | Authentication success.                          |
 | `auth_valid` |     1    | Authentication output is valid.                  |
 
@@ -146,6 +146,7 @@ The following table contains a description of the interface signals:
 
 - The Ascon core uses an interface that allows easy integration into projects using, e.g., an AXI4 bus.
 - The Ascon core can handle stalls of the input/output data bus. This can be tested by setting `STALLS = 1` in `test.py`.
+- If the length of AEAD output data is not a multiple of 4 (or 8) bytes then the last data block needs to be truncated according to the `bdi_valid` signal. See test bench for an example.
 - Many ciphers, including Ascon, require that decrypted plaintext is not released to a potential attacker until the tag of the ciphertext was successfully verified. The current design of the Ascon core outputs decrypted plaintext immediately which could lead to security degradation. For real applications an additional buffer should be used to temporarily store decrypted plaintext until the Ascon core has successfully verified the ciphertext tag.
 
 ## Contact

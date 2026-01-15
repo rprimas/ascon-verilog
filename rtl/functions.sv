@@ -40,4 +40,17 @@ function automatic logic [CCW-1:0] pad2;
   end
 endfunction
 
+// Mask output during ABS_MSG:
+// in1:  [0x00, 0x11, 0x22, 0x33]
+// val:  [   0,    0,    1,    1]
+// =>
+// mask: [0x00, 0x00, 0x22, 0x33]
+function automatic logic [CCW-1:0] mask;
+  input logic [CCW-1:0] in1;
+  input logic [CCW/8-1:0] val;
+  for (int i = 0; i < CCW / 8; i += 1) begin
+    mask[i*8+:8] = val[i] ? in1[i*8+:8] : 'd0;
+  end
+endfunction
+
 `endif  // INCL_FUNCTIONS

@@ -95,6 +95,9 @@ async def send_data(dut, data_in, bdi_type, bdo_ready, bdi_eoi):
         if int(dut.bdi_valid.value) and int(dut.bdi_ready.value):
             if VERBOSE >= 3:
                 dut._log.info("bdi:      {:08X}".format(bdi))
+            if int(dut.bdo_valid.value) and int(dut.bdo_ready.value):
+                if VERBOSE >= 3:
+                    dut._log.info("bdo:      {:08X}".format(int(dut.bdo.value)))
             bdo_bytes = int(dut.bdo.value).to_bytes(CCWD8, byteorder="big")
             for dd in range(CCWD8):
                 if bdi_valid & (1 << dd):

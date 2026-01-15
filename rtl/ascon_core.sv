@@ -213,11 +213,11 @@ module ascon_core (
         if (mode_q == M_AEAD128_ENC || mode_hash_xof) begin
           bdi_pad = pad(bdi, bdi_valid);
           state_slice_nx = state_slice ^ bdi_pad;
-          bdo = state_slice_nx;
+          bdo = mask(state_slice_nx, bdi_valid);
         end else if (mode_q == M_AEAD128_DEC) begin
           bdi_pad = pad2(bdi, state_slice, bdi_valid);
           state_slice_nx = bdi_pad;
-          bdo = state_slice ^ state_slice_nx;
+          bdo = mask(state_slice ^ state_slice_nx, bdi_valid);
         end
         bdi_ready = 'd1;
         bdo_valid = mode_enc_dec ? 'd1 : 'd0;
