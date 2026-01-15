@@ -30,24 +30,30 @@ TOPLEVEL = ascon_core
 # MODULE is the basename of the Python test file
 MODULE = test
 
-# Set source and config files
-ifeq (1,$(syn))
-SURFER_RON = surfer/syn.ron
-VERILOG_SOURCES = $(PWD)/syn/simple_cells.v $(PWD)/syn.v
-# VERILOG_SOURCES = $(PWD)/syn/ng45_cells.v $(PWD)/syn.v
-else
-SURFER_RON = surfer/sim.ron
+# Set source and config files for cocotb, yosys, and surfer
 VERILOG_SOURCES = $(PWD)/rtl/ascon_core.sv
+SURFER_RON = surfer/sim.ron
+ifeq ($(MAKECMDGOALS),syn)
+ifeq ($(cell),)
+cell = simple
+endif
+endif
+ifeq ($(cell),simple)
+YS_SCRIPT = syn/syn.ys
+VERILOG_SOURCES = $(PWD)/syn/simple_cells.v $(PWD)/syn.v
+SURFER_RON = surfer/syn.ron
+endif
+ifeq ($(cell),ng45)
+YS_SCRIPT = syn/syn_ng45.ys
+VERILOG_SOURCES = $(PWD)/syn/ng45_cells.v $(PWD)/syn.v
+SURFER_RON = surfer/syn.ron
 endif
 
 # Include cocotb makefile
 include $(shell cocotb-config --makefiles)/Makefile.sim
 
 syn:
-	yosys -D${VARIANT} syn/syn.ys
-
-syn_ng45:
-	yosys -D${VARIANT} syn/syn_ng45.ys
+	yosys -D${VARIANT} ${YS_SCRIPT}
 
 surf:
 	surfer -s $(SURFER_RON) dump.fst

@@ -108,14 +108,20 @@ The following table contains a description of the interface signals:
   - Fedora:
     - `dnf install yosys`
 - Execute the yosys synthesis script:
-  - `make syn`
+  - Simple cell library:
+    - `make syn` or `make syn cell=simple`
+  - Nangate45 cell library
+    - `make syn cell=ng45`
 
 ## RTL Post-Synthesis Simulation
 
-- Execute the yosys synthesis script:
-  - `make syn`
-- Execute the cocotb test bench for synthesized RTL:
-  - `make sim syn=1`
+- Synthesis and cocotb test for synthesized RTL:
+  - Simple cell library:
+    - `make syn` or `make syn cell=simple`
+    - `make sim cell=simple`
+  - Nangate45 cell library
+    - `make syn cell=ng45`
+    - `make sim cell=ng45`
 
 ## View Waveforms
 
@@ -128,8 +134,8 @@ The following table contains a description of the interface signals:
   - `make surf`
 - View waveform of post-synthesis cocotb test bench run:
   - `make syn`
-  - `make sim syn=1`
-  - `make surf syn=1`
+  - `make sim cell=simple`
+  - `make surf cell=simple`
 - Example waveform of test bench output:
 
 <p align="center">
