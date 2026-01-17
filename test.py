@@ -171,8 +171,11 @@ def log(dut, verbose, dashes, **kwargs):
 
 # Count cycles until dut reaches IDLE state
 async def cycle_cnt(dut):
+    while 1:
+        await RisingEdge(dut.clk)
+        if int(dut.fsm_q.value) != Fsm.IDLE.value:
+            break
     cycles = 1
-    await RisingEdge(dut.clk)
     while 1:
         await RisingEdge(dut.clk)
         if int(dut.fsm_q.value) == Fsm.IDLE.value:
@@ -247,7 +250,7 @@ async def test_enc(dut):
 
             log(dut, verbose=2, dashes=0, ad=ad, pt=pt, ct=ct, tag=tag)
 
-            cocotb.start_soon(cycle_cnt(dut))
+            cycle_task = cocotb.start_soon(cycle_cnt(dut))
             cocotb.start_soon(timeout(dut))
             cocotb.start_soon(toggle(dut, "dut.mode", mode.value))
 
@@ -278,8 +281,7 @@ async def test_enc(dut):
             for i in range(len(tag)):
                 assert tag_hw[i] == tag[i], "tag mismatch"
             
-            await RisingEdge(dut.clk)
-
+            await cycle_task.complete
             log(dut, verbose=1, dashes=1)
 
 
@@ -324,7 +326,7 @@ async def test_dec(dut):
 
             log(dut, verbose=2, dashes=0, ad=ad, pt=pt, ct=ct, tag=tag)
 
-            cocotb.start_soon(cycle_cnt(dut))
+            cycle_task = cocotb.start_soon(cycle_cnt(dut))
             cocotb.start_soon(timeout(dut))
             cocotb.start_soon(toggle(dut, "dut.mode", mode.value))
 
@@ -354,8 +356,7 @@ async def test_dec(dut):
             await RisingEdge(dut.clk)
             assert int(dut.auth.value) == 1
 
-            await RisingEdge(dut.clk)
-
+            await cycle_task.complete
             log(dut, verbose=1, dashes=1)
 
 
@@ -409,7 +410,7 @@ async def test_dec_fail(dut):
 
             log(dut, verbose=2, dashes=0, ad=ad, pt=pt, ct=ct, tag=tag)
 
-            cocotb.start_soon(cycle_cnt(dut))
+            cycle_task = cocotb.start_soon(cycle_cnt(dut))
             cocotb.start_soon(timeout(dut))
             cocotb.start_soon(toggle(dut, "dut.mode", mode.value))
 
@@ -460,8 +461,7 @@ async def test_dec_fail(dut):
             else:
                 assert int(dut.auth.value) == 1, "error: tag expected to match"
 
-            await RisingEdge(dut.clk)
-
+            await cycle_task.complete
             log(dut, verbose=1, dashes=1)
 
 
@@ -498,7 +498,7 @@ async def test_hash(dut):
 
         log(dut, verbose=2, dashes=0, msg=msg, hash=hash)
 
-        cocotb.start_soon(cycle_cnt(dut))
+        cycle_task = cocotb.start_soon(cycle_cnt(dut))
         cocotb.start_soon(timeout(dut))
         cocotb.start_soon(toggle(dut, "dut.mode", mode.value))
 
@@ -520,8 +520,7 @@ async def test_hash(dut):
         for i in range(32):
             assert hash_hw[i] == hash[i], "hash incorrect"
 
-        await RisingEdge(dut.clk)
-
+        await cycle_task.complete
         log(dut, verbose=1, dashes=1)
 
 
@@ -560,7 +559,7 @@ async def test_xof(dut):
 
             log(dut, verbose=2, dashes=0, msg=msg, xof=xof)
 
-            cocotb.start_soon(cycle_cnt(dut))
+            cycle_task = cocotb.start_soon(cycle_cnt(dut))
             cocotb.start_soon(timeout(dut))
             cocotb.start_soon(toggle(dut, "dut.mode", mode.value))
 
@@ -584,8 +583,7 @@ async def test_xof(dut):
             for i in range(xoflen):
                 assert hex(xof_hw[i]) == hex(xof[i]), "xof incorrect"
 
-            await RisingEdge(dut.clk)
-
+            await cycle_task.complete
             log(dut, verbose=1, dashes=1)
 
 
@@ -640,7 +638,7 @@ async def test_cxof(dut):
 
             log(dut, verbose=2, dashes=0, cstm=cstm, msg=msg, cxof=cxof)
 
-            cocotb.start_soon(cycle_cnt(dut))
+            cycle_task = cocotb.start_soon(cycle_cnt(dut))
             cocotb.start_soon(timeout(dut))
             cocotb.start_soon(toggle(dut, "dut.mode", mode.value))
 
@@ -663,6 +661,5 @@ async def test_cxof(dut):
             for i in range(cxoflen):
                 assert hex(cxof_hw[i]) == hex(cxof[i]), "cxof incorrect"
 
-            await RisingEdge(dut.clk)
-
+            await cycle_task.complete
             log(dut, verbose=1, dashes=1)
