@@ -110,8 +110,6 @@ The following table contains a description of the interface signals:
 - Execute the yosys synthesis script:
   - Simple cell library:
     - `make syn` or `make syn cell=simple`
-  - Nangate45 cell library
-    - `make syn cell=ng45`
 
 ## RTL Post-Synthesis Simulation
 
@@ -119,9 +117,6 @@ The following table contains a description of the interface signals:
   - Simple cell library:
     - `make syn` or `make syn cell=simple`
     - `make sim cell=simple`
-  - Nangate45 cell library
-    - `make syn cell=ng45`
-    - `make sim cell=ng45`
 
 ## View Waveforms
 

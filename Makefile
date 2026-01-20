@@ -43,11 +43,6 @@ YS_SCRIPT = syn/syn.ys
 VERILOG_SOURCES = $(PWD)/syn/simple_cells.v $(PWD)/syn.v
 SURFER_RON = surfer/syn.ron
 endif
-ifeq ($(cell),ng45)
-YS_SCRIPT = syn/syn_ng45.ys
-VERILOG_SOURCES = $(PWD)/syn/ng45_cells.v $(PWD)/syn.v
-SURFER_RON = surfer/syn.ron
-endif
 
 # Include cocotb makefile
 include $(shell cocotb-config --makefiles)/Makefile.sim
