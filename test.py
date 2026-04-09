@@ -16,7 +16,8 @@ RUNS = range(0, 10)
 CCW = 32
 # CCW = 64
 CCWD8 = CCW // 8
-STALLS = 0
+STALL_INPUT = 0
+STALL_OUTPUT = 0
 
 
 # Needs to match "mode_t" in "rtl/config.sv"
@@ -78,6 +79,10 @@ async def send_data(dut, data_in, bdi_type, bdo_ready, bdi_eoi):
     d = 0
     data_out = []
     while d < dlen:
+        if STALL_INPUT:
+            for _ in range(random.randint(1, 10)):
+                await clear_bdi(dut)
+                await RisingEdge(dut.clk)
         bdi = 0
         bdi_valid = 0
         for dd in range(d, min(d + CCWD8, dlen)):
@@ -89,8 +94,6 @@ async def send_data(dut, data_in, bdi_type, bdo_ready, bdi_eoi):
         dut.bdi_eot.value = d + CCWD8 >= dlen
         dut.bdi_eoi.value = d + CCWD8 >= dlen and bdi_eoi
         dut.bdo_ready.value = bdo_ready
-        if STALLS and (random.randint(0, 10) != 0):
-            await clear_bdi(dut)
         await RisingEdge(dut.clk)
         if int(dut.bdi_valid.value) and int(dut.bdi_ready.value):
             if VERBOSE >= 3:
@@ -130,11 +133,13 @@ async def receive_data(dut, type, len=16, bdo_eoo=0):
     d = 0
     data_out = []
     while d < len:
+        if STALL_OUTPUT:
+            for _ in range(random.randint(1, 10)):
+                dut.bdo_ready.value = 0
+                dut.bdo_eoo.value = 0
+                await RisingEdge(dut.clk)
         dut.bdo_ready.value = 1
         dut.bdo_eoo.value = (d + CCWD8 >= len) & bdo_eoo
-        if STALLS and (random.randint(0, 10) != 0):
-            dut.bdo_ready.value = 0
-            dut.bdo_eoo.value = 0
         await RisingEdge(dut.clk)
         if int(dut.bdo_ready.value) and int(dut.bdo_valid.value) and (int(dut.bdo_type.value) == type):
             if VERBOSE >= 3:
@@ -221,7 +226,6 @@ def corrupt(data):
 
 @cocotb.test()
 async def test_enc(dut):
-
     # init test
     random.seed(31415)
     mode = Mode.M_AEAD128_ENC
@@ -280,9 +284,31 @@ async def test_enc(dut):
             # check tag
             for i in range(len(tag)):
                 assert tag_hw[i] == tag[i], "tag mismatch"
-            
+
             await cycle_task.complete
             log(dut, verbose=1, dashes=1)
+
+
+@cocotb.test()
+async def test_enc_backpressure(dut):
+    global STALL_OUTPUT
+    stall_output = STALL_OUTPUT
+    STALL_OUTPUT = 1
+    try:
+        await test_enc.func(dut)
+    finally:
+        STALL_OUTPUT = stall_output
+
+
+@cocotb.test()
+async def test_enc_rare_input(dut):
+    global STALL_INPUT
+    stall_input = STALL_INPUT
+    STALL_INPUT = 1
+    try:
+        await test_enc.func(dut)
+    finally:
+        STALL_INPUT = stall_input
 
 
 # ,------.                                       ,--.
@@ -295,7 +321,6 @@ async def test_enc(dut):
 
 @cocotb.test()
 async def test_dec(dut):
-
     # init test
     random.seed(31415)
     mode = Mode.M_AEAD128_DEC
@@ -358,6 +383,28 @@ async def test_dec(dut):
 
             await cycle_task.complete
             log(dut, verbose=1, dashes=1)
+
+
+@cocotb.test()
+async def test_dec_backpressure(dut):
+    global STALL_OUTPUT
+    stall_output = STALL_OUTPUT
+    STALL_OUTPUT = 1
+    try:
+        await test_dec.func(dut)
+    finally:
+        STALL_OUTPUT = stall_output
+
+
+@cocotb.test()
+async def test_dec_rare_input(dut):
+    global STALL_INPUT
+    stall_input = STALL_INPUT
+    STALL_INPUT = 1
+    try:
+        await test_dec.func(dut)
+    finally:
+        STALL_INPUT = stall_input
 
 
 # ,------.                                       ,--.      ,------.       ,--.,--.

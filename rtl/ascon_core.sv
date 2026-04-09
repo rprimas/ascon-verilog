@@ -219,8 +219,8 @@ module ascon_core (
           state_slice_nx = bdi_pad;
           bdo = mask(state_slice ^ state_slice_nx, bdi_valid);
         end
-        bdi_ready = 'd1;
-        bdo_valid = mode_enc_dec ? 'd1 : 'd0;
+        bdi_ready = mode_enc_dec ? bdo_ready : 'd1;
+        bdo_valid = (mode_enc_dec && (bdi_valid != 'd0)) ? 'd1 : 'd0;
         bdo_type  = mode_enc_dec ? D_MSG : D_INVALID;
         bdo_eot   = mode_enc_dec ? bdi_eot : 'd0;
         if (mode_q == M_HASH256) bdo = 'd0;
