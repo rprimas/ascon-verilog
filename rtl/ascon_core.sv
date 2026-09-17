@@ -220,7 +220,7 @@ module ascon_core (
           bdo = mask(state_slice ^ state_slice_nx, bdi_valid);
         end
         bdi_ready = mode_enc_dec ? bdo_ready : 'd1;
-        bdo_valid = (mode_enc_dec && (bdi_valid != 'd0)) ? 'd1 : 'd0;
+        bdo_valid = (mode_enc_dec && (bdi_type == D_MSG) && (bdi_valid != 'd0)) ? 'd1 : 'd0;
         bdo_type  = mode_enc_dec ? D_MSG : D_INVALID;
         bdo_eot   = mode_enc_dec ? bdi_eot : 'd0;
         if (mode_q == M_HASH256) bdo = 'd0;
@@ -476,7 +476,7 @@ module ascon_core (
       if (bdi_eoi) eoi_d    = 'd1;
     end
     if (add_ad_pad) ad_pad_d = 'd1;
-    if (add_msg_pad) ad_pad_d = 'd1;
+    if (add_msg_pad) msg_pad_d = 'd1;
     if (abs_msg_done && bdi_eoi) eoi_d = 'd1;
     if (kadd_4_done && (mode_q == M_AEAD128_DEC)) auth_intern_d = 'd1;
     if (ver_tag) auth_intern_d = auth_intern_d && (bdi == state_slice);

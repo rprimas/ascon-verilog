@@ -3,15 +3,12 @@
 
 MAKEFLAGS=-j8
 
-# The following variants require "CCW = 32" in test.py:
-VARIANT = V1
-# VARIANT = V2
-# VARIANT = V3
-
-# The following variants require "CCW = 64" in test.py:
-# VARIANT = V4
-# VARIANT = V5
-# VARIANT = V6
+VARIANT ?= V1 # ccw=32, 1 round/cycle
+# VARIANT ?= V2 # ccw=32, 2 rounds/cycle
+# VARIANT ?= V3 # ccw=32, 4 rounds/cycle
+# VARIANT ?= V4 # ccw=64, 1 round/cycle
+# VARIANT ?= V5 # ccw=64, 2 rounds/cycle
+# VARIANT ?= V6 # ccw=64, 4 rounds/cycle
 
 # Verilator arguments
 SIM ?= verilator

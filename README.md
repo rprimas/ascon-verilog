@@ -66,7 +66,7 @@ The following table contains a description of the interface signals:
 | **Name**     | **Bits** | **Description**                                  |
 |--------------|:--------:|--------------------------------------------------|
 | `clk`        |     1    | Clock signal.                                    |
-| `rst`        |     1    | Reset signal. Note: Synchronous active high.     |
+| `rst`        |     1    | Reset signal. Note: Asynchronous active high.    |
 | `key`        |   32/64  | Key data input.                                  |
 | `key_valid`  |     1    | Key data is valid.                               |
 | `key_ready`  |     1    | Ascon core is ready to receive a new key.        |
@@ -78,10 +78,11 @@ The following table contains a description of the interface signals:
 | `bdi_type`   |     4    | Type of BDI data.                                |
 | `mode`       |     4    | Ascon mode.                                      |
 | `bdo`        |   32/64  | Block data output (BDO).                         |
-| `bdo_valid`  |    4/8   | Valid BDO data bytes.                            |
+| `bdo_valid`  |     1    | Valid BDO data bytes.                            |
 | `bdo_ready`  |     1    | Test bench is ready to receive data.             |
 | `bdo_type`   |     4    | Type of BDO data.                                |
 | `bdo_eoo`    |     1    | Last BDO block (only for XOF modes).             |
+| `bdo_eot`    |     1    | Last BDO block of this type.                     |
 | `auth`       |     1    | Authentication success.                          |
 | `auth_valid` |     1    | Authentication output is valid.                  |
 
@@ -140,7 +141,7 @@ The following table contains a description of the interface signals:
 ## Integration
 
 - The Ascon core uses an interface that allows easy integration into projects using, e.g., an AXI4 bus.
-- The Ascon core can handle stalls of the input/output data bus. This can be tested by setting `STALLS = 1` in `test.py`.
+- The Ascon core can handle stalls of the input/output data bus. This can be tested by setting `STALL_INPUT` or `STALL_OUTPUT` in `test.py`.
 - If the length of AEAD output data is not a multiple of 4 (or 8) bytes then the last data block needs to be truncated according to the `bdi_valid` signal. See test bench for an example.
 - Many ciphers, including Ascon, require that decrypted plaintext is not released to a potential attacker until the tag of the ciphertext was successfully verified. The current design of the Ascon core outputs decrypted plaintext immediately which could lead to security degradation. For real applications an additional buffer should be used to temporarily store decrypted plaintext until the Ascon core has successfully verified the ciphertext tag.
 

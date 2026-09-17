@@ -6,3 +6,4 @@ results.xml
 *.fst
 *.code-workspace
 syn.v
+pyenv/

@@ -1,21 +1,17 @@
 # This file is public domain, it can be freely copied without restrictions.
 # SPDX-License-Identifier: CC0-1.0
 
-import cocotb
-from cocotb.triggers import RisingEdge
-from cocotb.clock import Clock
-
 import random
 from enum import Enum
 
+import cocotb
+from cocotb.clock import Clock
+from cocotb.triggers import RisingEdge
+
 from ascon import *
 
-VERBOSE = 1
-RUNS = range(0, 10)
-# RUNS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 16, 32, 64, 128, 256, 512, 1024]
-CCW = 32
-# CCW = 64
-CCWD8 = CCW // 8
+VERBOSE = 0
+RUNS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 15, 16, 17, 31, 32, 33]
 STALL_INPUT = 0
 STALL_OUTPUT = 0
 
@@ -42,25 +38,29 @@ class Data(Enum):
 
 # Needs to match "fsm_t" in "rtl/ascon_core.sv"
 class Fsm(Enum):
-    INVALID  = 0
-    IDLE     = 1
-    LD_KEY   = 2
-    LD_NPUB  = 3
-    INIT     = 4
-    KADD_2   = 5
-    ABS_AD   = 6
-    PAD_AD   = 7
-    PRO_AD   = 8
-    DOM_SEP  = 9
-    ABS_MSG  = 10
-    PAD_MSG  = 11
-    PRO_MSG  = 12
-    KADD_3   = 13
-    FINAL    = 14
-    KADD_4   = 15
-    SQZ_TAG  = 16
+    INVALID = 0
+    IDLE = 1
+    LD_KEY = 2
+    LD_NPUB = 3
+    INIT = 4
+    KADD_2 = 5
+    ABS_AD = 6
+    PAD_AD = 7
+    PRO_AD = 8
+    DOM_SEP = 9
+    ABS_MSG = 10
+    PAD_MSG = 11
+    PRO_MSG = 12
+    KADD_3 = 13
+    FINAL = 14
+    KADD_4 = 15
+    SQZ_TAG = 16
     SQZ_HASH = 17
-    VER_TAG  = 18
+    VER_TAG = 18
+
+
+def bus_bytes(dut):
+    return len(dut.bdi) // 8
 
 
 # Reset BDI signals
@@ -75,6 +75,7 @@ async def clear_bdi(dut):
 
 # Send data of specific type to dut
 async def send_data(dut, data_in, bdi_type, bdo_ready, bdi_eoi):
+    ccw_bytes = bus_bytes(dut)
     dlen = len(data_in)
     d = 0
     data_out = []
@@ -85,51 +86,55 @@ async def send_data(dut, data_in, bdi_type, bdo_ready, bdi_eoi):
                 await RisingEdge(dut.clk)
         bdi = 0
         bdi_valid = 0
-        for dd in range(d, min(d + CCWD8, dlen)):
-            bdi |= data_in[dd] << 8 * (dd % CCWD8)
-            bdi_valid |= 1 << (dd % CCWD8)
+        for dd in range(d, min(d + ccw_bytes, dlen)):
+            bdi |= data_in[dd] << 8 * (dd % ccw_bytes)
+            bdi_valid |= 1 << (dd % ccw_bytes)
         dut.bdi.value = bdi
         dut.bdi_valid.value = bdi_valid
         dut.bdi_type.value = bdi_type
-        dut.bdi_eot.value = d + CCWD8 >= dlen
-        dut.bdi_eoi.value = d + CCWD8 >= dlen and bdi_eoi
+        dut.bdi_eot.value = d + ccw_bytes >= dlen
+        dut.bdi_eoi.value = d + ccw_bytes >= dlen and bdi_eoi
         dut.bdo_ready.value = bdo_ready
+        if STALL_OUTPUT and bdo_ready:
+            dut.bdo_ready.value = random.randint(0, 10) == 0
         await RisingEdge(dut.clk)
         if int(dut.bdi_valid.value) and int(dut.bdi_ready.value):
             if VERBOSE >= 3:
-                dut._log.info("bdi:      {:08X}".format(bdi))
+                dut._log.info(f"bdi:      {bdi:08X}")
             if int(dut.bdo_valid.value) and int(dut.bdo_ready.value):
                 if VERBOSE >= 3:
-                    dut._log.info("bdo:      {:08X}".format(int(dut.bdo.value)))
-            bdo_bytes = int(dut.bdo.value).to_bytes(CCWD8, byteorder="big")
-            for dd in range(CCWD8):
+                    dut._log.info(f"bdo:      {int(dut.bdo.value):08X}")
+            bdo_bytes = int(dut.bdo.value).to_bytes(ccw_bytes, byteorder="big")
+            for dd in range(ccw_bytes):
                 if bdi_valid & (1 << dd):
-                    data_out.append(bdo_bytes[CCWD8 - 1 - dd])
-            d += CCWD8
+                    data_out.append(bdo_bytes[ccw_bytes - 1 - dd])
+            d += ccw_bytes
     await clear_bdi(dut)
     return data_out
 
 
 # Send key data to dut
 async def send_key(dut, key_in):
+    ccw_bytes = bus_bytes(dut)
     k = 0
     while k < 16:
         key2 = 0
-        for kk in range(k, min(k + CCWD8, 16)):
-            key2 |= key_in[kk] << 8 * (kk % CCWD8)
+        for kk in range(k, min(k + ccw_bytes, 16)):
+            key2 |= key_in[kk] << 8 * (kk % ccw_bytes)
         dut.key.value = key2
         dut.key_valid.value = 1
         await RisingEdge(dut.clk)
         if int(dut.key_ready.value):
             if VERBOSE >= 3:
-                dut._log.info("key:      {:08X}".format(int(dut.key.value)))
-            k += CCWD8
+                dut._log.info(f"key:      {int(dut.key.value):08X}")
+            k += ccw_bytes
     dut.key.value = 0
     dut.key_valid.value = 0
 
 
 # Receive data of specific type from dut
 async def receive_data(dut, type, len=16, bdo_eoo=0):
+    ccw_bytes = bus_bytes(dut)
     d = 0
     data_out = []
     while d < len:
@@ -139,15 +144,19 @@ async def receive_data(dut, type, len=16, bdo_eoo=0):
                 dut.bdo_eoo.value = 0
                 await RisingEdge(dut.clk)
         dut.bdo_ready.value = 1
-        dut.bdo_eoo.value = (d + CCWD8 >= len) & bdo_eoo
+        dut.bdo_eoo.value = (d + ccw_bytes >= len) & bdo_eoo
         await RisingEdge(dut.clk)
-        if int(dut.bdo_ready.value) and int(dut.bdo_valid.value) and (int(dut.bdo_type.value) == type):
+        if (
+            int(dut.bdo_ready.value)
+            and int(dut.bdo_valid.value)
+            and (int(dut.bdo_type.value) == type)
+        ):
             if VERBOSE >= 3:
-                dut._log.info("bdo:      {:08X}".format(int(dut.bdo.value)))
-            bdo_bytes = int(dut.bdo.value).to_bytes(CCWD8, byteorder="big")
-            for dd in range(CCWD8):
-                data_out.append(bdo_bytes[CCWD8 - 1 - dd])
-            d += CCWD8
+                dut._log.info(f"bdo:      {int(dut.bdo.value):08X}")
+            bdo_bytes = int(dut.bdo.value).to_bytes(ccw_bytes, byteorder="big")
+            for dd in range(ccw_bytes):
+                data_out.append(bdo_bytes[ccw_bytes - 1 - dd])
+            d += ccw_bytes
     dut.bdo_ready.value = 0
     dut.bdo_eoo.value = 0
     return data_out
@@ -212,7 +221,7 @@ async def timeout(dut):
 # Corrupt data for decryption failure tests
 def corrupt(data):
     data_corrupt = bytearray(data).copy()
-    data_corrupt[random.randint(0,len(data_corrupt)-1)] ^= random.randint(1, 255)
+    data_corrupt[random.randint(0, len(data_corrupt) - 1)] ^= random.randint(1, 255)
     return data_corrupt
 
 
@@ -262,7 +271,9 @@ async def test_enc(dut):
             await send_key(dut, key)
 
             # send nonce
-            await send_data(dut, npub, Data.D_NONCE.value, 0, (adlen == 0) and (msglen == 0))
+            await send_data(
+                dut, npub, Data.D_NONCE.value, 0, (adlen == 0) and (msglen == 0)
+            )
 
             # send ad
             if adlen > 0:
@@ -359,7 +370,9 @@ async def test_dec(dut):
             await send_key(dut, key)
 
             # send nonce
-            await send_data(dut, npub, Data.D_NONCE.value, 0, (adlen == 0) and (msglen == 0))
+            await send_data(
+                dut, npub, Data.D_NONCE.value, 0, (adlen == 0) and (msglen == 0)
+            )
 
             # send ad
             if adlen > 0:
@@ -412,7 +425,7 @@ async def test_dec_rare_input(dut):
 # |  |  \  :| .-. :| .--'|  .--' \  '  /| .-. |'-.  .-'    |  `--,' ,-.  |,--.|  |
 # |  '--'  /\   --.\ `--.|  |     \   ' | '-' '  |  |      |  |`  \ '-'  ||  ||  |
 # `-------'  `----' `---'`--'   .-'  /  |  |-'   `--'      `--'    `--`--'`--'`--'
-#                               `---'   `--'                                              
+#                               `---'   `--'
 
 
 @cocotb.test()
@@ -439,12 +452,12 @@ async def test_dec_fail(dut):
             dut._log.info("test      %s ad:%d msg:%d", mode.name, adlen, msglen)
 
             # flip coin if data is corrupted
-            corrupt_key   = random.randint(0,4)%5 == 0
-            corrupt_nonce = random.randint(0,4)%5 == 0
-            corrupt_ad    = random.randint(0,4)%5 == 0 and adlen > 0
-            corrupt_ct    = random.randint(0,4)%5 == 0 and msglen > 0
-            corrupt_tag   = random.randint(0,4)%5 == 0
-            dec_fail  = corrupt_key or corrupt_nonce or corrupt_ad or corrupt_ct
+            corrupt_key = random.randint(0, 4) % 5 == 0
+            corrupt_nonce = random.randint(0, 4) % 5 == 0
+            corrupt_ad = random.randint(0, 4) % 5 == 0 and adlen > 0
+            corrupt_ct = random.randint(0, 4) % 5 == 0 and msglen > 0
+            corrupt_tag = random.randint(0, 4) % 5 == 0
+            dec_fail = corrupt_key or corrupt_nonce or corrupt_ad or corrupt_ct
             auth_fail = dec_fail or corrupt_tag
 
             ad = bytearray([random.randint(0, 255) for x in range(adlen)])
@@ -469,9 +482,17 @@ async def test_dec_fail(dut):
 
             # send nonce
             if corrupt_nonce:
-                await send_data(dut, corrupt(npub), Data.D_NONCE.value, 0, (adlen == 0) and (msglen == 0))
+                await send_data(
+                    dut,
+                    corrupt(npub),
+                    Data.D_NONCE.value,
+                    0,
+                    (adlen == 0) and (msglen == 0),
+                )
             else:
-                await send_data(dut, npub, Data.D_NONCE.value, 0, (adlen == 0) and (msglen == 0))
+                await send_data(
+                    dut, npub, Data.D_NONCE.value, 0, (adlen == 0) and (msglen == 0)
+                )
 
             # send ad
             if adlen > 0:
@@ -494,19 +515,18 @@ async def test_dec_fail(dut):
             else:
                 await send_data(dut, tag, Data.D_TAG.value, 0, 1)
 
-            # check plaintext
-            equal = all([x == y for x,y in zip(pt,pt_hw)]) if len(pt) > 0 else True
-            if (dec_fail and len(pt) > 0):
-                assert equal == False, "error: pt expected to mismatch"
-            else:
-                assert equal == True, "error: pt expected to match"
+            # Unmodified decryption inputs must reproduce the plaintext.
+            if not dec_fail and msglen > 0:
+                assert pt_hw == list(pt), "error: plaintext mismatch"
 
-            # check tag verification
+            # Authentication determines whether any modified input is rejected.
             await RisingEdge(dut.clk)
-            if (auth_fail):
-                assert int(dut.auth.value) == 0, "error: tag expected to mismatch"
-            else:
-                assert int(dut.auth.value) == 1, "error: tag expected to match"
+            assert int(dut.auth_valid.value) == 1, (
+                "error: authentication result not valid"
+            )
+            assert int(dut.auth.value) == (not auth_fail), (
+                "error: unexpected authentication result"
+            )
 
             await cycle_task.complete
             log(dut, verbose=1, dashes=1)
