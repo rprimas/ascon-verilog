@@ -1,6 +1,3 @@
-`ifndef INCL_REGISTER
-`define INCL_REGISTER
-
 // Licensed under the Creative Commons 1.0 Universal License (CC0), see LICENSE
 // for details.
 //
@@ -29,5 +26,3 @@ module register #(parameter DATA_WIDTH, parameter RST_VALUE = DATA_WIDTH'('d0)) 
   end
 
 endmodule
-
-`endif  // INCL_REGISTER

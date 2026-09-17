@@ -1,6 +1,3 @@
-`ifndef INCL_ASCONP
-`define INCL_ASCONP
-
 // Licensed under the Creative Commons 1.0 Universal License (CC0), see LICENSE
 // for details.
 //
@@ -8,8 +5,6 @@
 //
 // Implementation of the Ascon permutation (Ascon-p).
 // Performs UROL rounds per clock cycle.
-
-`include "config.sv"
 
 module asconp (
     input  logic [ 3:0] round_cnt,
@@ -77,5 +72,3 @@ module asconp (
   assign x4_o = x4[UROL];
 
 endmodule
-
-`endif  // INCL_ASCONP

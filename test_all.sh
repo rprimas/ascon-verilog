@@ -1,4 +1,6 @@
-# Run tests for all variants of the Ascon core
+#!/usr/bin/env bash
+
+# Run cocotb test bench for all variants of the Ascon core
 set -o pipefail
 results=()
 overall_status=0

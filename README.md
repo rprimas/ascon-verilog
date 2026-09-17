@@ -52,11 +52,15 @@ Cycles required for processing **x** bytes of message:
 - `rtl/`: SystemVerilog implementation of Ascon.
 - `surfer/`: Files for the [Surfer](https://surfer-project.org/) waveform viewer.
 - `syn/`: Files for [Yosys](https://github.com/YosysHQ/yosys) synthesis.
+- `.gitignore`: List of files/folders to be ignored for git versioning.
 - `ascon.py`: Ascon's python reference implementation [pyascon](https://github.com/meichlseder/pyascon).
 - `CITATION.cff`: Github citation information file.
+- `file_list.txt`: List of verilog source files.
 - `LICENSE`: License file.
 - `Makefile`: Makefile for rtl simulation, rtl synthesis, and waveform viewing.
 - `README.md`: This README.
+- `requirements.txt`: Relevant python libraries for cocotb test bench.
+- `test_all.sh`: Bash script that runs cocotb test bench for all Ascon core variants.
 - `test.py`: Python script for running the [cocotb](https://www.cocotb.org/) test bench.
 
 ## Interface
@@ -78,7 +82,7 @@ The following table contains a description of the interface signals:
 | `bdi_type`   |     4    | Type of BDI data.                                |
 | `mode`       |     4    | Ascon mode.                                      |
 | `bdo`        |   32/64  | Block data output (BDO).                         |
-| `bdo_valid`  |     1    | Valid BDO data bytes.                            |
+| `bdo_valid`  |     1    | BDO data is valid.                               |
 | `bdo_ready`  |     1    | Test bench is ready to receive data.             |
 | `bdo_type`   |     4    | Type of BDO data.                                |
 | `bdo_eoo`    |     1    | Last BDO block (only for XOF modes).             |

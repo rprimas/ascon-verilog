@@ -1,17 +1,9 @@
-`ifndef INCL_ASCON_CORE
-`define INCL_ASCON_CORE
-
 // Licensed under the Creative Commons 1.0 Universal License (CC0), see LICENSE
 // for details.
 //
 // Author: Robert Primas (rprimas 'at' proton.me, https://rprimas.github.io)
 //
 // Implementation of the Ascon core.
-
-`include "config.sv"
-`include "functions.sv"
-`include "asconp.sv"
-`include "register.sv"
 
 module ascon_core (
     input  logic              clk,
@@ -196,12 +188,12 @@ module ascon_core (
       LD_KEY:  key_ready = 'd1;
       LD_NPUB: begin
         state_idx = word_cnt_q + W192;
-        bdi_ready = 'd1;
+        bdi_ready = bdi_type == D_NONCE;
         state_slice_nx  = bdi;
       end
       ABS_AD: begin
         state_idx = word_cnt_q;
-        bdi_ready = 'd1;
+        bdi_ready = bdi_type == D_AD;
         bdi_pad   = pad(bdi, bdi_valid);
         state_slice_nx  = state_slice ^ bdi_pad;
       end
@@ -219,7 +211,7 @@ module ascon_core (
           state_slice_nx = bdi_pad;
           bdo = mask(state_slice ^ state_slice_nx, bdi_valid);
         end
-        bdi_ready = mode_enc_dec ? bdo_ready : 'd1;
+        bdi_ready = (bdi_type == D_MSG) && (mode_enc_dec ? bdo_ready : 1'b1);
         bdo_valid = (mode_enc_dec && (bdi_type == D_MSG) && (bdi_valid != 'd0)) ? 'd1 : 'd0;
         bdo_type  = mode_enc_dec ? D_MSG : D_INVALID;
         bdo_eot   = mode_enc_dec ? bdi_eot : 'd0;
@@ -241,7 +233,7 @@ module ascon_core (
       end
       VER_TAG: begin
         state_idx = word_cnt_q + W192;
-        bdi_ready = 'd1;
+        bdi_ready = bdi_type == D_TAG;
       end
       default: ;
     endcase
@@ -498,5 +490,3 @@ module ascon_core (
   assign x4 = state_q[4];
 
 endmodule
-
-`endif  // INCL_ASCON_CORE

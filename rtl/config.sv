@@ -1,6 +1,3 @@
-`ifndef INCL_CONFIG
-`define INCL_CONFIG
-
 // Licensed under the Creative Commons 1.0 Universal License (CC0), see LICENSE
 // for details.
 //
@@ -77,5 +74,3 @@ typedef enum logic [3:0] {
   D_TAG     = 4,
   D_HASH    = 5
 } data_t;
-
-`endif  // INCL_CONFIG

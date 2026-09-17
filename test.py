@@ -101,9 +101,8 @@ async def send_data(dut, data_in, bdi_type, bdo_ready, bdi_eoi):
         if int(dut.bdi_valid.value) and int(dut.bdi_ready.value):
             if VERBOSE >= 3:
                 dut._log.info(f"bdi:      {bdi:08X}")
-            if int(dut.bdo_valid.value) and int(dut.bdo_ready.value):
-                if VERBOSE >= 3:
-                    dut._log.info(f"bdo:      {int(dut.bdo.value):08X}")
+            if int(dut.bdo_valid.value) and int(dut.bdo_ready.value) and (VERBOSE >= 3):
+                dut._log.info(f"bdo:      {int(dut.bdo.value):08X}")
             bdo_bytes = int(dut.bdo.value).to_bytes(ccw_bytes, byteorder="big")
             for dd in range(ccw_bytes):
                 if bdi_valid & (1 << dd):
@@ -164,9 +163,9 @@ async def receive_data(dut, type, len=16, bdo_eoo=0):
 
 # Toggle the value of one signal
 async def toggle(dut, signalStr, value):
-    eval(signalStr, dict(dut=cocotb.top)).value = value
+    eval(signalStr, {"dut": cocotb.top}).value = value
     await RisingEdge(dut.clk)
-    eval(signalStr, dict(dut=cocotb.top)).value = 0
+    eval(signalStr, {"dut": cocotb.top}).value = 0
 
 
 # Log the content of multiple byte arrays
@@ -177,7 +176,7 @@ def log(dut, verbose, dashes, **kwargs):
                 "%s %s %s",
                 k,
                 " " * (8 - len(k)),
-                "".join("{:02X}".format(x) for x in val),
+                "".join(f"{x:02X}" for x in val),
             )
         if dashes:
             dut._log.info("------------------------------------------")

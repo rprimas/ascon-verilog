@@ -1,0 +1,5 @@
+rtl/config.sv
+rtl/functions.sv
+rtl/register.sv
+rtl/asconp.sv
+rtl/ascon_core.sv

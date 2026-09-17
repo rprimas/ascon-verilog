@@ -1,14 +1,9 @@
-`ifndef INCL_FUNCTIONS
-`define INCL_FUNCTIONS
-
 // Licensed under the Creative Commons 1.0 Universal License (CC0), see LICENSE
 // for details.
 //
 // Author: Robert Primas (rprimas 'at' proton.me, https://rprimas.github.io)
 //
 // Generic functions for the Ascon core.
-
-`include "config.sv"
 
 // Pad input during ABS_AD, ABS_MSG (encryption):
 // in:  [0x00, 0x00, 0x11, 0x22]
@@ -52,5 +47,3 @@ function automatic logic [CCW-1:0] mask;
     mask[i*8+:8] = val[i] ? in1[i*8+:8] : 'd0;
   end
 endfunction
-
-`endif  // INCL_FUNCTIONS
