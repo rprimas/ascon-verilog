@@ -112,6 +112,7 @@ The following table contains a description of the interface signals:
     - `apt-get install yosys`
   - Fedora:
     - `dnf install yosys`
+- Install the `slurm`
 - Execute the yosys synthesis script:
   - Simple cell library:
     - `make syn` or `make syn cell=simple`
@@ -149,6 +150,7 @@ The following table contains a description of the interface signals:
 - If a new key is loaded, `key_valid` needs to be high on the same cycle that `mode` is sampled.
 - If an empty hash/XOF input is processed, `bdi_eoi` needs to be high on the same cycle that `mode` is sampled.
 - If the length of AEAD output data is not a multiple of 4 (or 8) bytes then the last data block needs to be truncated according to the `bdi_valid` signal. See test bench for an example.
+- The length of XOF/CXOF output needs to be greater than zero bytes.
 - The Ascon core can handle stalls of the input/output data bus. This can be tested by setting `STALL_INPUT` or `STALL_OUTPUT` in `test.py`.
 - Many ciphers, including Ascon, require that decrypted plaintext is not released to a potential attacker until the tag of the ciphertext was successfully verified. The current design of the Ascon core outputs decrypted plaintext immediately which could lead to security degradation. For real applications an additional buffer should be used to temporarily store decrypted plaintext until the Ascon core has successfully verified the ciphertext tag.
 

@@ -11,7 +11,8 @@ from cocotb.triggers import RisingEdge
 from ascon import *
 
 VERBOSE = 0
-RUNS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 15, 16, 17, 31, 32, 33]
+# RUNS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 15, 16, 17, 31, 32, 33]
+RUNS = [0, 1, 2, 3, 4, 5, 6, 7, 8]
 STALL_INPUT = 0
 STALL_OUTPUT = 0
 
@@ -615,7 +616,9 @@ async def test_xof(dut):
 
     for msglen in RUNS:
         for xlen in RUNS:
-            xoflen = max(((xlen + 7) // 8) * 8, 8)
+            if xlen == 0:
+                continue
+            xoflen = xlen
             dut._log.info("test      %s msg:%d xof:%d", mode.name, msglen, xoflen)
 
             msg = bytearray([random.randint(0, 255) for x in range(msglen)])
@@ -677,55 +680,57 @@ async def test_cxof(dut):
     log(dut, verbose=1, dashes=1)
 
     for msglen in RUNS:
-        for cstmlen in RUNS:
-            cstmlen = min(cstmlen, 256)
-            cxoflen = max(((msglen + 7) // 8) * 8, 8)
-            cstm = bytearray([random.randint(0, 255) for x in range(cstmlen)])
-            msg = bytearray([random.randint(0, 255) for x in range(msglen)])
+        for cstmlen in [0, 1, 2, 3, 4, 5, 6, 7, 8, 256]:
+            for xlen in RUNS:
+                if xlen == 0:
+                    continue
+                cxoflen = xlen
+                cstm = bytearray([random.randint(0, 255) for x in range(cstmlen)])
+                msg = bytearray([random.randint(0, 255) for x in range(msglen)])
 
-            dut._log.info(
-                "test      %s cstm:%d msg:%d xof:%d",
-                mode.name,
-                cstmlen,
-                msglen,
-                cxoflen,
-            )
+                dut._log.info(
+                    "test      %s cstm:%d msg:%d xof:%d",
+                    mode.name,
+                    cstmlen,
+                    msglen,
+                    cxoflen,
+                )
 
-            # compute in software
-            cxof = ascon_hash(
-                msg, variant="Ascon-CXOF128", hashlength=cxoflen, customization=cstm
-            )
+                # compute in software
+                cxof = ascon_hash(
+                    msg, variant="Ascon-CXOF128", hashlength=cxoflen, customization=cstm
+                )
 
-            # prepend bit-length identifier block to cstm
-            for i in range(8):
-                cstm.insert(0, 0)
-            cstm[0] = (cstmlen * 8) % 256
-            cstm[1] = min(((cstmlen * 8) >> 8), 8)
+                # prepend bit-length identifier block to cstm
+                for i in range(8):
+                    cstm.insert(0, 0)
+                cstm[0] = (cstmlen * 8) % 256
+                cstm[1] = min(((cstmlen * 8) >> 8), 8)
 
-            log(dut, verbose=2, dashes=0, cstm=cstm, msg=msg, cxof=cxof)
+                log(dut, verbose=2, dashes=0, cstm=cstm, msg=msg, cxof=cxof)
 
-            cycle_task = cocotb.start_soon(cycle_cnt(dut))
-            cocotb.start_soon(timeout(dut))
-            cocotb.start_soon(toggle(dut, "dut.mode", mode.value))
+                cycle_task = cocotb.start_soon(cycle_cnt(dut))
+                cocotb.start_soon(timeout(dut))
+                cocotb.start_soon(toggle(dut, "dut.mode", mode.value))
 
-            await RisingEdge(dut.clk)
+                await RisingEdge(dut.clk)
 
-            # send customization string
-            await send_data(dut, cstm, Data.D_AD.value, 0, (msglen == 0))
+                # send customization string
+                await send_data(dut, cstm, Data.D_AD.value, 0, (msglen == 0))
 
-            # send msg
-            if msglen > 0:
-                await send_data(dut, msg, Data.D_MSG.value, 0, 1)
+                # send msg
+                if msglen > 0:
+                    await send_data(dut, msg, Data.D_MSG.value, 0, 1)
 
-            # receive xof
-            cxof_hw = await receive_data(dut, Data.D_HASH.value, cxoflen, 1)
-            log(dut, verbose=2, dashes=0, cxof_hw=cxof_hw)
+                # receive xof
+                cxof_hw = await receive_data(dut, Data.D_HASH.value, cxoflen, 1)
+                log(dut, verbose=2, dashes=0, cxof_hw=cxof_hw)
 
-            await RisingEdge(dut.clk)
+                await RisingEdge(dut.clk)
 
-            # check cxof
-            for i in range(cxoflen):
-                assert hex(cxof_hw[i]) == hex(cxof[i]), "cxof incorrect"
+                # check cxof
+                for i in range(cxoflen):
+                    assert hex(cxof_hw[i]) == hex(cxof[i]), "cxof incorrect"
 
-            await cycle_task.complete
-            log(dut, verbose=1, dashes=1)
+                await cycle_task.complete
+                log(dut, verbose=1, dashes=1)

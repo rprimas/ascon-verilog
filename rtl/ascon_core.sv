@@ -89,9 +89,10 @@ module ascon_core (
   logic last_abs_blk;
   logic add_ad_pad, add_msg_pad;
 
-  logic mode_enc_dec, mode_hash_xof;
+  logic mode_enc_dec, mode_xof, mode_hash_xof;
   assign mode_enc_dec  = (mode_q == M_AEAD128_ENC) || (mode_q == M_AEAD128_DEC);
-  assign mode_hash_xof = (mode_q == M_HASH256) || (mode_q == M_XOF128) || (mode_q == M_CXOF128);
+  assign mode_xof      = (mode_q == M_XOF128) || (mode_q == M_CXOF128);
+  assign mode_hash_xof = (mode_q == M_HASH256) || mode_xof;
 
   logic idle_done, ld_key, ld_key_done, ld_npub, ld_npub_done, init, init_done, kadd_2_done;
   assign idle_done    = (fsm_q == IDLE) && (mode > 'd0);
@@ -125,12 +126,15 @@ module ascon_core (
   assign fin_done    = (round_cnt_q == UROL) && fin;
   assign kadd_4_done = (fsm_q == KADD_4);
 
-  logic sqz_hash, sqz_hash_done1, sqz_hash_done2, sqz_tag, sqz_tag_done, ver_tag, ver_tag_done;
+  logic sqz_hash, sqz_hash_done1, sqz_hash_done2, sqz_tag, sqz_tag_done, sqz_xof_done;
   assign sqz_hash       = (fsm_q == SQZ_HASH) && bdo_valid && bdo_ready;
   assign sqz_hash_done1 = (word_cnt_q == (W64 - 1)) && sqz_hash;
-  assign sqz_hash_done2 = ((hash_cnt_q == 'd3) && sqz_hash_done1) || (sqz_hash && bdo_eoo);
+  assign sqz_hash_done2 = ((hash_cnt_q == 'd3) && sqz_hash_done1);
+  assign sqz_xof_done   = mode_xof && sqz_hash && bdo_eoo;
   assign sqz_tag        = (fsm_q == SQZ_TAG) && bdo_valid && bdo_ready;
   assign sqz_tag_done   = (word_cnt_q == (W128 - 1)) && sqz_tag;
+
+  logic ver_tag, ver_tag_done;
   assign ver_tag        = (fsm_q == VER_TAG) && bdi_ready;
   assign ver_tag_done   = (word_cnt_q == (W128 - 1)) && ver_tag;
 
@@ -327,6 +331,7 @@ module ascon_core (
     if (kadd_4_done) fsm_d = (mode_q == M_AEAD128_DEC) ? VER_TAG : SQZ_TAG;
     if (sqz_hash_done1) fsm_d = FINAL;
     if (sqz_hash_done2) fsm_d = IDLE;
+    if (sqz_xof_done) fsm_d = IDLE;
     if (sqz_tag_done) fsm_d = IDLE;
     if (ver_tag_done) fsm_d = IDLE;
   end
@@ -413,6 +418,7 @@ module ascon_core (
         word_cnt_d = 'd0;
       end
     end
+    if (sqz_xof_done) word_cnt_d = 'd0;
     if (fsm_q == PAD_AD) word_cnt_d = 'd0;
     if (fsm_q == PAD_MSG) word_cnt_d = 'd0;
   end
