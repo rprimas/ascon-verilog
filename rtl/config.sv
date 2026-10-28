@@ -56,21 +56,19 @@ localparam logic [63:0] IV_XOF = 64'h0000080000cc0003;   // Ascon-XOF128
 localparam logic [63:0] IV_CXOF = 64'h0000080000cc0004;  // Ascon-CXOF128
 
 // Ascon modes
-typedef enum logic [3:0] {
+localparam logic [3:0]
   M_INVALID     = 0,
   M_AEAD128_ENC = 1,
   M_AEAD128_DEC = 2,
   M_HASH256     = 3,
   M_XOF128      = 4,
-  M_CXOF128     = 5
-} mode_t;
+  M_CXOF128     = 5;
 
 // Interface data types
-typedef enum logic [3:0] {
+localparam logic [3:0]
   D_INVALID = 0,
   D_NONCE   = 1,
   D_AD      = 2,  // also for customization string of CXOF
   D_MSG     = 3,  // for AEAD, HASH, XOF, CXOF
   D_TAG     = 4,
-  D_HASH    = 5
-} data_t;
+  D_HASH    = 5;

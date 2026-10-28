@@ -11,13 +11,13 @@ from cocotb.triggers import RisingEdge
 from ascon import *
 
 VERBOSE = 0
-# RUNS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 15, 16, 17, 31, 32, 33]
-RUNS = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+RUNS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 15, 16, 17, 31, 32, 33]
+# RUNS = [0, 1, 2, 3, 4, 5, 6, 7, 8]
 STALL_INPUT = 0
 STALL_OUTPUT = 0
 
 
-# Needs to match "mode_t" in "rtl/config.sv"
+# Needs to match "rtl/config.sv"
 class Mode(Enum):
     M_INVALID = 0
     M_AEAD128_ENC = 1
@@ -27,7 +27,7 @@ class Mode(Enum):
     M_CXOF128 = 5
 
 
-# Needs to match "data_t" in "rtl/config.sv"
+# Needs to match "rtl/config.sv"
 class Data(Enum):
     D_INVALID = 0
     D_NONCE = 1
@@ -37,7 +37,7 @@ class Data(Enum):
     D_HASH = 5
 
 
-# Needs to match "fsm_t" in "rtl/ascon_core.sv"
+# Needs to match "rtl/ascon_core.sv"
 class Fsm(Enum):
     INVALID = 0
     IDLE = 1
@@ -183,39 +183,47 @@ def log(dut, verbose, dashes, **kwargs):
             dut._log.info("------------------------------------------")
 
 
-# Count cycles until dut reaches IDLE state
+# Count cycles until dut reaches IDLE state.
+# Deactivated if internal signals are not accessible (e.g. synthesis).
 async def cycle_cnt(dut):
-    while 1:
-        await RisingEdge(dut.clk)
-        if int(dut.fsm_q.value) != Fsm.IDLE.value:
-            break
-    cycles = 1
-    while 1:
-        await RisingEdge(dut.clk)
-        if int(dut.fsm_q.value) == Fsm.IDLE.value:
-            if VERBOSE >= 1:
-                dut._log.info("cycles    %d", cycles)
-            return
-        cycles += 1
+    try:
+        while 1:
+            await RisingEdge(dut.clk)
+            if int(dut.fsm_q.value) != Fsm.IDLE.value:
+                break
+        cycles = 1
+        while 1:
+            await RisingEdge(dut.clk)
+            if int(dut.fsm_q.value) == Fsm.IDLE.value:
+                if VERBOSE >= 1:
+                    dut._log.info("cycles    %d", cycles)
+                return
+            cycles += 1
+    except AttributeError:
+        dut._log.info('deactivated: cycle count')
 
 
 # Test case fails if dut fsm state stays the same for 100 cycles
+# Deactivated if internal signals are not accessible (e.g. synthesis).
 async def timeout(dut):
     last_fsm = 0
     last_fsm_cycles = 0
     await RisingEdge(dut.clk)
-    while 1:
-        await RisingEdge(dut.clk)
-        dut_fsm = int(dut.fsm_q.value)
-        if dut_fsm == last_fsm:
-            last_fsm_cycles += 1
-        else:
-            last_fsm_cycles = 0
-            last_fsm = int(dut.fsm_q.value)
-        if last_fsm_cycles >= 1000:
-            assert False, "Timeout"
-        if dut_fsm == Fsm.IDLE.value:
-            return
+    try:
+        while 1:
+            await RisingEdge(dut.clk)
+            dut_fsm = int(dut.fsm_q.value)
+            if dut_fsm == last_fsm:
+                last_fsm_cycles += 1
+            else:
+                last_fsm_cycles = 0
+                last_fsm = int(dut.fsm_q.value)
+            if last_fsm_cycles >= 1000:
+                assert False, "Timeout"
+            if dut_fsm == Fsm.IDLE.value:
+                return
+    except AttributeError:
+        dut._log.info("deactivated: timeout")
 
 
 # Corrupt data for decryption failure tests

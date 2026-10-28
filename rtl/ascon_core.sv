@@ -6,30 +6,31 @@
 // Implementation of the Ascon core.
 
 module ascon_core (
-    input  logic              clk,
-    input  logic              rst,
-    input  logic  [  CCW-1:0] key,
-    input  logic              key_valid,
-    output logic              key_ready,
-    input  logic  [  CCW-1:0] bdi,
-    input  logic  [CCW/8-1:0] bdi_valid,
-    output logic              bdi_ready,
-    input  data_t             bdi_type,
-    input  logic              bdi_eot,
-    input  logic              bdi_eoi,
-    input  mode_t             mode,
-    output logic  [  CCW-1:0] bdo,
-    output logic              bdo_valid,
-    input  logic              bdo_ready,
-    output data_t             bdo_type,
-    output logic              bdo_eot,
-    input  logic              bdo_eoo,
-    output logic              auth,
-    output logic              auth_valid
+    input  logic             clk,
+    input  logic             rst,
+    input  logic [  CCW-1:0] key,
+    input  logic             key_valid,
+    output logic             key_ready,
+    input  logic [  CCW-1:0] bdi,
+    input  logic [CCW/8-1:0] bdi_valid,
+    output logic             bdi_ready,
+    input  logic [      3:0] bdi_type,
+    input  logic             bdi_eot,
+    input  logic             bdi_eoi,
+    input  logic [      3:0] mode,
+    output logic [  CCW-1:0] bdo,
+    output logic             bdo_valid,
+    input  logic             bdo_ready,
+    output logic [      3:0] bdo_type,
+    output logic             bdo_eot,
+    input  logic             bdo_eoo,
+    output logic             auth,
+    output logic             auth_valid
 );
 
   // FSM states
-  typedef enum logic [4:0] {
+  typedef logic [4:0] fsm_t;
+  localparam logic [4:0]
     INVALID  = 'd0,
     IDLE     = 'd1,
     LD_KEY   = 'd2,
@@ -48,8 +49,7 @@ module ascon_core (
     KADD_4   = 'd15,
     SQZ_TAG  = 'd16,
     SQZ_HASH = 'd17,
-    VER_TAG  = 'd18
-  } fsm_t;
+    VER_TAG  = 'd18;
 
   // Register signals
   logic [W128-1:0][CCW-1:0] key_d, key_q;
@@ -58,7 +58,7 @@ module ascon_core (
   logic [3:0] round_cnt_q, word_cnt_q;
   logic [1:0] hash_cnt_d, hash_cnt_q;
   logic [4:0] fsm_d, fsm_q;
-  mode_t mode_d, mode_q;
+  logic [3:0] mode_d, mode_q;
   logic auth_d, auth_intern_d, auth_valid_d;
   logic auth_q, auth_intern_q, auth_valid_q;
   logic ad_eot_d, ad_pad_d, msg_pad_d, eoi_d;
@@ -66,23 +66,34 @@ module ascon_core (
 
   // Registers
   register #('d128) reg_key_i (
-    .clk(clk), .rst(rst), .data_d(key_d), .data_q(key_q)
+      .clk(clk),
+      .rst(rst),
+      .data_d(key_d),
+      .data_q(key_q)
   );
   register #('d320) reg_state_i (
-    .clk(clk), .rst(rst), .data_d(state_d), .data_q(state_q)
+      .clk(clk),
+      .rst(rst),
+      .data_d(state_d),
+      .data_q(state_q)
   );
-  register #('d10)  reg_cnt_i (
-    .clk(clk), .rst(rst),
-    .data_d({round_cnt_d, word_cnt_d, hash_cnt_d}),
-    .data_q({round_cnt_q, word_cnt_q, hash_cnt_q})
+  register #('d10) reg_cnt_i (
+      .clk(clk),
+      .rst(rst),
+      .data_d({round_cnt_d, word_cnt_d, hash_cnt_d}),
+      .data_q({round_cnt_q, word_cnt_q, hash_cnt_q})
   );
   register #('d5, IDLE) reg_fsm_i (
-    .clk(clk), .rst(rst), .data_d(fsm_d), .data_q(fsm_q)
+      .clk(clk),
+      .rst(rst),
+      .data_d(fsm_d),
+      .data_q(fsm_q)
   );
   register #('d11) reg_flags_i (
-    .clk(clk), .rst(rst),
-    .data_d({auth_d, auth_intern_d, auth_valid_d, ad_eot_d, ad_pad_d, msg_pad_d, eoi_d, mode_d}),
-    .data_q({auth_q, auth_intern_q, auth_valid_q, ad_eot_q, ad_pad_q, msg_pad_q, eoi_q, mode_q})
+      .clk(clk),
+      .rst(rst),
+      .data_d({auth_d, auth_intern_d, auth_valid_d, ad_eot_d, ad_pad_d, msg_pad_d, eoi_d, mode_d}),
+      .data_q({auth_q, auth_intern_q, auth_valid_q, ad_eot_q, ad_pad_q, msg_pad_q, eoi_q, mode_q})
   );
 
   // Event signals
@@ -135,8 +146,8 @@ module ascon_core (
   assign sqz_tag_done   = (word_cnt_q == (W128 - 1)) && sqz_tag;
 
   logic ver_tag, ver_tag_done;
-  assign ver_tag        = (fsm_q == VER_TAG) && bdi_ready;
-  assign ver_tag_done   = (word_cnt_q == (W128 - 1)) && ver_tag;
+  assign ver_tag      = (fsm_q == VER_TAG) && bdi_ready;
+  assign ver_tag_done = (word_cnt_q == (W128 - 1)) && ver_tag;
 
   assign last_abs_blk =
     (abs_ad  && mode_enc_dec        && (word_cnt_q == (W128 - 1))) ||
@@ -159,17 +170,17 @@ module ascon_core (
 
   // Instantiation of Ascon-p permutation
   asconp asconp_i (
-    .round_cnt(round_cnt_q),
-    .x0_i(state_q[0]),
-    .x1_i(state_q[1]),
-    .x2_i(state_q[2]),
-    .x3_i(state_q[3]),
-    .x4_i(state_q[4]),
-    .x0_o(asconp_o[0]),
-    .x1_o(asconp_o[1]),
-    .x2_o(asconp_o[2]),
-    .x3_o(asconp_o[3]),
-    .x4_o(asconp_o[4])
+      .round_cnt(round_cnt_q),
+      .x0_i(state_q[0]),
+      .x1_i(state_q[1]),
+      .x2_i(state_q[2]),
+      .x3_i(state_q[3]),
+      .x4_i(state_q[4]),
+      .x0_o(asconp_o[0]),
+      .x1_o(asconp_o[1]),
+      .x2_o(asconp_o[2]),
+      .x3_o(asconp_o[3]),
+      .x4_o(asconp_o[4])
   );
 
   /////////////////////
@@ -193,13 +204,13 @@ module ascon_core (
       LD_NPUB: begin
         state_idx = word_cnt_q + W192;
         bdi_ready = (bdi_type == D_NONCE) && (bdi_valid == '1);
-        state_slice_nx  = bdi;
+        state_slice_nx = bdi;
       end
       ABS_AD: begin
         state_idx = word_cnt_q;
         bdi_ready = (bdi_type == D_AD) && (bdi_valid != '0);
-        bdi_pad   = pad(bdi, bdi_valid);
-        state_slice_nx  = state_slice ^ bdi_pad;
+        bdi_pad = pad(bdi, bdi_valid);
+        state_slice_nx = state_slice ^ bdi_pad;
       end
       PAD_AD, PAD_MSG: begin
         state_idx = word_cnt_q;
@@ -354,10 +365,10 @@ module ascon_core (
     if (idle_done && (mode == M_HASH256 || mode == M_XOF128 || mode == M_CXOF128)) begin
       state_d = '0;
       unique case (mode)
-        M_HASH256:  state_d[0] = IV_HASH[0+:64];
-        M_XOF128:   state_d[0] = IV_XOF[0+:64];
-        M_CXOF128:  state_d[0] = IV_CXOF[0+:64];
-        default: ;
+        M_HASH256: state_d[0] = IV_HASH[0+:64];
+        M_XOF128:  state_d[0] = IV_XOF[0+:64];
+        M_CXOF128: state_d[0] = IV_CXOF[0+:64];
+        default:   ;
       endcase
     end
     // State initialization: AEAD
@@ -471,7 +482,7 @@ module ascon_core (
     end
     if (abs_ad_done) begin
       if (bdi_eot) ad_eot_d = 'd1;
-      if (bdi_eoi) eoi_d    = 'd1;
+      if (bdi_eoi) eoi_d = 'd1;
     end
     if (add_ad_pad) ad_pad_d = 'd1;
     if (add_msg_pad) msg_pad_d = 'd1;
