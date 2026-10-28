@@ -1,5 +1,6 @@
 # read design 
-read_verilog -sv rtl/ascon_core.sv
+plugin -i slang
+read_slang --single-unit --top ascon_core --dir-prefix rtl -F./file_list.txt
 
 # generic synthesis
 synth -top ascon_core

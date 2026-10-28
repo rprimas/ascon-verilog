@@ -57,7 +57,7 @@ module ascon_core (
   logic [3:0] round_cnt_d, word_cnt_d;
   logic [3:0] round_cnt_q, word_cnt_q;
   logic [1:0] hash_cnt_d, hash_cnt_q;
-  fsm_t fsm_d, fsm_q;
+  logic [4:0] fsm_d, fsm_q;
   mode_t mode_d, mode_q;
   logic auth_d, auth_intern_d, auth_valid_d;
   logic auth_q, auth_intern_q, auth_valid_q;
