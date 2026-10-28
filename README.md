@@ -145,8 +145,11 @@ The following table contains a description of the interface signals:
 ## Integration
 
 - The Ascon core uses an interface that allows easy integration into projects using, e.g., an AXI4 bus.
-- The Ascon core can handle stalls of the input/output data bus. This can be tested by setting `STALL_INPUT` or `STALL_OUTPUT` in `test.py`.
+- The nonce/tag bytes need to be transferred using full BDI blocks.
+- If a new key is loaded, `key_valid` needs to be high on the same cycle that `mode` is sampled.
+- If an empty hash/XOF input is processed, `bdi_eoi` needs to be high on the same cycle that `mode` is sampled.
 - If the length of AEAD output data is not a multiple of 4 (or 8) bytes then the last data block needs to be truncated according to the `bdi_valid` signal. See test bench for an example.
+- The Ascon core can handle stalls of the input/output data bus. This can be tested by setting `STALL_INPUT` or `STALL_OUTPUT` in `test.py`.
 - Many ciphers, including Ascon, require that decrypted plaintext is not released to a potential attacker until the tag of the ciphertext was successfully verified. The current design of the Ascon core outputs decrypted plaintext immediately which could lead to security degradation. For real applications an additional buffer should be used to temporarily store decrypted plaintext until the Ascon core has successfully verified the ciphertext tag.
 
 ## Contact

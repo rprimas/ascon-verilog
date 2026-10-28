@@ -97,14 +97,14 @@ module ascon_core (
   assign idle_done    = (fsm_q == IDLE) && (mode > 'd0);
   assign ld_key       = (fsm_q == LD_KEY) && key_valid && key_ready;
   assign ld_key_done  = ld_key && (word_cnt_q == (W128 - 1));
-  assign ld_npub      = (fsm_q == LD_NPUB) && (bdi_type == D_NONCE) && (bdi_valid > 'd0) && bdi_ready;
+  assign ld_npub      = (fsm_q == LD_NPUB) && bdi_ready;
   assign ld_npub_done = ld_npub && (word_cnt_q == (W128 - 1));
   assign init         = (fsm_q == INIT);
   assign init_done    = init && (round_cnt_q == UROL);
   assign kadd_2_done  = (fsm_q == KADD_2) && (eoi_q || (bdi_valid > 'd0));
 
   logic abs_ad, abs_ad_done, pro_ad, pro_ad_done;
-  assign abs_ad      = (fsm_q == ABS_AD) && (bdi_type == D_AD) && (bdi_valid > 'd0) && bdi_ready;
+  assign abs_ad      = (fsm_q == ABS_AD) && bdi_ready;
   assign abs_ad_done = abs_ad && (last_abs_blk || bdi_eot);
   assign pro_ad      = (fsm_q == PRO_AD);
   assign pro_ad_done = pro_ad && (round_cnt_q == UROL);
@@ -131,7 +131,7 @@ module ascon_core (
   assign sqz_hash_done2 = ((hash_cnt_q == 'd3) && sqz_hash_done1) || (sqz_hash && bdo_eoo);
   assign sqz_tag        = (fsm_q == SQZ_TAG) && bdo_valid && bdo_ready;
   assign sqz_tag_done   = (word_cnt_q == (W128 - 1)) && sqz_tag;
-  assign ver_tag        = (fsm_q == VER_TAG) && (bdi_type == D_TAG) && bdi_ready && (bdi_valid != 'd0);
+  assign ver_tag        = (fsm_q == VER_TAG) && bdi_ready;
   assign ver_tag_done   = (word_cnt_q == (W128 - 1)) && ver_tag;
 
   assign last_abs_blk =
@@ -188,12 +188,12 @@ module ascon_core (
       LD_KEY:  key_ready = 'd1;
       LD_NPUB: begin
         state_idx = word_cnt_q + W192;
-        bdi_ready = bdi_type == D_NONCE;
+        bdi_ready = (bdi_type == D_NONCE) && (bdi_valid == '1);
         state_slice_nx  = bdi;
       end
       ABS_AD: begin
         state_idx = word_cnt_q;
-        bdi_ready = bdi_type == D_AD;
+        bdi_ready = (bdi_type == D_AD) && (bdi_valid != '0);
         bdi_pad   = pad(bdi, bdi_valid);
         state_slice_nx  = state_slice ^ bdi_pad;
       end
@@ -233,7 +233,7 @@ module ascon_core (
       end
       VER_TAG: begin
         state_idx = word_cnt_q + W192;
-        bdi_ready = bdi_type == D_TAG;
+        bdi_ready = (bdi_type == D_TAG) && (bdi_valid == '1);
       end
       default: ;
     endcase
