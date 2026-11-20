@@ -113,7 +113,7 @@ module ascon_core (
   assign ld_npub_done = ld_npub && (word_cnt_q == (W128 - 1));
   assign init         = (fsm_q == INIT);
   assign init_done    = init && (round_cnt_q == UROL);
-  assign kadd_2_done  = (fsm_q == KADD_2) && (eoi_q || (bdi_valid > 'd0));
+  assign kadd_2_done  = (fsm_q == KADD_2) && (eoi_q || ((bdi_valid > 'd0) && ((bdi_type == D_AD) || (bdi_type == D_MSG))));
 
   logic abs_ad, abs_ad_done, pro_ad, pro_ad_done;
   assign abs_ad      = (fsm_q == ABS_AD) && bdi_ready;
@@ -140,7 +140,7 @@ module ascon_core (
   logic sqz_hash, sqz_hash_done1, sqz_hash_done2, sqz_tag, sqz_tag_done, sqz_xof_done;
   assign sqz_hash       = (fsm_q == SQZ_HASH) && bdo_valid && bdo_ready;
   assign sqz_hash_done1 = (word_cnt_q == (W64 - 1)) && sqz_hash;
-  assign sqz_hash_done2 = ((hash_cnt_q == 'd3) && sqz_hash_done1);
+  assign sqz_hash_done2 = (mode_q == M_HASH256) && (hash_cnt_q == 'd3) && sqz_hash_done1;
   assign sqz_xof_done   = mode_xof && sqz_hash && bdo_eoo;
   assign sqz_tag        = (fsm_q == SQZ_TAG) && bdo_valid && bdo_ready;
   assign sqz_tag_done   = (word_cnt_q == (W128 - 1)) && sqz_tag;
@@ -230,7 +230,7 @@ module ascon_core (
         bdo_valid = (mode_enc_dec && (bdi_type == D_MSG) && (bdi_valid != 'd0)) ? 'd1 : 'd0;
         bdo_type  = mode_enc_dec ? D_MSG : D_INVALID;
         bdo_eot   = mode_enc_dec ? bdi_eot : 'd0;
-        if (mode_q == M_HASH256) bdo = 'd0;
+        if (mode_hash_xof) bdo = 'd0;
       end
       SQZ_TAG: begin
         state_idx = word_cnt_q + W192;
@@ -436,9 +436,9 @@ module ascon_core (
 
   always_comb begin
     hash_cnt_d = hash_cnt_q;
+    if (idle_done) hash_cnt_d = 'd0;
     if (mode_q == M_HASH256) begin
       if (sqz_hash_done1) hash_cnt_d = hash_cnt_q + 'd1;
-      if (abs_ad_done && bdi_eoi) hash_cnt_d = 'd0;
     end
   end
 

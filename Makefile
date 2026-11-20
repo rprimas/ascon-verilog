@@ -25,6 +25,8 @@ ifeq ($(cell),simple)
 SURFER_RON = surfer/syn.ron
 FILE_LIST = syn/file_list_syn.txt
 endif
+SIM_BUILD ?= sim_build/$(VARIANT)_$(or $(cell),rtl)
+CUSTOM_COMPILE_DEPS += $(FILE_LIST) $(shell cat $(FILE_LIST))
 
 # Verilator arguments
 SIM ?= verilator
@@ -47,6 +49,6 @@ surf:
 	surfer -s $(SURFER_RON) dump.fst
 
 clean::
-	rm -rf syn.v results.xml
+	rm -rf sim_build syn.v results.xml
 
 .PHONY: syn surf clean

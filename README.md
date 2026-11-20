@@ -78,7 +78,7 @@ The following table contains a description of the interface signals:
 | `bdi_valid`  |    4/8   | Valid BDI data bytes.                            |
 | `bdi_ready`  |     1    | Ascon core is ready to receive data.             |
 | `bdi_eot`    |     1    | Last BDI block of this type.                     |
-| `bdi_eoi`    |     1    | Last BDI block.                                  |
+| `bdi_eoi`    |     1    | Last BDI data block (excluding tag).             |
 | `bdi_type`   |     4    | Type of BDI data.                                |
 | `mode`       |     4    | Ascon mode.                                      |
 | `bdo`        |   32/64  | Block data output (BDO).                         |
@@ -147,6 +147,7 @@ The following table contains a description of the interface signals:
 
 - The Ascon core uses an interface that allows easy integration into projects using, e.g., an AXI4 bus.
 - The nonce/tag bytes need to be transferred using full BDI blocks.
+- `bdi_eoi` needs to be high on the last input data block excluding the tag (i.e., the last `D_MSG` block, or the last `D_AD`/`D_NONCE` block if subsequent data segments are empty).
 - If a new key is loaded, `key_valid` needs to be high on the same cycle that `mode` is sampled.
 - If an empty hash/XOF input is processed, `bdi_eoi` needs to be high on the same cycle that `mode` is sampled.
 - If the length of AEAD output data is not a multiple of 4 (or 8) bytes then the last data block needs to be truncated according to the `bdi_valid` signal. See test bench for an example.
