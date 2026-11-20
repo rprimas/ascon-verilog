@@ -171,7 +171,7 @@ async def receive_data(dut, type, len=16, bdo_eoo=0, check_eot=None):
     data_out = []
     if check_eot is None:
         check_eot = (type == Data.D_TAG.value) or (
-            type == Data.D_HASH.value and bdo_eoo == 0 and len == 32
+            type == Data.D_HASH.value and (bdo_eoo or len == 32)
         )
     while d < len:
         if STALL_OUTPUT:

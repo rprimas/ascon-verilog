@@ -244,7 +244,7 @@ module ascon_core (
         bdo       = state_slice;
         bdo_valid = 'd1;
         bdo_type  = D_HASH;
-        bdo_eot   = (hash_cnt_q == 'd3) && (word_cnt_q == (W64 - 1));
+        bdo_eot   = mode_xof ? bdo_eoo : ((hash_cnt_q == 'd3) && (word_cnt_q == (W64 - 1)));
       end
       VER_TAG: begin
         state_idx = word_cnt_q + W192;

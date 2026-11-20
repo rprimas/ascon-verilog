@@ -104,6 +104,7 @@ The following table contains a description of the interface signals:
   - `pip install cocotb`
 - Execute the cocotb test bench:
   - `make` or `make sim`
+  - Simulator binaries and test results are written to `builds/sim/<variant>/`, where `<variant>` is lowercase (for example, `v1`).
 
 ## RTL Synthesis
 
@@ -116,18 +117,17 @@ The following table contains a description of the interface signals:
 - Execute the yosys synthesis script:
   - Simple cell library:
     - `make syn`
+    - Set `VARIANT` to select a variant (for example, `make syn VARIANT=V6`). The netlist is written to `builds/net/<variant>/syn.v`.
 
 ## RTL Post-Synthesis Simulation
 
-- Synthesis and cocotb test for synthesized RTL:
-  - Simple cell library:
-    - `make syn`
-    - `make sim cell=simple`
+- Run `make sim cell=simple VARIANT=V6` (or omit `VARIANT` for V1). This builds the selected netlist if needed and runs the cocotb tests against it. Simulator binaries and results go in `builds/sim/<variant>-simple/`.
+- Run `bash test_all.sh 1` to test all variants after synthesis, following the RTL tests. Without `1`, the script runs only the RTL tests.
 
 ## View Waveforms
 
 - Make sure you have a recent verilator version (>= `v5.0.38`).
-- Uncomment all `--trace` arguments in the Makefile.
+- `make dump` and `make surf` enable tracing and write `dump.fst` in `builds/sim/<variant>-rtl-trace/` or `builds/sim/<variant>-simple-trace/`.
 - Install the [Surfer](https://surfer-project.org/) waveform viewer.
   - `cargo install --git https://gitlab.com/surfer-project/surfer surfer`
 - View waveform of cocotb test bench run:
