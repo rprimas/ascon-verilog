@@ -25,16 +25,19 @@ ifeq ($(cell),simple)
 SURFER_RON = surfer/syn.ron
 FILE_LIST = syn/file_list_syn.txt
 endif
-SIM_BUILD ?= sim_build/$(VARIANT)_$(or $(cell),rtl)
+TRACE ?= 0
+SIM_BUILD ?= sim_build/$(VARIANT)_$(or $(cell),rtl)$(if $(filter 1,$(TRACE)),_trace)
 CUSTOM_COMPILE_DEPS += $(FILE_LIST) $(shell cat $(FILE_LIST))
 
 # Verilator arguments
 SIM ?= verilator
 TOPLEVEL_LANG ?= verilog
 EXTRA_ARGS += --threads 4
-# EXTRA_ARGS += --trace
-# EXTRA_ARGS += --trace-fst
-# EXTRA_ARGS += --trace-threads 2
+ifeq ($(TRACE),1)
+EXTRA_ARGS += --trace
+EXTRA_ARGS += --trace-fst
+EXTRA_ARGS += --trace-threads 2
+endif
 EXTRA_ARGS += -Wno-UNOPTFLAT
 EXTRA_ARGS += -D$(VARIANT)
 EXTRA_ARGS += -f $(FILE_LIST)
@@ -45,10 +48,13 @@ include $(shell cocotb-config --makefiles)/Makefile.sim
 syn:
 	yosys -p "plugin -i slang; read_slang -D${VARIANT} --single-unit --top ascon_core --dir-prefix rtl -F./file_list.txt; synth -top ascon_core; dfflibmap -liberty syn/simple_cells.lib; abc -liberty syn/simple_cells.lib; clean; write_verilog syn.v; stat -liberty syn/simple_cells.lib"
 
-surf:
+dump:
+	$(MAKE) sim TRACE=1 VARIANT=$(VARIANT) $(if $(cell),cell=$(cell)) $(if $(COCOTB_TEST_FILTER),COCOTB_TEST_FILTER=$(COCOTB_TEST_FILTER))
+
+surf: dump
 	surfer -s $(SURFER_RON) dump.fst
 
 clean::
-	rm -rf sim_build syn.v results.xml
+	rm -rf sim_build syn.v results.xml dump.fst
 
-.PHONY: syn surf clean
+.PHONY: syn dump surf clean
