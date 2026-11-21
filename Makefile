@@ -26,7 +26,7 @@ SYN_NETLIST = builds/net/$(VARIANT_DIR)/syn.v
 SIM_MODE = rtl
 ifeq ($(cell),simple)
 SURFER_RON = surfer/syn.ron
-SIM_MODE = simple
+SIM_MODE = syn
 NETLIST_SOURCES = syn/simple_cells.v $(SYN_NETLIST)
 CUSTOM_COMPILE_DEPS += $(NETLIST_SOURCES)
 EXTRA_ARGS += $(NETLIST_SOURCES)
@@ -35,7 +35,7 @@ CUSTOM_COMPILE_DEPS += file_list.txt $(shell cat file_list.txt)
 EXTRA_ARGS += -f file_list.txt
 endif
 TRACE ?= 0
-SIM_BUILD ?= builds/sim/$(VARIANT_DIR)$(if $(filter 1,$(TRACE)),-$(SIM_MODE)-trace,$(if $(filter simple,$(SIM_MODE)),-simple))
+SIM_BUILD ?= builds/sim/$(VARIANT_DIR)$(if $(filter 1,$(TRACE)),-$(SIM_MODE)-trace,$(if $(filter syn,$(SIM_MODE)),-syn))
 COCOTB_RESULTS_FILE ?= $(SIM_BUILD)/results.xml
 
 # Verilator arguments
@@ -60,15 +60,13 @@ $(SYN_NETLIST): Makefile file_list.txt $(shell cat file_list.txt) syn/simple_cel
 	mkdir -p $(@D)
 	yosys -p "plugin -i slang; read_slang -D$(VARIANT_DEFINE) --single-unit --top ascon_core --dir-prefix rtl -F./file_list.txt; synth -top ascon_core; dfflibmap -liberty syn/simple_cells.lib; abc -liberty syn/simple_cells.lib; clean; write_verilog $@; stat -liberty syn/simple_cells.lib"
 
-dump surf: override TRACE = 1
+surf: override TRACE = 1
 
-dump:
+surf:
 	$(MAKE) sim TRACE=1 VARIANT=$(VARIANT) $(if $(cell),cell=$(cell)) $(if $(COCOTB_TEST_FILTER),COCOTB_TEST_FILTER=$(COCOTB_TEST_FILTER))
-
-surf: dump
 	cd $(SIM_BUILD) && surfer -s $(abspath $(SURFER_RON)) dump.fst
 
 clean::
 	rm -rf builds sim_build syn.v results.xml dump.fst
 
-.PHONY: syn dump surf clean
+.PHONY: syn surf clean

@@ -90,44 +90,70 @@ The following table contains a description of the interface signals:
 | `auth`       |     1    | Authentication success.                          |
 | `auth_valid` |     1    | Authentication output is valid.                  |
 
+## Python Environment
+
+This repository is tested with Python 3.14. You can use [uv](https://docs.astral.sh/uv/) to install that version and create a virtual environment (`.venv`) without changing your system Python.
+
+On Linux, install `uv` if it is not already available:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+From the repository root, install Python 3.14, create and activate the virtual environment, and install the pinned test dependencies:
+
+```bash
+uv python install 3.14
+uv venv --python 3.14 .venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
+```
+
+In each new terminal, run `source .venv/bin/activate` before running `make`.
+
+## Simulation Environment
+
+RTL simulation uses Verilator and cocotb. On Ubuntu, install Verilator and the build tools:
+
+```bash
+sudo apt update
+sudo apt install build-essential verilator
+```
+
+Alternatively, use the Verilator bundled with [OSS CAD Suite](https://github.com/YosysHQ/oss-cad-suite-build). If Ubuntu's package is too old, you can also [build Verilator from source](https://verilator.org/guide/latest/install.html#git-quick-install).
+
+Set up and activate the [Python environment](#python-environment) for cocotb, after activating OSS CAD Suite if you use it. Then check that `verilator --version` works.
+
+## Synthesis Environment
+
+Synthesis uses Yosys and its Slang plugin. On Ubuntu, install Yosys:
+
+```bash
+sudo apt update
+sudo apt install yosys
+```
+
+Alternatively, use [OSS CAD Suite](https://github.com/YosysHQ/oss-cad-suite-build), which bundles recent versions of Yosys and Slang together.
+
+Check that Yosys can load the plugin with `yosys -Q -T -p 'plugin -i slang'`. Activate the [Python environment](#python-environment) after activating OSS CAD Suite (if used) and before running `make syn`, because the Makefile loads cocotb's build rules.
+
 ## RTL Simulation
 
-- Install the Verilator open-source verilog simulator:
-  - Ubuntu:
-    - `apt-get install verilator`
-  - Fedora:
-    - `dnf install verilator`
-    - `dnf install verilator-devel`
-  - Build from source:
-    - [Git Quick Install](https://verilator.org/guide/latest/install.html#git-quick-install)
-- Install the [cocotb](https://www.cocotb.org/) open-source verilog test bench environment:
-  - `pip install cocotb`
-- Execute the cocotb test bench:
-  - `make` or `make sim`
-  - Simulator binaries and test results are written to `builds/sim/<variant>/`, where `<variant>` is lowercase (for example, `v1`).
+Run `make sim` (or `make`) to execute the cocotb test bench. Simulator binaries and test results are written to `builds/sim/<variant>/`, where `<variant>` is lowercase (for example, `v1`).
 
 ## RTL Synthesis
 
-- Install the Yosys open-source synthesis suite (tested with version `0.53`):
-  - Ubuntu:
-    - `apt-get install yosys`
-  - Fedora:
-    - `dnf install yosys`
-- Install the `slang` yosys plugin
-- Execute the yosys synthesis script:
-  - Simple cell library:
-    - `make syn`
-    - Set `VARIANT` to select a variant (for example, `make syn VARIANT=V6`). The netlist is written to `builds/net/<variant>/syn.v`.
+Run `make syn` to synthesize the design with the simple cell library. Set `VARIANT` to select a variant (for example, `make syn VARIANT=V6`). The netlist is written to `builds/net/<variant>/syn.v`.
 
 ## RTL Post-Synthesis Simulation
 
-- Run `make sim cell=simple VARIANT=V6` (or omit `VARIANT` for V1). This builds the selected netlist if needed and runs the cocotb tests against it. Simulator binaries and results go in `builds/sim/<variant>-simple/`.
+- Run `make sim cell=simple VARIANT=V6` (or omit `VARIANT` for V1). This builds the selected netlist if needed and runs the cocotb tests against it. Simulator binaries and results go in `builds/sim/<variant>-syn/`.
 - Run `bash test_all.sh 1` to test all variants after synthesis, following the RTL tests. Without `1`, the script runs only the RTL tests.
 
 ## View Waveforms
 
-- Make sure you have a recent verilator version (>= `v5.0.38`).
-- `make dump` and `make surf` enable tracing and write `dump.fst` in `builds/sim/<variant>-rtl-trace/` or `builds/sim/<variant>-simple-trace/`.
+- `make surf` runs the simulation with tracing enabled and opens `dump.fst` from `builds/sim/<variant>-rtl-trace/` or `builds/sim/<variant>-syn-trace/`.
 - Install the [Surfer](https://surfer-project.org/) waveform viewer.
   - `cargo install --git https://gitlab.com/surfer-project/surfer surfer`
 - View waveform of cocotb test bench run:
@@ -153,7 +179,7 @@ The following table contains a description of the interface signals:
 - If the length of AEAD output data is not a multiple of 4 (or 8) bytes then the last data block needs to be truncated according to the `bdi_valid` signal. See test bench for an example.
 - The length of XOF/CXOF output needs to be greater than zero bytes.
 - The CXOF customization string starts with a 64-bit length encoding. The customization string may contain 0 to 256 bytes (excluding length encoding). The entire customization string needs to be sent as a single `D_AD` segment.
-- The Ascon core can handle stalls of the input/output data bus. This can be tested by setting `STALL_INPUT` or `STALL_OUTPUT` in `test.py`.
+- The Ascon core can handle stalls of the input/output data bus. This can be tested by setting `STALL_INPUT` or `STALL_OUTPUT` in `test_helpers.py`.
 - Many ciphers, including Ascon, require that decrypted plaintext is not released to a potential attacker until the tag of the ciphertext was successfully verified. The current design of the Ascon core outputs decrypted plaintext immediately which could lead to security degradation. For real applications an additional buffer should be used to temporarily store decrypted plaintext until the Ascon core has successfully verified the ciphertext tag.
 
 ## Contact

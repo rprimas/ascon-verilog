@@ -22,6 +22,18 @@ output Y;
 assign Y = ~(A | B);
 endmodule
 
+module XOR(A, B, Y);
+input A, B;
+output Y;
+assign Y = A ^ B;
+endmodule
+
+module XNOR(A, B, Y);
+input A, B;
+output Y;
+assign Y = ~(A ^ B);
+endmodule
+
 module DFF(C, D, Q);
 input C, D;
 output reg Q;

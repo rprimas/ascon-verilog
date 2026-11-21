@@ -1,6 +1,6 @@
 library(demo) {
   cell(BUF) {
-    area: 6;
+    area: 4;
     pin(A) { direction: input; }
     pin(Y) { direction: output;
               function: "A"; }
@@ -25,8 +25,22 @@ library(demo) {
     pin(Y) { direction: output;
              function: "(A+B)'"; }
   }
+  cell(XOR) {
+    area: 8;
+    pin(A) { direction: input; }
+    pin(B) { direction: input; }
+    pin(Y) { direction: output;
+             function: "A^B"; }
+  }
+  cell(XNOR) {
+    area: 8;
+    pin(A) { direction: input; }
+    pin(B) { direction: input; }
+    pin(Y) { direction: output;
+             function: "(A^B)'"; }
+  }
   cell(DFF) {
-    area: 18;
+    area: 23;
     ff(IQ, IQN) { clocked_on: C;
                   next_state: D; }
     pin(C) { direction: input;
@@ -36,7 +50,7 @@ library(demo) {
               function: "IQ"; }
   }
   cell(DFFSR) {
-    area: 18;
+    area: 32;
     ff("IQ", "IQN") { clocked_on: C;
                   next_state: D;
                       preset: S;

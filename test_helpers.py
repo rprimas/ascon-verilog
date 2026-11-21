@@ -242,7 +242,8 @@ async def cycle_cnt(dut):
                 return
             cycles += 1
     except AttributeError:
-        dut._log.info("deactivated: cycle count")
+        if VERBOSE >= 1:
+            dut._log.info("deactivated: cycle count")
 
 
 # Test case fails if no top-level I/O activity occurs for max_cycles cycles.
